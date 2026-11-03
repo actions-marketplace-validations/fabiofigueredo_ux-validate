@@ -4,6 +4,10 @@ Testes de **conteúdo**, **navegação** e **interface** de aplicações web, fe
 
 Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate responde: *a Dona Maria, de 68 anos, no celular, consegue descobrir quanto custa o seu produto?* E se não consegue, mostra onde ela travou, por quê e em qual arquivo corrigir.
 
+![Relatório do ux-validate com notas por persona e objetivos cumpridos](docs/relatorio-exemplo.png)
+
+> **Status:** versão inicial (0.1). Funciona com o Claude Code; outras ferramentas de IA estão no [roadmap](#roadmap).
+
 ## Como funciona
 
 ```
@@ -28,6 +32,18 @@ Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate responde:
 O ux-validate roda **dentro da sua ferramenta de IA**: o modelo usado é o que ela estiver usando.
 
 ## Instalação
+
+Pré-requisitos: **Node.js 20+** e o **[Claude Code](https://claude.com/claude-code)** (terminal ou extensão do VS Code).
+
+No projeto que você quer testar:
+
+```bash
+npm install -D github:fabiofigueredo/ux-validate
+```
+
+```bash
+npx playwright install chromium
+```
 
 ```bash
 npx ux-validate init
@@ -96,20 +112,63 @@ Formato completo e efeito de cada característica: [`source/references/persona-f
 
 ## Experimente com o site de demonstração
 
-`examples/demo-site` é um site com problemas plantados de propósito (links quebrados, lorem ipsum, layout que estoura no celular, formulário inacessível…).
+`examples/demo-site` é um site com problemas plantados de propósito (links quebrados, lorem ipsum, layout que estoura no celular, formulário inacessível…). Ótimo para ver a ferramenta funcionando antes de usar no seu projeto.
+
+**1. Clone e suba o site** (deixe este terminal aberto):
 
 ```bash
-npm install
-npm run demo:serve        # serve em http://localhost:4321
+git clone https://github.com/fabiofigueredo/ux-validate.git
 ```
-
-Em outro terminal, num projeto de teste:
 
 ```bash
-npx ux-validate init --yes
+cd ux-validate && npm install && npx playwright install chromium
 ```
 
-Troque `app.url` em `ux-validate.config.yml` por `http://localhost:4321/index.html` e rode `/persona-test` no Claude Code. `examples/sample-findings.json` mostra o tipo de resultado que o agente produz.
+```bash
+npm run demo:serve
+```
+
+O site fica em http://localhost:4321/index.html.
+
+**2. Crie um projeto de teste** em outro terminal, ao lado da pasta `ux-validate`:
+
+```bash
+mkdir projeto-teste && cd projeto-teste && npm init -y
+```
+
+```bash
+npm install -D ../ux-validate
+```
+
+```bash
+npx ux-validate init
+```
+
+Quando o setup pedir a URL, informe `http://localhost:4321/index.html`.
+
+**3. Rode as checagens fixas:**
+
+```bash
+npx ux-validate check
+```
+
+```bash
+npx ux-validate report
+```
+
+Abra o `report.html` em `.ux-validate/runs/<data-hora>/`.
+
+**4. Rode o teste com personas:** abra a pasta `projeto-teste` no VS Code, abra o Claude Code, aprove o servidor MCP `playwright` (ou ative-o com `/mcp`) e digite `/persona-test dona-maria`.
+
+`examples/sample-findings.json` mostra o tipo de resultado que o agente produz.
+
+### Problemas comuns
+
+| Sintoma | Solução |
+|---|---|
+| `/persona-test` não aparece | A pasta aberta precisa ser a do projeto onde você rodou o `init` (a que tem `.claude/`) |
+| Erro dizendo que o navegador não foi encontrado | Rode `npx playwright install chromium` no projeto |
+| "A página inicial não abre" | Confira se a aplicação está no ar e se `app.url` está certa |
 
 ## Estrutura do projeto
 
@@ -139,6 +198,10 @@ Os comandos em `source/commands/` usam placeholders (`{{WORK_DIR}}`, `{{CHECK_CM
 - [ ] Modo standalone (agente próprio via AI SDK, com o provedor e o modelo escolhidos no setup)
 - [ ] GitHub Action com comentário no PR e saída SARIF
 - [ ] Repetir a navegação e só confirmar problemas que aparecem em mais de uma execução
+
+## Contribuindo
+
+Sugestões e PRs são bem-vindos. Antes de abrir um PR, rode `npm test`. Para mudar o comportamento do agente, edite os comandos em `source/commands/` e as referências em `source/references/`: eles valem para todas as ferramentas.
 
 ## Variáveis de ambiente
 
