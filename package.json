@@ -2,6 +2,15 @@
   "name": "ux-validate",
   "version": "0.1.0",
   "description": "Testes de conteúdo, navegação e interface de aplicações web, guiados por personas e executados pelo seu agente de IA.",
+  "author": "Fabio Figueredo (https://github.com/fabiofigueredo)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fabiofigueredo/ux-validate.git"
+  },
+  "homepage": "https://github.com/fabiofigueredo/ux-validate#readme",
+  "bugs": {
+    "url": "https://github.com/fabiofigueredo/ux-validate/issues"
+  },
   "type": "module",
   "bin": {
     "ux-validate": "bin/ux-validate.js"

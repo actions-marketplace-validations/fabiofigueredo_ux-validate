@@ -38,7 +38,7 @@ Pré-requisitos: **Node.js 20+** e o **[Claude Code](https://claude.com/claude-c
 No projeto que você quer testar:
 
 ```bash
-npm install -D github:fabiofigueredo/ux-validate
+npm install -D ux-validate
 ```
 
 ```bash
@@ -209,3 +209,7 @@ Sugestões e PRs são bem-vindos. Antes de abrir um PR, rode `npm test`. Para mu
 |---|---|
 | `UX_VALIDATE_CHROMIUM` | Caminho de um Chromium já instalado, se não quiser usar o do Playwright |
 | `DEBUG` | Mostra o erro completo quando um comando falha |
+
+## Licença
+
+[MIT](LICENSE) © Fabio Figueredo
