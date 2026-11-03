@@ -14,7 +14,7 @@ const OUTCOME_LABEL = { success: '✅ Conseguiu', partial: '⚠️ Em parte', fa
  */
 export async function buildReport({ cwd, run }) {
   const runDir = run ? path.resolve(cwd, run) : latestRunDir(cwd);
-  if (!runDir || !fs.existsSync(runDir)) throw new Error('Nenhuma execução encontrada. Rode /persona-test ou "npx ux-validade check".');
+  if (!runDir || !fs.existsSync(runDir)) throw new Error('Nenhuma execução encontrada. Rode /persona-test ou "npx ux-validate check".');
 
   const checks = readJson(path.join(runDir, 'checks.json'));
   const agent = readJson(path.join(runDir, 'findings.json'));
@@ -101,7 +101,7 @@ function scoreFor(findings, persona) {
 
 function renderMarkdown(d) {
   const lines = [];
-  lines.push(`# Relatório ux-validade`, '');
+  lines.push(`# Relatório ux-validate`, '');
   lines.push(`**Aplicação:** ${d.url ?? '—'}  `);
   lines.push(`**Data:** ${fmtDate(d.createdAt)}  `);
   if (d.agentInfo) lines.push(`**Avaliado por:** ${[d.agentInfo.tool, d.agentInfo.model].filter(Boolean).join(' · ')}  `);
@@ -222,7 +222,7 @@ function renderHtml(d) {
 
   return `<!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Relatório ux-validade</title>
+<title>Relatório ux-validate</title>
 <style>
 :root{--bg:#f7f7f5;--card:#fff;--text:#1d1d1b;--muted:#6b6b66;--line:#e3e3de;--good:#1a7f4b;--warn:#a15c00;--bad:#b42318;--accent:#3b4ccf}
 @media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--text:#ecece8;--muted:#a3a39c;--line:#33332f;--good:#4ec98a;--warn:#f0b041;--bad:#f97066;--accent:#8b98ff}}
@@ -245,7 +245,7 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:
 a{color:var(--accent)}.filters{display:flex;flex-wrap:wrap;gap:8px}.filters button{font:inherit;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
 .filters button[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
 </style></head><body><main>
-<h1>Relatório ux-validade</h1>
+<h1>Relatório ux-validate</h1>
 <p class="muted">${esc(d.url ?? '')} · ${esc(fmtDate(d.createdAt))}${d.agentInfo ? ` · ${esc([d.agentInfo.tool, d.agentInfo.model].filter(Boolean).join(' · '))}` : ''} · ${d.pages.length} página(s)</p>
 <h2>Notas por persona</h2>
 <div style="overflow-x:auto"><table><thead><tr><th>Persona</th><th>Geral</th><th>Conteúdo</th><th>Navegação</th><th>Interface</th><th>Objetivos</th></tr></thead><tbody>${scoreRows}</tbody></table></div>

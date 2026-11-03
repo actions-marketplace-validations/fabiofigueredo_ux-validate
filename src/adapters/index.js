@@ -23,8 +23,8 @@ export const ADAPTERS = [
 const VARS = {
   WORK_DIR,
   REFERENCES_DIR: `${WORK_DIR}/references`,
-  CHECK_CMD: 'npx ux-validade check',
-  REPORT_CMD: 'npx ux-validade report',
+  CHECK_CMD: 'npx ux-validate check',
+  REPORT_CMD: 'npx ux-validate report',
 };
 
 export function loadCommands() {

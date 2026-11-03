@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
 
-const HELP = `ux-validade — testes de conteúdo, navegação e interface guiados por personas
+const HELP = `ux-validate — testes de conteúdo, navegação e interface guiados por personas
 
 Uso:
-  ux-validade init   [--yes] [--force]          Configura o projeto e instala os comandos no seu agente de IA
-  ux-validade check  [--out <dir>] [--url <url>] Roda as checagens fixas (acessibilidade, links, console, conteúdo)
-  ux-validade report [--run <dir>]               Gera report.md e report.html a partir de uma execução
+  ux-validate init   [--yes] [--force]          Configura o projeto e instala os comandos no seu agente de IA
+  ux-validate check  [--out <dir>] [--url <url>] Roda as checagens fixas (acessibilidade, links, console, conteúdo)
+  ux-validate report [--run <dir>]               Gera report.md e report.html a partir de uma execução
 
 Opções gerais:
-  --config <arquivo>   Caminho do arquivo de configuração (padrão: ux-validade.config.yml)
+  --config <arquivo>   Caminho do arquivo de configuração (padrão: ux-validate.config.yml)
   -h, --help           Mostra esta ajuda
 `;
 
@@ -21,7 +21,7 @@ const { positionals, values } = parseArgs({
     out: { type: 'string' },
     url: { type: 'string' },
     run: { type: 'string' },
-    config: { type: 'string', default: 'ux-validade.config.yml' },
+    config: { type: 'string', default: 'ux-validate.config.yml' },
     help: { type: 'boolean', short: 'h' },
   },
 });

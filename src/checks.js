@@ -39,7 +39,7 @@ export async function runChecks({ cwd, configPath, out, url }) {
   fs.mkdirSync(path.join(runDir, 'screenshots'), { recursive: true });
 
   const browser = await chromium.launch(
-    process.env.UX_VALIDADE_CHROMIUM ? { executablePath: process.env.UX_VALIDADE_CHROMIUM } : {},
+    process.env.UX_VALIDATE_CHROMIUM ? { executablePath: process.env.UX_VALIDATE_CHROMIUM } : {},
   );
   const findings = [];
   const add = (f) => findings.push({ id: `C${String(findings.length + 1).padStart(3, '0')}`, ...f });
@@ -61,7 +61,7 @@ export async function runChecks({ cwd, configPath, out, url }) {
     checkSiteWide(pages, add);
 
     const result = {
-      tool: 'ux-validade',
+      tool: 'ux-validate',
       kind: 'checks',
       url: startUrl,
       createdAt: new Date().toISOString(),

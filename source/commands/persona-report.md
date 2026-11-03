@@ -1,12 +1,12 @@
 ---
 name: persona-report
-description: Gera ou atualiza o relatório da última execução do ux-validade e resume as prioridades de correção (opcionalmente comparando com a execução anterior).
+description: Gera ou atualiza o relatório da última execução do ux-validate e resume as prioridades de correção (opcionalmente comparando com a execução anterior).
 argumentHint: "[pasta da execução] [--compare]"
 ---
 
 # /persona-report
 
-Monta o relatório de uma execução do ux-validade e explica ao usuário o que corrigir primeiro.
+Monta o relatório de uma execução do ux-validate e explica ao usuário o que corrigir primeiro.
 
 Argumentos recebidos: `$ARGUMENTS`
 - Uma pasta de execução (ex.: `{{WORK_DIR}}/runs/2026-11-03T14-20-00`). Sem pasta, use a mais recente em `{{WORK_DIR}}/runs/`.

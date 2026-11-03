@@ -1,10 +1,10 @@
 {
-  "name": "ux-validade",
+  "name": "ux-validate",
   "version": "0.1.0",
   "description": "Testes de conteúdo, navegação e interface de aplicações web, guiados por personas e executados pelo seu agente de IA.",
   "type": "module",
   "bin": {
-    "ux-validade": "bin/ux-validade.js"
+    "ux-validate": "bin/ux-validate.js"
   },
   "files": [
     "bin",

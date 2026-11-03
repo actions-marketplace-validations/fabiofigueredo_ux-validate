@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 
-export const WORK_DIR = '.ux-validade';
+export const WORK_DIR = '.ux-validate';
 export const RUNS_DIR = `${WORK_DIR}/runs`;
 
 export const VIEWPORTS = {
@@ -26,10 +26,10 @@ const DEFAULTS = {
   agent: { maxStepsPerGoal: 15 },
 };
 
-export function loadConfig(cwd, configPath = 'ux-validade.config.yml') {
+export function loadConfig(cwd, configPath = 'ux-validate.config.yml') {
   const file = path.resolve(cwd, configPath);
   if (!fs.existsSync(file)) {
-    throw new Error(`Configuração não encontrada em ${configPath}. Rode "npx ux-validade init" primeiro.`);
+    throw new Error(`Configuração não encontrada em ${configPath}. Rode "npx ux-validate init" primeiro.`);
   }
   const raw = YAML.parse(fs.readFileSync(file, 'utf8')) ?? {};
   const config = {
