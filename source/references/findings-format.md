@@ -57,7 +57,7 @@ Arquivo escrito pelo agente em `.ux-validate/runs/<execução>/findings.json`. O
 |---|---|---|
 | `outcome` | `success`, `partial`, `fail` | `partial` = cumpriu com ajuda de sorte ou sem certeza de ter conseguido |
 | `blockers` | ids de achados | Achados que impediram ou atrasaram o objetivo |
-| `category` | `content`, `navigation`, `ui` | Uma por achado; se tocar duas, escolha a da causa |
+| `category` | `content`, `navigation`, `ui`, `accessibility` | Uma por achado; se tocar duas, escolha a da causa. Problemas de teclado, leitor de tela, ARIA e WCAG vão em `accessibility` |
 | `severity` | `critical`, `high`, `medium`, `low` | Ver tabela abaixo |
 | `personas` | ids das personas afetadas | Obrigatório e não vazio |
 | `evidence.screenshot` | caminho relativo à pasta da execução | Ao menos um campo de `evidence` é obrigatório |

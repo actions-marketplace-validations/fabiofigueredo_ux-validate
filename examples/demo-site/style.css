@@ -6,3 +6,5 @@ nav a { color: #999; text-decoration: none; font-size: 13px; }   /* contraste ba
 .fine { font-size: 10px; }
 .cta { background: #7dd3fc; color: #fff; border: 0; padding: 4px 8px; }
 form label { display: block; margin-top: 12px; }
+a:focus, button:focus { outline: none; }                           /* remove o indicador de foco */
+.faq { display: block; margin: 8px 0; background: none; border: 1px solid #ddd; padding: 8px; }

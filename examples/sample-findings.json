@@ -2,7 +2,9 @@
   "kind": "agent",
   "createdAt": "2026-11-03T10:12:00Z",
   "url": "http://localhost:4321/index.html",
-  "agent": { "tool": "exemplo (escrito à mão para demonstrar o formato)" },
+  "agent": {
+    "tool": "exemplo (escrito à mão para demonstrar o formato)"
+  },
   "personas": [
     {
       "id": "dona-maria",
@@ -10,9 +12,45 @@
       "viewport": "mobile",
       "summary": "Entendeu pouco do que a empresa faz e não achou como falar com alguém. A página inicial é larga demais para o celular e os textos do menu são pequenos e claros demais.",
       "goals": [
-        { "goal": "Entender o que a empresa oferece", "outcome": "fail", "steps": 3, "path": ["http://localhost:4321/index.html"], "notes": "O título fala em 'soluções inovadoras em nuvem' e o texto seguinte é lorem ipsum; ela não descobriu o que é vendido.", "blockers": ["A001"] },
-        { "goal": "Descobrir quanto custa", "outcome": "partial", "steps": 5, "path": ["http://localhost:4321/index.html", "http://localhost:4321/planos.html"], "notes": "Não reconheceu 'Pricing' no menu; chegou aos planos por tentativa. Viu 'R$ NaN/mês' na inicial e preços diferentes na página de planos.", "blockers": ["A002", "A003"] },
-        { "goal": "Encontrar um telefone ou WhatsApp para falar com alguém", "outcome": "fail", "steps": 4, "path": ["http://localhost:4321/index.html", "http://localhost:4321/contato.html"], "notes": "A página de contato só tem um formulário; não há telefone nem WhatsApp. Desistiu.", "blockers": ["A004"] }
+        {
+          "goal": "Entender o que a empresa oferece",
+          "outcome": "fail",
+          "steps": 3,
+          "path": [
+            "http://localhost:4321/index.html"
+          ],
+          "notes": "O título fala em 'soluções inovadoras em nuvem' e o texto seguinte é lorem ipsum; ela não descobriu o que é vendido.",
+          "blockers": [
+            "A001"
+          ]
+        },
+        {
+          "goal": "Descobrir quanto custa",
+          "outcome": "partial",
+          "steps": 5,
+          "path": [
+            "http://localhost:4321/index.html",
+            "http://localhost:4321/planos.html"
+          ],
+          "notes": "Não reconheceu 'Pricing' no menu; chegou aos planos por tentativa. Viu 'R$ NaN/mês' na inicial e preços diferentes na página de planos.",
+          "blockers": [
+            "A002",
+            "A003"
+          ]
+        },
+        {
+          "goal": "Encontrar um telefone ou WhatsApp para falar com alguém",
+          "outcome": "fail",
+          "steps": 4,
+          "path": [
+            "http://localhost:4321/index.html",
+            "http://localhost:4321/contato.html"
+          ],
+          "notes": "A página de contato só tem um formulário; não há telefone nem WhatsApp. Desistiu.",
+          "blockers": [
+            "A004"
+          ]
+        }
       ]
     },
     {
@@ -21,9 +59,40 @@
       "viewport": "desktop",
       "summary": "Achou os planos rápido, mas não conseguiu criar conta: o link de teste grátis leva a uma página que não existe.",
       "goals": [
-        { "goal": "Comparar os planos e entender os limites de cada um", "outcome": "partial", "steps": 2, "path": ["http://localhost:4321/index.html", "http://localhost:4321/planos.html"], "notes": "O limite do plano Starter aparece como '{{plan.limit}} usuários'.", "blockers": [] },
-        { "goal": "Criar uma conta de teste", "outcome": "fail", "steps": 3, "path": ["http://localhost:4321/planos.html", "http://localhost:4321/cadastro.html"], "notes": "'Começar teste grátis' leva a um 404; o botão 'Get started' da inicial não faz nada.", "blockers": ["A005"] },
-        { "goal": "Encontrar a documentação ou uma página técnica", "outcome": "fail", "steps": 3, "path": ["http://localhost:4321/index.html"], "notes": "Não há link para documentação; 'Blog' não leva a lugar nenhum.", "blockers": [] }
+        {
+          "goal": "Comparar os planos e entender os limites de cada um",
+          "outcome": "partial",
+          "steps": 2,
+          "path": [
+            "http://localhost:4321/index.html",
+            "http://localhost:4321/planos.html"
+          ],
+          "notes": "O limite do plano Starter aparece como '{{plan.limit}} usuários'.",
+          "blockers": []
+        },
+        {
+          "goal": "Criar uma conta de teste",
+          "outcome": "fail",
+          "steps": 3,
+          "path": [
+            "http://localhost:4321/planos.html",
+            "http://localhost:4321/cadastro.html"
+          ],
+          "notes": "'Começar teste grátis' leva a um 404; o botão 'Get started' da inicial não faz nada.",
+          "blockers": [
+            "A005"
+          ]
+        },
+        {
+          "goal": "Encontrar a documentação ou uma página técnica",
+          "outcome": "fail",
+          "steps": 3,
+          "path": [
+            "http://localhost:4321/index.html"
+          ],
+          "notes": "Não há link para documentação; 'Blog' não leva a lugar nenhum.",
+          "blockers": []
+        }
       ]
     },
     {
@@ -32,18 +101,223 @@
       "viewport": "desktop",
       "summary": "A página inicial não tem títulos navegáveis e o formulário de contato não pode ser enviado pelo teclado.",
       "goals": [
-        { "goal": "Entender o que a empresa oferece navegando só pelos títulos", "outcome": "fail", "steps": 2, "path": ["http://localhost:4321/index.html"], "notes": "O título principal é uma div estilizada, então o leitor de tela não o anuncia como título.", "blockers": ["A006"] },
-        { "goal": "Preencher o formulário de contato", "outcome": "fail", "steps": 6, "path": ["http://localhost:4321/contato.html"], "notes": "Campos sem rótulo (só placeholder) e o 'Enviar' é uma div que não recebe foco.", "blockers": ["A007"] }
+        {
+          "goal": "Entender o que a empresa oferece navegando só pelos títulos",
+          "outcome": "fail",
+          "steps": 2,
+          "path": [
+            "http://localhost:4321/index.html"
+          ],
+          "notes": "O título principal é uma div estilizada, então o leitor de tela não o anuncia como título.",
+          "blockers": [
+            "A006"
+          ]
+        },
+        {
+          "goal": "Preencher o formulário de contato",
+          "outcome": "fail",
+          "steps": 6,
+          "path": [
+            "http://localhost:4321/contato.html"
+          ],
+          "notes": "Campos sem rótulo (só placeholder) e o 'Enviar' é uma div que não recebe foco.",
+          "blockers": [
+            "A007",
+            "A008"
+          ]
+        }
       ]
     }
   ],
   "findings": [
-    { "id": "A001", "category": "content", "severity": "critical", "title": "A página inicial não diz o que a empresa vende", "description": "O destaque é um slogan genérico seguido de lorem ipsum. Uma pessoa que não conhece a empresa sai sem saber se é hospedagem, armazenamento ou outra coisa.", "personas": ["dona-maria", "rafael-dev"], "page": "http://localhost:4321/index.html", "heuristic": "Nielsen #2: correspondência com o mundo real", "evidence": { "screenshot": "screenshots/index-html-mobile.png", "snippet": "Soluções inovadoras em nuvem para o seu negócio / Lorem ipsum dolor sit amet…" }, "suggestion": "Troque por uma frase concreta, como 'Guarde e compartilhe os arquivos da sua empresa com segurança, a partir de R$ 29/mês'.", "sourceHint": { "file": "examples/demo-site/index.html", "line": 16 }, "confidence": "confirmed", "relatedChecks": ["C011"] },
-    { "id": "A002", "category": "navigation", "severity": "high", "title": "Menu em inglês ('Pricing') para público brasileiro", "description": "O resto do site está em português; 'Pricing' não foi reconhecido como 'preços' por quem não lê inglês.", "personas": ["dona-maria"], "page": "http://localhost:4321/index.html", "heuristic": "Nielsen #4: consistência e padrões", "evidence": { "selector": "nav a[href='planos.html']", "snippet": "<a href=\"planos.html\">Pricing</a>" }, "suggestion": "Renomeie para 'Planos e preços' em todas as páginas.", "sourceHint": { "file": "examples/demo-site/index.html", "line": 9 }, "confidence": "confirmed" },
-    { "id": "A003", "category": "content", "severity": "high", "title": "Preço inconsistente entre páginas", "description": "A inicial mostra 'R$ NaN/mês' e a página de planos menciona 'a partir de R$ 19/mês', mas o plano mais barato custa R$ 29. Isso gera desconfiança.", "personas": ["dona-maria", "rafael-dev"], "page": "http://localhost:4321/planos.html", "heuristic": "Confiabilidade do conteúdo", "evidence": { "screenshot": "screenshots/planos-html-mobile.png", "snippet": "R$ 29/mês … Na página inicial dizemos \"a partir de R$ 19/mês\"." }, "suggestion": "Use uma única fonte para os preços e exiba o mesmo valor em todas as páginas.", "confidence": "confirmed", "relatedChecks": ["C013"] },
-    { "id": "A004", "category": "content", "severity": "high", "title": "Não há telefone nem WhatsApp", "description": "A única forma de contato é um formulário. Para quem prefere falar com uma pessoa, isso é um bloqueio.", "personas": ["dona-maria"], "page": "http://localhost:4321/contato.html", "heuristic": "Nielsen #10: ajuda e documentação", "evidence": { "screenshot": "screenshots/contato-html-mobile.png" }, "suggestion": "Exiba telefone e WhatsApp no topo da página de contato e no rodapé de todas as páginas.", "sourceHint": { "file": "examples/demo-site/contato.html" }, "confidence": "confirmed" },
-    { "id": "A005", "category": "navigation", "severity": "critical", "title": "Não é possível criar conta", "description": "O botão 'Get started' da inicial chama uma função que não existe, e 'Começar teste grátis' leva a uma página 404. Não há outro caminho para cadastro.", "personas": ["rafael-dev"], "page": "http://localhost:4321/planos.html", "heuristic": "Nielsen #3: controle e liberdade", "evidence": { "selector": "a[href='cadastro.html'], button.cta", "snippet": "<button class=\"cta\" onclick=\"startTrial()\">Get started</button>" }, "suggestion": "Crie a página de cadastro e aponte os dois botões para ela.", "sourceHint": { "file": "examples/demo-site/planos.html", "line": 16 }, "confidence": "confirmed", "relatedChecks": ["C021", "C007"] },
-    { "id": "A006", "category": "ui", "severity": "high", "title": "Título principal não é um título para leitores de tela", "description": "O texto em destaque é uma div com fonte grande; quem navega pelos títulos não o encontra.", "personas": ["lucas-leitor-de-tela"], "page": "http://localhost:4321/index.html", "heuristic": "WCAG 1.3.1", "evidence": { "snippet": "<div style=\"font-size:32px;font-weight:bold\">Soluções inovadoras…</div>" }, "suggestion": "Troque a div por <h1>.", "sourceHint": { "file": "examples/demo-site/index.html", "line": 16 }, "confidence": "confirmed", "relatedChecks": ["C006"] },
-    { "id": "A007", "category": "ui", "severity": "critical", "title": "Formulário de contato não pode ser enviado pelo teclado", "description": "Os campos não têm rótulo (só placeholder, que some ao digitar) e o 'Enviar' é uma div sem foco nem papel de botão.", "personas": ["lucas-leitor-de-tela", "dona-maria"], "page": "http://localhost:4321/contato.html", "heuristic": "WCAG 2.1.1, 3.3.2 e 4.1.2", "evidence": { "selector": "form > div", "snippet": "<div onclick=\"this.closest('form').requestSubmit()\">Enviar</div>" }, "suggestion": "Use <label> visível em cada campo e <button type=\"submit\">Enviar</button>.", "sourceHint": { "file": "examples/demo-site/contato.html", "line": 9 }, "confidence": "confirmed", "relatedChecks": ["C018"] }
+    {
+      "id": "A001",
+      "category": "content",
+      "severity": "critical",
+      "title": "A página inicial não diz o que a empresa vende",
+      "description": "O destaque é um slogan genérico seguido de lorem ipsum. Uma pessoa que não conhece a empresa sai sem saber se é hospedagem, armazenamento ou outra coisa.",
+      "personas": [
+        "dona-maria",
+        "rafael-dev"
+      ],
+      "page": "http://localhost:4321/index.html",
+      "heuristic": "Nielsen #2: correspondência com o mundo real",
+      "evidence": {
+        "screenshot": "screenshots/index-html-mobile.png",
+        "snippet": "Soluções inovadoras em nuvem para o seu negócio / Lorem ipsum dolor sit amet…"
+      },
+      "suggestion": "Troque por uma frase concreta, como 'Guarde e compartilhe os arquivos da sua empresa com segurança, a partir de R$ 29/mês'.",
+      "sourceHint": {
+        "file": "examples/demo-site/index.html",
+        "line": 16
+      },
+      "confidence": "confirmed",
+      "relatedChecks": [
+        "C011"
+      ]
+    },
+    {
+      "id": "A002",
+      "category": "navigation",
+      "severity": "high",
+      "title": "Menu em inglês ('Pricing') para público brasileiro",
+      "description": "O resto do site está em português; 'Pricing' não foi reconhecido como 'preços' por quem não lê inglês.",
+      "personas": [
+        "dona-maria"
+      ],
+      "page": "http://localhost:4321/index.html",
+      "heuristic": "Nielsen #4: consistência e padrões",
+      "evidence": {
+        "selector": "nav a[href='planos.html']",
+        "snippet": "<a href=\"planos.html\">Pricing</a>"
+      },
+      "suggestion": "Renomeie para 'Planos e preços' em todas as páginas.",
+      "sourceHint": {
+        "file": "examples/demo-site/index.html",
+        "line": 9
+      },
+      "confidence": "confirmed"
+    },
+    {
+      "id": "A003",
+      "category": "content",
+      "severity": "high",
+      "title": "Preço inconsistente entre páginas",
+      "description": "A inicial mostra 'R$ NaN/mês' e a página de planos menciona 'a partir de R$ 19/mês', mas o plano mais barato custa R$ 29. Isso gera desconfiança.",
+      "personas": [
+        "dona-maria",
+        "rafael-dev"
+      ],
+      "page": "http://localhost:4321/planos.html",
+      "heuristic": "Confiabilidade do conteúdo",
+      "evidence": {
+        "screenshot": "screenshots/planos-html-mobile.png",
+        "snippet": "R$ 29/mês … Na página inicial dizemos \"a partir de R$ 19/mês\"."
+      },
+      "suggestion": "Use uma única fonte para os preços e exiba o mesmo valor em todas as páginas.",
+      "confidence": "confirmed",
+      "relatedChecks": [
+        "C013"
+      ]
+    },
+    {
+      "id": "A004",
+      "category": "content",
+      "severity": "high",
+      "title": "Não há telefone nem WhatsApp",
+      "description": "A única forma de contato é um formulário. Para quem prefere falar com uma pessoa, isso é um bloqueio.",
+      "personas": [
+        "dona-maria"
+      ],
+      "page": "http://localhost:4321/contato.html",
+      "heuristic": "Nielsen #10: ajuda e documentação",
+      "evidence": {
+        "screenshot": "screenshots/contato-html-mobile.png"
+      },
+      "suggestion": "Exiba telefone e WhatsApp no topo da página de contato e no rodapé de todas as páginas.",
+      "sourceHint": {
+        "file": "examples/demo-site/contato.html"
+      },
+      "confidence": "confirmed"
+    },
+    {
+      "id": "A005",
+      "category": "navigation",
+      "severity": "critical",
+      "title": "Não é possível criar conta",
+      "description": "O botão 'Get started' da inicial chama uma função que não existe, e 'Começar teste grátis' leva a uma página 404. Não há outro caminho para cadastro.",
+      "personas": [
+        "rafael-dev"
+      ],
+      "page": "http://localhost:4321/planos.html",
+      "heuristic": "Nielsen #3: controle e liberdade",
+      "evidence": {
+        "selector": "a[href='cadastro.html'], button.cta",
+        "snippet": "<button class=\"cta\" onclick=\"startTrial()\">Get started</button>"
+      },
+      "suggestion": "Crie a página de cadastro e aponte os dois botões para ela.",
+      "sourceHint": {
+        "file": "examples/demo-site/planos.html",
+        "line": 16
+      },
+      "confidence": "confirmed",
+      "relatedChecks": [
+        "C032",
+        "C007"
+      ]
+    },
+    {
+      "id": "A006",
+      "category": "accessibility",
+      "severity": "high",
+      "title": "Título principal não é um título para leitores de tela",
+      "description": "O texto em destaque é uma div com fonte grande; quem navega pelos títulos não o encontra.",
+      "personas": [
+        "lucas-leitor-de-tela"
+      ],
+      "page": "http://localhost:4321/index.html",
+      "heuristic": "WCAG 1.3.1 · APG: Landmarks e títulos",
+      "evidence": {
+        "snippet": "<div style=\"font-size:32px;font-weight:bold\">Soluções inovadoras…</div>"
+      },
+      "suggestion": "Troque a div por <h1>.",
+      "sourceHint": {
+        "file": "examples/demo-site/index.html",
+        "line": 16
+      },
+      "confidence": "confirmed",
+      "relatedChecks": [
+        "C006"
+      ]
+    },
+    {
+      "id": "A007",
+      "category": "accessibility",
+      "severity": "critical",
+      "title": "Formulário de contato não pode ser enviado pelo teclado",
+      "description": "Os campos não têm rótulo (só placeholder, que some ao digitar) e o 'Enviar' é uma div sem foco nem papel de botão.",
+      "personas": [
+        "lucas-leitor-de-tela",
+        "dona-maria"
+      ],
+      "page": "http://localhost:4321/contato.html",
+      "heuristic": "WCAG 2.1.1, 3.3.2 e 4.1.2",
+      "evidence": {
+        "selector": "form > div",
+        "snippet": "<div onclick=\"this.closest('form').requestSubmit()\">Enviar</div>"
+      },
+      "suggestion": "Use <label> visível em cada campo e <button type=\"submit\">Enviar</button>.",
+      "sourceHint": {
+        "file": "examples/demo-site/contato.html",
+        "line": 9
+      },
+      "confidence": "confirmed",
+      "relatedChecks": [
+        "C023",
+        "C024"
+      ]
+    },
+    {
+      "id": "A008",
+      "category": "accessibility",
+      "severity": "high",
+      "title": "Confirmação do formulário não é anunciada ao leitor de tela",
+      "description": "Ao enviar o formulário de contato, a mensagem \"Mensagem enviada com sucesso!\" aparece na tela, mas não está numa região status/alert. O leitor de tela não anuncia nada e o Lucas não sabe se a mensagem foi enviada.",
+      "personas": [
+        "lucas-leitor-de-tela"
+      ],
+      "page": "http://localhost:4321/contato.html",
+      "heuristic": "WCAG 4.1.3 (Mensagens de status) · WAI-ARIA: live regions",
+      "evidence": {
+        "selector": "#ok",
+        "snippet": "<p id=\"ok\" hidden>Mensagem enviada com sucesso!</p>"
+      },
+      "suggestion": "Deixe a região na página desde o início com role=\"status\" (ex.: <p id=\"ok\" role=\"status\"></p>) e preencha o texto ao enviar.",
+      "sourceHint": {
+        "file": "examples/demo-site/contato.html",
+        "line": 16
+      },
+      "confidence": "confirmed"
+    }
   ]
 }

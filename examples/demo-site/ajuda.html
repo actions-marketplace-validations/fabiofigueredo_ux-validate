@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ajuda | NuvemFácil</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header><nav><a href="index.html">Home</a><a href="planos.html">Pricing</a><a href="contato.html">Contato</a></nav></header>
+<main>
+  <h1>Central de ajuda</h1>
+
+  <!-- Abas falsas: role="tab" sem tabindex nem navegação por setas -->
+  <div role="tablist" aria-label="Tipo de conta">
+    <div role="tab" aria-selected="true" onclick="mostrar('pf')">Pessoa física</div>
+    <div role="tab" aria-selected="false" onclick="mostrar('pj')">Empresa</div>
+  </div>
+  <div id="pf" role="tabpanel">Dúvidas de pessoa física.</div>
+  <div id="pj" role="tabpanel" hidden>Dúvidas de empresas.</div>
+
+  <!-- Acordeão: abre e fecha, mas aria-expanded nunca muda -->
+  <h2>Perguntas frequentes</h2>
+  <button class="faq" aria-expanded="false" aria-controls="r1" onclick="toggle('r1')">Como cancelo meu plano?</button>
+  <div id="r1" hidden>Acesse Configurações &gt; Plano &gt; Cancelar.</div>
+  <button class="faq" aria-expanded="false" aria-controls="r2" onclick="toggle('r2')">Posso trocar de plano?</button>
+  <div id="r2" hidden>Sim, a qualquer momento.</div>
+
+  <!-- Checkbox customizado sem foco nem aria-checked -->
+  <p><span role="checkbox" class="check">Quero receber novidades</span></p>
+
+  <!-- Card clicável feito com div -->
+  <div class="card" style="cursor:pointer" onclick="location.href='contato.html'">Ainda precisa de ajuda? Fale com a gente</div>
+</main>
+<script>
+  function mostrar(id) { pf.hidden = id !== 'pf'; pj.hidden = id !== 'pj'; }
+  function toggle(id) { const el = document.getElementById(id); el.hidden = !el.hidden; }
+</script>
+</body>
+</html>

@@ -1,16 +1,16 @@
 ---
 name: persona-test
 description: Testa conteúdo, navegação e interface da aplicação web do ponto de vista de cada persona e gera um relatório com os problemas e como corrigi-los.
-argumentHint: "[persona] [--only content|navigation|ui]"
+argumentHint: "[persona] [--only content|navigation|ui|accessibility]"
 ---
 
 # /persona-test
 
-Você vai testar a aplicação **como se fosse cada persona**: tentar cumprir os objetivos dela no navegador, com as limitações dela, e avaliar conteúdo, navegação e interface pelo ponto de vista dela. No fim, gera um relatório com evidências e sugestões de correção.
+Você vai testar a aplicação **como se fosse cada persona**: tentar cumprir os objetivos dela no navegador, com as limitações dela, e avaliar conteúdo, navegação, interface e acessibilidade pelo ponto de vista dela. No fim, gera um relatório com evidências e sugestões de correção.
 
 Argumentos recebidos: `$ARGUMENTS`
 - Um nome de persona (o `id` ou o nome do arquivo) limita o teste a ela. Sem nome, teste todas.
-- `--only content|navigation|ui` limita a avaliação a uma categoria.
+- `--only content|navigation|ui|accessibility` limita a avaliação a uma categoria.
 
 ## Regras que valem o teste inteiro
 
@@ -34,7 +34,7 @@ Rode:
 {{CHECK_CMD}}
 ```
 
-Isso cria uma pasta de execução em `{{WORK_DIR}}/runs/<data-hora>/` com `checks.json` (acessibilidade via axe-core, links quebrados, erros de console, rolagem horizontal, textos provisórios) e screenshots. Anote o caminho da pasta: tudo desta execução vai para lá.
+Isso cria uma pasta de execução em `{{WORK_DIR}}/runs/<data-hora>/` com `checks.json` (acessibilidade via axe-core e WAI-ARIA, navegação pelo teclado, links quebrados, erros de console, rolagem horizontal, textos provisórios), screenshots e, em `aria/`, a árvore de acessibilidade de cada página (o que um leitor de tela anuncia). Anote o caminho da pasta: tudo desta execução vai para lá.
 
 Leia o `checks.json`. Esses problemas **já estão registrados**: não os repita como achados seus. Quando um deles atrapalhar uma persona de um jeito específico, crie um achado próprio explicando o impacto para ela e cite o id da checagem em `relatedChecks`.
 
@@ -48,12 +48,25 @@ Para cada persona, use as ferramentas de navegador do Playwright MCP (`browser_r
    - Conte cada ação (clique, digitação, rolagem para procurar algo) como um passo. Pare quando cumprir o objetivo, quando chegar a `maxStepsPerGoal` ou antes, se o comportamento da persona indicar que ela desistiria (ex.: `patience: baixa` desiste após 3 ou 4 passos sem progresso visível).
    - Registre o caminho (URLs visitadas), o resultado (`success`, `partial` ou `fail`) e, em `notes`, o momento exato em que hesitou ou travou e por quê.
    - Em cada ponto de atrito, tire um screenshot com `browser_take_screenshot` e salve-o em `<pasta da execução>/screenshots/` com nome descritivo (ex.: `ana-checkout-botao-escondido.png`).
-3. Ao longo do caminho, avalie as três categorias pelo olhar da persona, usando `{{REFERENCES_DIR}}/heuristics.md` e `{{REFERENCES_DIR}}/content-guidelines.md`:
+3. Ao longo do caminho, avalie as quatro categorias pelo olhar da persona, usando `{{REFERENCES_DIR}}/heuristics.md`, `{{REFERENCES_DIR}}/content-guidelines.md` e `{{REFERENCES_DIR}}/wai-aria.md`:
    - **Conteúdo**: ela entende os textos? Jargão, termos em inglês sem explicação, tom inadequado, informação que ela procura e não acha, textos contraditórios ou genéricos demais.
    - **Navegação**: ela sabe onde está e como voltar? Menus claros, rótulos que dizem para onde levam, becos sem saída, passos desnecessários, feedback após ações.
-   - **Interface**: ela consegue ver e usar? Contraste e tamanho para a visão dela, alvos de toque no celular, estados de carregamento e erro, consistência visual, elementos que parecem clicáveis e não são (ou o contrário).
+   - **Interface**: ela consegue ver e usar? Tamanho e legibilidade para a visão dela, alvos de toque no celular, estados de carregamento e erro, consistência visual, elementos que parecem clicáveis e não são (ou o contrário).
+   - **Acessibilidade**: ela consegue usar com as ferramentas e limitações dela? Teclado, leitor de tela, contraste, informação passada só por cor, mensagens dinâmicas anunciadas. Detalhes no Passo 3b.
+
+Personas com `vision: leitor-de-tela` navegam **sem olhar a tela**: use só o teclado (`browser_press_key`) e a árvore de acessibilidade (`browser_snapshot`), nunca `browser_click` em coordenadas ou elementos que o teclado não alcança. Se algo só funciona com o mouse, para ela é um bloqueio.
 
 Ajuste o rigor às características da persona (ex.: `vision: reduzida` aumenta a gravidade de contraste e fontes pequenas; `tech_literacy: baixa` aumenta a de jargão e ícones sem rótulo).
+
+## Passo 3b: auditoria de acessibilidade (WAI-ARIA)
+
+Faça uma vez por execução (não por persona), a menos que `--only` exclua `accessibility`. Siga `{{REFERENCES_DIR}}/wai-aria.md`.
+
+1. Para cada página visitada, leia a árvore em `<pasta da execução>/aria/`. Verifique nomes acessíveis, papéis, estados, landmarks e a hierarquia de títulos.
+2. Identifique os **widgets** da aplicação: diálogos, abas, acordeões, menus, combobox/autocomplete, carrosséis, checkboxes ou selects customizados, formulários.
+3. Teste cada tipo de widget **pelo teclado**, com o padrão do APG correspondente: abrir, operar, fechar, e para onde vai o foco depois. Use `browser_press_key` e confira o resultado com `browser_snapshot`.
+4. Em formulários, envie com erro de propósito (dados de teste) e verifique se o erro é anunciado: `aria-invalid`, `aria-describedby`, foco no primeiro erro, mensagens em `role="alert"`/`status`.
+5. Registre os achados com `category: "accessibility"`, citando no `heuristic` o critério WCAG e o padrão do APG. Em `personas`, liste quem é afetado: em geral, as personas com `vision` diferente de `normal`, mas pense em quem mais sofre (ex.: foco invisível atrapalha qualquer um que use teclado).
 
 ## Passo 4: apontar onde corrigir
 

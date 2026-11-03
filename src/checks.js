@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
 import { VIEWPORTS, loadConfig, newRunDir } from './config.js';
+import { runAriaChecks } from './aria.js';
 
 /**
  * Checagens determinísticas: dão o mesmo resultado com qualquer modelo de linguagem.
@@ -50,11 +51,16 @@ export async function runChecks({ cwd, configPath, out, url }) {
     const pages = await crawl(browser, startUrl, config, add);
     if (!pages.length) throw new Error(`Não consegui abrir ${startUrl}. A aplicação está rodando?`);
 
+    // Teclado e ARIA são testados uma vez por página, de preferência no desktop (onde se usa teclado).
+    const keyboardViewport = config.viewports.includes('desktop') ? 'desktop' : config.viewports[0];
     for (const vpName of config.viewports) {
       console.log(`Analisando ${pages.length} página(s) em ${vpName}…`);
       const context = await browser.newContext({ viewport: VIEWPORTS[vpName], ...pick(VIEWPORTS[vpName]) });
       for (const p of pages.filter((p) => p.ok)) {
-        await inspectPage(context, p, vpName, runDir, add, vpName === config.viewports[0]);
+        await inspectPage(context, p, vpName, runDir, add, {
+          checkContent: vpName === config.viewports[0],
+          checkAria: vpName === keyboardViewport,
+        });
       }
       await context.close();
     }
@@ -67,7 +73,7 @@ export async function runChecks({ cwd, configPath, out, url }) {
       url: startUrl,
       createdAt: new Date().toISOString(),
       viewports: config.viewports,
-      pages: pages.map(({ url, status, title, ok, screenshots, linksTo }) => ({ url, status, title, ok, screenshots, linksTo })),
+      pages: pages.map(({ url, status, title, ok, screenshots, ariaTree, linksTo }) => ({ url, status, title, ok, screenshots, ariaTree, linksTo })),
       findings: dedupe(findings),
     };
     fs.writeFileSync(path.join(runDir, 'checks.json'), JSON.stringify(result, null, 2));
@@ -88,8 +94,19 @@ function axeFor(page) {
   return new AxeBuilder({ page }).withTags(AXE_TAGS);
 }
 
+// Regras recentes do axe que ainda não têm tradução oficial em pt-BR.
+const AXE_EXTRA_PT = {
+  'target-size': {
+    help: 'Alvos de toque devem ter pelo menos 24×24px ou espaço suficiente ao redor',
+    description: 'Garante que botões e links sejam fáceis de tocar sem acertar o vizinho por engano',
+  },
+};
+
 /** Textos da regra no idioma do relatório, quando houver tradução. */
-const axeText = (v) => ({ help: AXE_LOCALE?.rules?.[v.id]?.help ?? v.help, description: AXE_LOCALE?.rules?.[v.id]?.description ?? v.description });
+const axeText = (v) => {
+  const t = AXE_LOCALE?.rules?.[v.id] ?? (AXE_LOCALE ? AXE_EXTRA_PT[v.id] : null);
+  return { help: t?.help ?? v.help, description: t?.description ?? v.description };
+};
 
 /** ["wcag2aa", "wcag143"] -> "WCAG 1.4.3" */
 function wcagCriteria(tags) {
@@ -196,7 +213,7 @@ async function crawl(browser, startUrl, config, add) {
   return pages;
 }
 
-async function inspectPage(context, entry, vpName, runDir, add, checkContent) {
+async function inspectPage(context, entry, vpName, runDir, add, { checkContent, checkAria }) {
   const page = await context.newPage();
   const consoleErrors = [];
   const failedRequests = [];
@@ -233,7 +250,7 @@ async function inspectPage(context, entry, vpName, runDir, add, checkContent) {
     add({
       ...base,
       source: 'check:axe',
-      category: 'ui',
+      category: 'accessibility',
       severity: AXE_SEVERITY[v.impact] ?? 'medium',
       title: text.help,
       description: `${text.description} (${v.nodes.length} elemento(s)).`,
@@ -334,6 +351,12 @@ async function inspectPage(context, entry, vpName, runDir, add, checkContent) {
         suggestion: 'Substitua pelo conteúdo real ou remova o trecho.',
       });
     }
+  }
+  // Por último, porque interage com a página (Tab, cliques em botões de abrir/fechar).
+  if (checkAria) {
+    await runAriaChecks(page, { base, add, shot, runDir, entry, name: slug(entry.url) }).catch((err) => {
+      if (process.env.DEBUG) console.error('Falha nas checagens ARIA:', err);
+    });
   }
   await page.close();
 }

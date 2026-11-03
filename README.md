@@ -1,6 +1,6 @@
 # ux-validate
 
-Testes de **conteúdo**, **navegação** e **interface** de aplicações web, feitos do ponto de vista de **personas**, geradas por IA ou não, e executados pelo agente de IA que você já usa.
+Testes de **conteúdo**, **navegação**, **interface** e **acessibilidade** de aplicações web, feitos do ponto de vista de **personas**, geradas por IA ou não, e executados pelo agente de IA que você já usa.
 
 Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate responde: *a Dona Maria, de 68 anos, no celular, consegue descobrir quanto custa o seu produto?* E se não consegue, mostra onde ela travou, por quê e em qual arquivo corrigir.
 
@@ -14,13 +14,14 @@ Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate responde:
 /persona-test
    │
    ├─ 1. Checagens fixas  (npx ux-validate check)
-   │     axe-core, links quebrados, erros de console, rolagem horizontal,
-   │     textos provisórios (lorem ipsum, TODO, NaN, {{variáveis}})…
+   │     axe-core, WAI-ARIA e teclado, links quebrados, erros de console,
+   │     rolagem horizontal, textos provisórios (lorem ipsum, TODO, NaN)…
    │     → mesmo resultado com qualquer modelo de linguagem
    │
    ├─ 2. Navegação como cada persona  (agente + Playwright MCP)
    │     tenta cumprir os objetivos dela, com as limitações dela,
-   │     e avalia conteúdo, navegação e interface pelo olhar dela
+   │     e avalia conteúdo, navegação, interface e acessibilidade
+   │     pelo olhar dela; testa os widgets pelo teclado (padrões do APG)
    │
    ├─ 3. Aponta o arquivo provável de cada problema no seu código
    │
@@ -30,6 +31,18 @@ Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate responde:
 ```
 
 O ux-validate roda **dentro da sua ferramenta de IA**: o modelo usado é o que ela estiver usando.
+
+## Acessibilidade e WAI-ARIA
+
+A categoria **Acessibilidade** combina três camadas:
+
+| Camada | O que verifica |
+|---|---|
+| **axe-core** | Sintaxe do ARIA (papéis, atributos e valores válidos), nomes acessíveis, contraste, textos alternativos e demais regras WCAG 2.2 AA |
+| **Checagens ARIA de comportamento** | Percorre cada página com `Tab` e encontra: armadilha de teclado, foco invisível, foco em elemento escondido, widgets com `role` que não recebem foco, elementos clicáveis sem acesso pelo teclado (`<div onclick>`), `aria-expanded` que não muda ao abrir e fechar, campos identificados só pelo placeholder |
+| **Agente** | Testa cada widget pelo teclado seguindo o [ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/) (diálogos, abas, acordeões, menus, combobox…), verifica se mensagens dinâmicas são anunciadas (`role="status"`/`alert`) e navega como uma pessoa que usa leitor de tela |
+
+Cada execução salva também a **árvore de acessibilidade** de cada página em `.ux-validate/runs/<data-hora>/aria/`: papéis, nomes e estados, ou seja, o que um leitor de tela anuncia. O relatório liga cada problema de acessibilidade à árvore da página.
 
 ## Instalação
 
@@ -77,7 +90,7 @@ No Claude Code, dentro do seu projeto:
 |---|---|
 | `/persona-test` | Testa com todas as personas e gera o relatório |
 | `/persona-test dona-maria` | Testa com uma persona só |
-| `/persona-test --only content` | Avalia só uma categoria (`content`, `navigation`, `ui`) |
+| `/persona-test --only accessibility` | Avalia só uma categoria (`content`, `navigation`, `ui`, `accessibility`) |
 | `/persona-report` | Refaz o relatório da última execução e monta um plano de correção |
 | `/persona-report --compare` | Mostra o que foi resolvido, o que continua e o que é novo |
 
@@ -112,7 +125,7 @@ Formato completo e efeito de cada característica: [`source/references/persona-f
 
 ## Experimente com o site de demonstração
 
-`examples/demo-site` é um site com problemas plantados de propósito (links quebrados, lorem ipsum, layout que estoura no celular, formulário inacessível…). Ótimo para ver a ferramenta funcionando antes de usar no seu projeto.
+`examples/demo-site` é um site com problemas plantados de propósito (links quebrados, lorem ipsum, layout que estoura no celular, formulário inacessível, abas e acordeão com ARIA errado…). Ótimo para ver a ferramenta funcionando antes de usar no seu projeto.
 
 **1. Clone e suba o site** (deixe este terminal aberto):
 
@@ -179,10 +192,11 @@ Abra o `report.html` em `.ux-validate/runs/<data-hora>/`.
 bin/ux-validate.js        CLI (init, check, report)
 src/init.js              setup interativo
 src/checks.js            checagens determinísticas (Playwright + axe-core)
+src/aria.js              checagens de WAI-ARIA e teclado
 src/report.js            notas e relatório (Markdown + HTML)
 src/adapters/            um adapter por ferramenta de IA
 source/commands/         comandos escritos uma vez, independentes da ferramenta
-source/references/       heurísticas, guia de conteúdo, formatos de persona e de achados
+source/references/       heurísticas, guia de conteúdo, guia WAI-ARIA, formatos de persona e de achados
 source/personas/         personas de exemplo
 examples/                site de demonstração e resultado de exemplo
 test/                    testes (npm test)

@@ -19,6 +19,8 @@ Cite o critério usado no campo `heuristic` de cada achado (ex.: "Nielsen #4" ou
 
 ## WCAG essenciais (nível AA)
 
+Para ARIA, teclado e leitores de tela, veja também `wai-aria.md`.
+
 | Critério | Resumo |
 |---|---|
 | 1.1.1 | Imagens informativas têm texto alternativo |

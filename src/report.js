@@ -5,7 +5,8 @@ import { latestRunDir } from './config.js';
 const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low'];
 const SEVERITY_LABEL = { critical: 'Crítico', high: 'Alto', medium: 'Médio', low: 'Baixo' };
 const PENALTY = { critical: 30, high: 15, medium: 6, low: 2 };
-const CATEGORIES = { content: 'Conteúdo', navigation: 'Navegação', ui: 'Interface' };
+const CATEGORIES = { content: 'Conteúdo', navigation: 'Navegação', ui: 'Interface', accessibility: 'Acessibilidade' };
+const CATEGORY_KEYS = Object.keys(CATEGORIES);
 const OUTCOME_LABEL = { success: '✅ Conseguiu', partial: '⚠️ Em parte', fail: '❌ Não conseguiu' };
 
 /**
@@ -48,8 +49,10 @@ export function analyze(checks, agent) {
   const covered = new Set(agentFindings.flatMap((f) => f.relatedChecks ?? []));
   const findings = [...agentFindings, ...checkFindings.filter((f) => !covered.has(f.id))];
 
+  const ariaTrees = Object.fromEntries((checks?.pages ?? []).filter((p) => p.ariaTree).map((p) => [p.url, p.ariaTree]));
   for (const f of findings) {
     f.affects = affectedPersonas(f, personas);
+    if (f.category === 'accessibility' && ariaTrees[f.page]) f.ariaTree = ariaTrees[f.page];
   }
   findings.sort(
     (a, b) =>
@@ -93,7 +96,7 @@ function scoreFor(findings, persona) {
     // Navegação pesa metade pelos problemas encontrados e metade por conseguir cumprir os objetivos.
     result.navigation = Math.round((result.navigation + result.goalRate) / 2);
   }
-  result.overall = Math.round((result.content + result.navigation + result.ui) / 3);
+  result.overall = Math.round(CATEGORY_KEYS.reduce((sum, c) => sum + result[c], 0) / CATEGORY_KEYS.length);
   return result;
 }
 
@@ -108,11 +111,11 @@ function renderMarkdown(d) {
   lines.push(`**Páginas analisadas:** ${d.pages.length || '—'}`, '');
 
   lines.push('## Notas por persona', '');
-  lines.push('| Persona | Geral | Conteúdo | Navegação | Interface | Objetivos cumpridos |');
-  lines.push('|---|---:|---:|---:|---:|---:|');
+  lines.push(`| Persona | Geral | ${Object.values(CATEGORIES).join(' | ')} | Objetivos cumpridos |`);
+  lines.push(`|---|---:|${CATEGORY_KEYS.map(() => '---:').join('|')}|---:|`);
   for (const s of d.scores) {
     lines.push(
-      `| ${s.persona.name} | **${s.overall}** | ${s.content} | ${s.navigation} | ${s.ui} | ${s.goalRate ?? '—'}${s.goalRate != null ? '%' : ''} |`,
+      `| ${s.persona.name} | **${s.overall}** | ${CATEGORY_KEYS.map((c) => s[c]).join(' | ')} | ${s.goalRate ?? '—'}${s.goalRate != null ? '%' : ''} |`,
     );
   }
   lines.push('');
@@ -157,6 +160,7 @@ function renderMarkdown(d) {
       lines.push('', f.description ?? '', '');
       if (f.evidence?.snippet) lines.push('```', f.evidence.snippet, '```', '');
       if (f.evidence?.selector) lines.push(`Elemento(s): \`${f.evidence.selector}\``, '');
+      if (f.ariaTree) lines.push(`Árvore de acessibilidade da página: [${f.ariaTree}](${f.ariaTree})`, '');
       if (f.evidence?.screenshot) lines.push(`![screenshot](${f.evidence.screenshot})`, '');
       if (f.suggestion) lines.push(`**Como corrigir:** ${f.suggestion}${f.helpUrl ? ` ([referência](${f.helpUrl}))` : ''}`, '');
     }
@@ -175,7 +179,7 @@ function renderHtml(d) {
     .map(
       (s) => `<tr><th scope="row">${esc(s.persona.name)}</th>
         <td><span class="score ${scoreClass(s.overall)}">${s.overall}</span></td>
-        ${['content', 'navigation', 'ui'].map((c) => `<td class="${scoreClass(s[c])}">${s[c]}</td>`).join('')}
+        ${CATEGORY_KEYS.map((c) => `<td class="${scoreClass(s[c])}">${s[c]}</td>`).join('')}
         <td>${s.goalRate != null ? `${s.goalRate}%` : '—'}</td></tr>`,
     )
     .join('');
@@ -212,6 +216,7 @@ function renderHtml(d) {
         ${f.heuristic ? `<dt>Critério</dt><dd>${esc(f.heuristic)}</dd>` : ''}
         ${f.sourceHint?.file ? `<dt>Onde corrigir</dt><dd><code>${esc(f.sourceHint.file)}${f.sourceHint.line ? `:${f.sourceHint.line}` : ''}</code></dd>` : ''}
         ${f.evidence?.selector ? `<dt>Elemento</dt><dd><code>${esc(f.evidence.selector)}</code></dd>` : ''}
+        ${f.ariaTree ? `<dt>Leitor de tela</dt><dd><a href="${esc(f.ariaTree)}">Árvore de acessibilidade da página</a></dd>` : ''}
       </dl>
       ${f.evidence?.snippet ? `<pre>${esc(f.evidence.snippet)}</pre>` : ''}
       ${f.suggestion ? `<p class="fix"><strong>Como corrigir:</strong> ${esc(f.suggestion)}${f.helpUrl ? ` <a href="${esc(f.helpUrl)}" target="_blank" rel="noopener">Referência</a>` : ''}</p>` : ''}
@@ -248,7 +253,7 @@ a{color:var(--accent)}.filters{display:flex;flex-wrap:wrap;gap:8px}.filters butt
 <h1>Relatório ux-validate</h1>
 <p class="muted">${esc(d.url ?? '')} · ${esc(fmtDate(d.createdAt))}${d.agentInfo ? ` · ${esc([d.agentInfo.tool, d.agentInfo.model].filter(Boolean).join(' · '))}` : ''} · ${d.pages.length} página(s)</p>
 <h2>Notas por persona</h2>
-<div style="overflow-x:auto"><table><thead><tr><th>Persona</th><th>Geral</th><th>Conteúdo</th><th>Navegação</th><th>Interface</th><th>Objetivos</th></tr></thead><tbody>${scoreRows}</tbody></table></div>
+<div style="overflow-x:auto"><table><thead><tr><th>Persona</th><th>Geral</th>${Object.values(CATEGORIES).map((c) => `<th>${c}</th>`).join('')}<th>Objetivos</th></tr></thead><tbody>${scoreRows}</tbody></table></div>
 ${goals ? `<h2>Objetivos</h2>${goals}` : ''}
 <h2>Problemas (${d.findings.length})</h2>
 <div class="filters"><button data-filter="all" aria-pressed="true">Todos</button>${filters}</div>
