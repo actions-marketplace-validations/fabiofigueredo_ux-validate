@@ -1,0 +1,37 @@
+{
+  "name": "persona-qa",
+  "version": "0.1.0",
+  "description": "Testes de conteúdo, navegação e interface de aplicações web, guiados por personas e executados pelo seu agente de IA.",
+  "type": "module",
+  "bin": {
+    "persona-qa": "bin/persona-qa.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "source"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "demo:serve": "npx http-server examples/demo-site -p 4321 -s",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "qa",
+    "ux",
+    "accessibility",
+    "persona",
+    "playwright",
+    "claude-code",
+    "ai-agent"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@axe-core/playwright": "^4.10.0",
+    "@inquirer/prompts": "^8.0.0",
+    "playwright": "^1.50.0",
+    "yaml": "^2.6.0"
+  }
+}

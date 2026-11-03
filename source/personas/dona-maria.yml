@@ -1,0 +1,20 @@
+# Persona de exemplo. Edite os objetivos para refletir o que importa na SUA aplicação.
+id: dona-maria
+name: Dona Maria
+description: >
+  68 anos, aposentada. Usa o celular para WhatsApp e para o app do banco, às vezes com
+  ajuda da neta. Lê devagar, prefere letras grandes e desconfia de sites que pedem dados logo de cara.
+viewport: mobile
+traits:
+  tech_literacy: baixa
+  vision: reduzida
+  patience: baixa
+  language: pt-BR
+  reading_level: básico
+goals:
+  - Entender o que a empresa oferece
+  - Descobrir quanto custa
+  - Encontrar um telefone ou WhatsApp para falar com alguém
+expectations:
+  - Contato visível sem precisar procurar
+  - Textos simples e letras grandes

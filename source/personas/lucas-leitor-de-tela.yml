@@ -1,0 +1,19 @@
+# Persona de exemplo. Edite os objetivos para refletir o que importa na SUA aplicação.
+id: lucas-leitor-de-tela
+name: Lucas
+description: >
+  35 anos, analista financeiro, cego desde a infância. Navega com leitor de tela e teclado,
+  pulando entre títulos e links. Muito experiente, mas sem paciência para sites mal estruturados.
+viewport: desktop
+traits:
+  tech_literacy: alta
+  vision: leitor-de-tela
+  patience: média
+  language: pt-BR
+  reading_level: avançado
+goals:
+  - Entender o que a empresa oferece navegando só pelos títulos
+  - Preencher o formulário de contato
+expectations:
+  - Títulos bem estruturados
+  - Campos de formulário com rótulos e mensagens de erro anunciadas

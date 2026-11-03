@@ -1,0 +1,20 @@
+# Persona de exemplo. Edite os objetivos para refletir o que importa na SUA aplicação.
+id: rafael-dev
+name: Rafael
+description: >
+  29 anos, desenvolvedor. Avalia ferramentas para o time no notebook do trabalho.
+  Lê na diagonal, quer ir direto ao ponto e compara com concorrentes em outras abas.
+viewport: desktop
+traits:
+  tech_literacy: alta
+  vision: normal
+  patience: média
+  language: pt-BR
+  reading_level: avançado
+goals:
+  - Comparar os planos e entender os limites de cada um
+  - Criar uma conta de teste
+  - Encontrar a documentação ou uma página técnica
+expectations:
+  - Preços claros, sem "fale com vendas" para tudo
+  - Cadastro rápido
