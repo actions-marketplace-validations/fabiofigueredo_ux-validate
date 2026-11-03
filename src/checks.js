@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
 import { VIEWPORTS, loadConfig, newRunDir } from './config.js';
@@ -119,6 +120,8 @@ async function crawl(browser, startUrl, config, add) {
       const res = await context.request.get(pageUrl, { timeout: 10000 }).catch(() => null);
       status = res?.status() ?? 0;
     }
+    // Arquivos locais (file://) não têm status HTTP: consideramos 200 se o arquivo existe e 404 se não.
+    if (new URL(pageUrl).protocol === 'file:') status = fs.existsSync(fileURLToPath(pageUrl)) ? 200 : 404;
     const ok = status > 0 && status < 400;
     const entry = { url: pageUrl, status, ok, title: ok ? await page.title() : '', screenshots: {}, linksTo: [] };
     pages.push(entry);
@@ -198,17 +201,27 @@ async function inspectPage(context, entry, vpName, runDir, add, checkContent) {
   const consoleErrors = [];
   const failedRequests = [];
   page.on('console', (msg) => {
-    if (msg.type() === 'error' && !msg.text().startsWith('Failed to load resource')) consoleErrors.push(msg.text());
+    const text = msg.text();
+    if (msg.type() !== 'error' || text.startsWith('Failed to load resource')) return;
+    // Com file://, o navegador bloqueia leituras de arquivos locais feitas pelo axe; não é erro da aplicação.
+    if (/Access to .* at 'file:\/\/.*CORS policy/.test(text)) return;
+    consoleErrors.push(text);
   });
   page.on('pageerror', (err) => consoleErrors.push(err.message));
   page.on('response', (res) => {
     if (res.status() >= 400 && res.url() !== entry.url) failedRequests.push(`${res.status()} ${res.url()}`);
   });
-  page.on('requestfailed', (req) => failedRequests.push(`falhou ${req.url()}`));
+  page.on('requestfailed', (req) => {
+    const url = req.url();
+    // Arquivo local que existe mas foi bloqueado (leitura do axe via file://): não é erro da aplicação.
+    if (url.startsWith('file:') && fs.existsSync(fileURLToPath(url))) return;
+    failedRequests.push(`falhou ${url}`);
+  });
 
   await page.goto(entry.url, { waitUntil: 'networkidle', timeout: 20000 }).catch(() => {});
 
-  const shot = path.join('screenshots', `${slug(entry.url)}-${vpName}.png`);
+  // Sempre com "/": o caminho é usado em links do relatório, inclusive no Windows.
+  const shot = `screenshots/${slug(entry.url)}-${vpName}.png`;
   await page.screenshot({ path: path.join(runDir, shot), fullPage: true }).catch(() => {});
   entry.screenshots[vpName] = shot;
   const base = { page: entry.url, viewport: vpName };
@@ -402,5 +415,7 @@ function normalize(u) {
 
 function slug(u) {
   const { pathname } = new URL(u);
-  return (pathname.replace(/\/+$/, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '') || 'home').slice(0, 60);
+  // Pega o fim do caminho: em URLs longas (ex.: file:///C:/Users/...) o começo é igual para todas as páginas.
+  const clean = decodeURIComponent(pathname).replace(/\/+$/, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+  return (clean.slice(-60).replace(/^-/, '') || 'home');
 }

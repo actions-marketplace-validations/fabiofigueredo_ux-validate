@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { loadCommands } from '../src/adapters/index.js';
+import { loadCommands, parseCommand } from '../src/adapters/index.js';
 import claudeCode from '../src/adapters/claude-code.js';
 
 test('comandos não deixam placeholders sem substituir', () => {
@@ -25,4 +25,11 @@ test('adapter do Claude Code cria skills e preserva servidores MCP existentes', 
   const mcp = JSON.parse(fs.readFileSync(path.join(dir, '.mcp.json'), 'utf8'));
   assert.ok(mcp.mcpServers.outro && mcp.mcpServers.playwright);
   fs.rmSync(dir, { recursive: true });
+});
+
+test('lê comandos com quebras de linha do Windows (CRLF) e BOM', () => {
+  const text = '\uFEFF---\r\nname: exemplo\r\ndescription: teste\r\n---\r\n\r\nRode {{CHECK_CMD}}\r\n';
+  const cmd = parseCommand(text);
+  assert.equal(cmd.name, 'exemplo');
+  assert.equal(cmd.body, 'Rode npx ux-validate check\n');
 });

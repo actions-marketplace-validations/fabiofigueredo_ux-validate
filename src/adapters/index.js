@@ -33,11 +33,21 @@ export function loadCommands() {
     .readdirSync(dir)
     .filter((f) => f.endsWith('.md'))
     .map((file) => {
-      const text = fs.readFileSync(path.join(dir, file), 'utf8');
-      const match = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
-      if (!match) throw new Error(`Comando sem frontmatter: ${file}`);
-      const meta = YAML.parse(match[1]);
-      const body = match[2].replace(/\{\{(\w+)\}\}/g, (all, key) => VARS[key] ?? all);
-      return { ...meta, body: body.trim() + '\n' };
+      try {
+        return parseCommand(fs.readFileSync(path.join(dir, file), 'utf8'));
+      } catch (err) {
+        throw new Error(`${file}: ${err.message}`);
+      }
     });
+}
+
+/** Lê um comando (frontmatter YAML + corpo em Markdown) e substitui os placeholders. */
+export function parseCommand(text) {
+  // No Windows o Git pode converter as quebras de linha para CRLF; normalizamos antes de ler.
+  const normalized = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  const match = normalized.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!match) throw new Error('comando sem frontmatter (bloco entre "---" no início do arquivo)');
+  const meta = YAML.parse(match[1]);
+  const body = match[2].replace(/\{\{(\w+)\}\}/g, (all, key) => VARS[key] ?? all);
+  return { ...meta, body: body.trim() + '\n' };
 }

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import { checkbox, confirm, input, select } from '@inquirer/prompts';
 import { PROVIDERS, VIEWPORTS, WORK_DIR, RUNS_DIR } from './config.js';
@@ -8,6 +9,8 @@ import { writeFile } from './files.js';
 
 export async function init({ cwd, yes = false, force = false }) {
   console.log('\nux-validate: configuração');
+  // Carrega os comandos antes de gravar qualquer arquivo, para não deixar uma instalação pela metade.
+  const commands = loadCommands();
   const answers = yes ? defaultAnswers() : await ask();
 
   const results = [];
@@ -26,7 +29,6 @@ export async function init({ cwd, yes = false, force = false }) {
     }
   }
 
-  const commands = loadCommands();
   for (const id of answers.targets) {
     const adapter = ADAPTERS.find((a) => a.id === id);
     results.push(...adapter.install({ cwd, commands, force }));
@@ -62,7 +64,11 @@ async function ask() {
     })),
   });
 
-  const url = await input({ message: 'URL da aplicação a ser testada:', default: 'http://localhost:3000' });
+  const url = await input({
+    message: 'URL da aplicação a ser testada (ex.: http://localhost:3000):',
+    default: 'http://localhost:3000',
+    validate: validateUrl,
+  });
   const start = await input({
     message: 'Comando para subir a aplicação (opcional, ex.: npm run dev):',
     default: '',
@@ -111,6 +117,20 @@ async function ask() {
   const examplePersonas = await confirm({ message: 'Criar personas de exemplo?', default: true });
 
   return { targets, url, start, viewports, standalone, examplePersonas };
+}
+
+function validateUrl(value) {
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    return 'URL inválida. Exemplo: http://localhost:3000';
+  }
+  if (url.protocol === 'file:') {
+    if (!fs.existsSync(fileURLToPath(url))) return 'Esse arquivo não existe. Confira o caminho ou use a URL de um servidor (http://...).';
+    return true;
+  }
+  return ['http:', 'https:'].includes(url.protocol) || 'Use uma URL que comece com http://, https:// ou file://';
 }
 
 function renderConfig(a) {

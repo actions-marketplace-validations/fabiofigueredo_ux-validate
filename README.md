@@ -146,6 +146,8 @@ npx ux-validate init
 
 Quando o setup pedir a URL, informe `http://localhost:4321/index.html`.
 
+> Também dá para testar arquivos HTML direto do disco, sem servidor, usando uma URL `file://` (ex.: `file:///C:/projetos/meu-site/index.html`). Prefira `http://` sempre que a aplicação tiver um servidor: é como o usuário real vai acessá-la.
+
 **3. Rode as checagens fixas:**
 
 ```bash
@@ -169,6 +171,7 @@ Abra o `report.html` em `.ux-validate/runs/<data-hora>/`.
 | `/persona-test` não aparece | A pasta aberta precisa ser a do projeto onde você rodou o `init` (a que tem `.claude/`) |
 | Erro dizendo que o navegador não foi encontrado | Rode `npx playwright install chromium` no projeto |
 | "A página inicial não abre" | Confira se a aplicação está no ar e se `app.url` está certa |
+| Quer mudar a URL depois do setup | Edite `app.url` em `ux-validate.config.yml` |
 
 ## Estrutura do projeto
 

@@ -1,0 +1,3 @@
+# Mantém quebras de linha LF em qualquer sistema (o Windows converteria para CRLF).
+* text=auto eol=lf
+*.png binary
