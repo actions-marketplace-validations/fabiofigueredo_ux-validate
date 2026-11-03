@@ -1,6 +1,6 @@
 # Formato de persona
 
-Cada persona é um arquivo `.yml` na pasta de personas (padrão `.persona-qa/personas/`).
+Cada persona é um arquivo `.yml` na pasta de personas (padrão `.ux-validade/personas/`).
 
 ```yaml
 id: dona-maria              # identificador curto, sem espaços (usado no relatório)

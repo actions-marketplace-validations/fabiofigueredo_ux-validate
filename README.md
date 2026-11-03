@@ -1,15 +1,15 @@
-# persona-qa
+# ux-validade
 
 Testes de **conteúdo**, **navegação** e **interface** de aplicações web, feitos do ponto de vista de **personas**, geradas por IA ou não, e executados pelo agente de IA que você já usa.
 
-Em vez de só dizer "o contraste está abaixo de 4,5:1", o persona-qa responde: *a Dona Maria, de 68 anos, no celular, consegue descobrir quanto custa o seu produto?* E se não consegue, mostra onde ela travou, por quê e em qual arquivo corrigir.
+Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validade responde: *a Dona Maria, de 68 anos, no celular, consegue descobrir quanto custa o seu produto?* E se não consegue, mostra onde ela travou, por quê e em qual arquivo corrigir.
 
 ## Como funciona
 
 ```
 /persona-test
    │
-   ├─ 1. Checagens fixas  (npx persona-qa check)
+   ├─ 1. Checagens fixas  (npx ux-validade check)
    │     axe-core, links quebrados, erros de console, rolagem horizontal,
    │     textos provisórios (lorem ipsum, TODO, NaN, {{variáveis}})…
    │     → mesmo resultado com qualquer modelo de linguagem
@@ -20,17 +20,17 @@ Em vez de só dizer "o contraste está abaixo de 4,5:1", o persona-qa responde: 
    │
    ├─ 3. Aponta o arquivo provável de cada problema no seu código
    │
-   └─ 4. Relatório  (npx persona-qa report)
+   └─ 4. Relatório  (npx ux-validade report)
          notas por persona, objetivos cumpridos, problemas com evidência
          e sugestão de correção → report.md + report.html
 ```
 
-O persona-qa roda **dentro da sua ferramenta de IA**: o modelo usado é o que ela estiver usando.
+O ux-validade roda **dentro da sua ferramenta de IA**: o modelo usado é o que ela estiver usando.
 
 ## Instalação
 
 ```bash
-npx persona-qa init
+npx ux-validade init
 ```
 
 O setup pergunta:
@@ -45,9 +45,9 @@ E cria:
 
 | Arquivo | Para quê |
 |---|---|
-| `persona-qa.config.yml` | Configuração |
-| `.persona-qa/personas/*.yml` | Suas personas |
-| `.persona-qa/references/` | Heurísticas e formatos que o agente consulta |
+| `ux-validade.config.yml` | Configuração |
+| `.ux-validade/personas/*.yml` | Suas personas |
+| `.ux-validade/references/` | Heurísticas e formatos que o agente consulta |
 | `.claude/skills/persona-test/`, `persona-report/` | Comandos do Claude Code |
 | `.mcp.json` | Registra o Playwright MCP (o navegador do agente) |
 
@@ -68,11 +68,11 @@ No Claude Code, dentro do seu projeto:
 Pelo terminal (útil no CI):
 
 ```bash
-npx persona-qa check            # só as checagens fixas
-npx persona-qa report           # relatório da execução mais recente
+npx ux-validade check            # só as checagens fixas
+npx ux-validade report           # relatório da execução mais recente
 ```
 
-Os resultados ficam em `.persona-qa/runs/<data-hora>/` (já incluído no `.gitignore`).
+Os resultados ficam em `.ux-validade/runs/<data-hora>/` (já incluído no `.gitignore`).
 
 ## Personas
 
@@ -106,15 +106,15 @@ npm run demo:serve        # serve em http://localhost:4321
 Em outro terminal, num projeto de teste:
 
 ```bash
-npx persona-qa init --yes
+npx ux-validade init --yes
 ```
 
-Troque `app.url` em `persona-qa.config.yml` por `http://localhost:4321/index.html` e rode `/persona-test` no Claude Code. `examples/sample-findings.json` mostra o tipo de resultado que o agente produz.
+Troque `app.url` em `ux-validade.config.yml` por `http://localhost:4321/index.html` e rode `/persona-test` no Claude Code. `examples/sample-findings.json` mostra o tipo de resultado que o agente produz.
 
 ## Estrutura do projeto
 
 ```
-bin/persona-qa.js        CLI (init, check, report)
+bin/ux-validade.js        CLI (init, check, report)
 src/init.js              setup interativo
 src/checks.js            checagens determinísticas (Playwright + axe-core)
 src/report.js            notas e relatório (Markdown + HTML)
@@ -144,5 +144,5 @@ Os comandos em `source/commands/` usam placeholders (`{{WORK_DIR}}`, `{{CHECK_CM
 
 | Variável | Uso |
 |---|---|
-| `PERSONA_QA_CHROMIUM` | Caminho de um Chromium já instalado, se não quiser usar o do Playwright |
+| `UX_VALIDADE_CHROMIUM` | Caminho de um Chromium já instalado, se não quiser usar o do Playwright |
 | `DEBUG` | Mostra o erro completo quando um comando falha |

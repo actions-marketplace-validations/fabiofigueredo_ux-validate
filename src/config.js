@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
 
-export const WORK_DIR = '.persona-qa';
+export const WORK_DIR = '.ux-validade';
 export const RUNS_DIR = `${WORK_DIR}/runs`;
 
 export const VIEWPORTS = {
@@ -26,10 +26,10 @@ const DEFAULTS = {
   agent: { maxStepsPerGoal: 15 },
 };
 
-export function loadConfig(cwd, configPath = 'persona-qa.config.yml') {
+export function loadConfig(cwd, configPath = 'ux-validade.config.yml') {
   const file = path.resolve(cwd, configPath);
   if (!fs.existsSync(file)) {
-    throw new Error(`Configuração não encontrada em ${configPath}. Rode "npx persona-qa init" primeiro.`);
+    throw new Error(`Configuração não encontrada em ${configPath}. Rode "npx ux-validade init" primeiro.`);
   }
   const raw = YAML.parse(fs.readFileSync(file, 'utf8')) ?? {};
   const config = {

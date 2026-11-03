@@ -14,7 +14,7 @@ test('comandos não deixam placeholders sem substituir', () => {
 });
 
 test('adapter do Claude Code cria skills e preserva servidores MCP existentes', () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'persona-qa-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ux-validade-'));
   fs.writeFileSync(path.join(dir, '.mcp.json'), JSON.stringify({ mcpServers: { outro: { command: 'x' } } }));
   claudeCode.install({ cwd: dir, commands: loadCommands(), force: false });
 

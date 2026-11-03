@@ -1,10 +1,10 @@
 {
-  "name": "persona-qa",
+  "name": "ux-validade",
   "version": "0.1.0",
   "description": "Testes de conteúdo, navegação e interface de aplicações web, guiados por personas e executados pelo seu agente de IA.",
   "type": "module",
   "bin": {
-    "persona-qa": "bin/persona-qa.js"
+    "ux-validade": "bin/ux-validade.js"
   },
   "files": [
     "bin",

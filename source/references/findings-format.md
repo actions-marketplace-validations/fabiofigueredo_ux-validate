@@ -1,6 +1,6 @@
 # Formato do findings.json
 
-Arquivo escrito pelo agente em `.persona-qa/runs/<execução>/findings.json`. O comando `persona-qa report` junta este arquivo com o `checks.json` para gerar o relatório.
+Arquivo escrito pelo agente em `.ux-validade/runs/<execução>/findings.json`. O comando `ux-validade report` junta este arquivo com o `checks.json` para gerar o relatório.
 
 ```json
 {

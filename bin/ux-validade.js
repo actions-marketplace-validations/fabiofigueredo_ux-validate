@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
 
-const HELP = `persona-qa — testes de conteúdo, navegação e interface guiados por personas
+const HELP = `ux-validade — testes de conteúdo, navegação e interface guiados por personas
 
 Uso:
-  persona-qa init   [--yes] [--force]          Configura o projeto e instala os comandos no seu agente de IA
-  persona-qa check  [--out <dir>] [--url <url>] Roda as checagens fixas (acessibilidade, links, console, conteúdo)
-  persona-qa report [--run <dir>]               Gera report.md e report.html a partir de uma execução
+  ux-validade init   [--yes] [--force]          Configura o projeto e instala os comandos no seu agente de IA
+  ux-validade check  [--out <dir>] [--url <url>] Roda as checagens fixas (acessibilidade, links, console, conteúdo)
+  ux-validade report [--run <dir>]               Gera report.md e report.html a partir de uma execução
 
 Opções gerais:
-  --config <arquivo>   Caminho do arquivo de configuração (padrão: persona-qa.config.yml)
+  --config <arquivo>   Caminho do arquivo de configuração (padrão: ux-validade.config.yml)
   -h, --help           Mostra esta ajuda
 `;
 
@@ -21,7 +21,7 @@ const { positionals, values } = parseArgs({
     out: { type: 'string' },
     url: { type: 'string' },
     run: { type: 'string' },
-    config: { type: 'string', default: 'persona-qa.config.yml' },
+    config: { type: 'string', default: 'ux-validade.config.yml' },
     help: { type: 'boolean', short: 'h' },
   },
 });

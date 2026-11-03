@@ -7,11 +7,11 @@ import { ADAPTERS, SOURCE_DIR, loadCommands } from './adapters/index.js';
 import { writeFile } from './files.js';
 
 export async function init({ cwd, yes = false, force = false }) {
-  console.log('\npersona-qa: configuração');
+  console.log('\nux-validade: configuração');
   const answers = yes ? defaultAnswers() : await ask();
 
   const results = [];
-  results.push(writeFile(cwd, 'persona-qa.config.yml', renderConfig(answers), { force }));
+  results.push(writeFile(cwd, 'ux-validade.config.yml', renderConfig(answers), { force }));
 
   // Referências (heurísticas, formato de saída) são compartilhadas por todas as ferramentas.
   for (const file of fs.readdirSync(path.join(SOURCE_DIR, 'references'))) {
@@ -124,7 +124,7 @@ function renderConfig(a) {
     ...(a.standalone ? { standalone: a.standalone } : {}),
   };
   return (
-    '# Configuração do persona-qa. Documentação: README.md do projeto persona-qa.\n' +
+    '# Configuração do ux-validade. Documentação: README.md do projeto ux-validade.\n' +
     '# A API key nunca fica neste arquivo: informe só o nome da variável de ambiente.\n' +
     YAML.stringify(config)
   );
@@ -136,7 +136,7 @@ function ensureGitignore(cwd) {
   const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
   if (current.split('\n').some((l) => l.trim() === line)) return { rel: '.gitignore', status: 'mantido' };
   const prefix = current && !current.endsWith('\n') ? '\n' : '';
-  fs.writeFileSync(file, `${current}${prefix}# persona-qa: resultados das execuções\n${line}\n`);
+  fs.writeFileSync(file, `${current}${prefix}# ux-validade: resultados das execuções\n${line}\n`);
   return { rel: '.gitignore', status: current ? 'atualizado' : 'criado' };
 }
 
@@ -149,7 +149,7 @@ function printNextSteps(a) {
   }
   if (a.standalone) {
     console.log('\n  Modo standalone configurado. A execução sem ferramenta de IA chega numa próxima versão;');
-    console.log('  por enquanto "npx persona-qa check" já roda as checagens fixas no CI.');
+    console.log('  por enquanto "npx ux-validade check" já roda as checagens fixas no CI.');
   }
   console.log('');
 }
