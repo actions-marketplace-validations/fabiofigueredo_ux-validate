@@ -4,6 +4,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fix, applyEdits, locateSource, listSourceFiles } from '../src/fix.js';
+import { setLocale } from '../src/i18n.js';
+
+// Estes testes conferem as mensagens em português.
+setLocale('pt-BR');
 
 function project() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'uxv-fix-'));

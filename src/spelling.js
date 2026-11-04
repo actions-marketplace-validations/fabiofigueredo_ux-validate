@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { WORK_DIR } from './config.js';
+import { t, getLocale } from './i18n.js';
 
 /**
  * Verificação ortográfica offline com Hunspell (WebAssembly) e os dicionários do LibreOffice.
@@ -13,7 +14,9 @@ const require = createRequire(import.meta.url);
 // Idioma do conteúdo -> pacote de dicionário. "pt-BR" usa o VERO (LibreOffice Brasil).
 const DICTIONARIES = { 'pt-BR': 'dictionary-pt', en: 'dictionary-en', es: 'dictionary-es' };
 export const SUPPORTED_LANGUAGES = Object.keys(DICTIONARIES);
-export const PROJECT_DICTIONARY = `${WORK_DIR}/dicionario.txt`;
+// O nome do arquivo segue o idioma da ferramenta; os dois são lidos, se existirem.
+const DICTIONARY_FILES = { en: `${WORK_DIR}/dictionary.txt`, 'pt-BR': `${WORK_DIR}/dicionario.txt` };
+export const projectDictionary = (locale = getLocale()) => DICTIONARY_FILES[locale] ?? DICTIONARY_FILES.en;
 
 const MAX_SUGGESTIONS = 30; // sugestões são lentas (~0,3 s cada); limitamos por execução
 const LIST_LIMIT = 12;
@@ -39,9 +42,10 @@ export async function createSpeller({ cwd, language, ignore = [] }) {
   const english = lang === 'en' ? null : await loadDictionary(factory, DICTIONARIES.en);
 
   const custom = new Set(ignore.map((w) => w.toLowerCase()));
-  const projectDict = path.join(cwd, PROJECT_DICTIONARY);
-  if (fs.existsSync(projectDict)) {
-    for (const line of fs.readFileSync(projectDict, 'utf8').split(/\r?\n/)) {
+  for (const rel of Object.values(DICTIONARY_FILES)) {
+    const file = path.join(cwd, rel);
+    if (!fs.existsSync(file)) continue;
+    for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
       const word = line.replace(/#.*/, '').trim();
       if (word) custom.add(word.toLowerCase());
     }
@@ -165,14 +169,11 @@ export async function checkSpelling(page, { base, add, shot, speller }) {
       source: 'check:spelling',
       category: 'content',
       severity: unknown.length >= 3 ? 'medium' : 'low',
-      title: 'Possíveis erros de ortografia',
-      description:
-        `${unknown.length} palavra(s) não reconhecidas pelo dicionário (${speller.language}). ` +
-        'Erros de ortografia passam descuido e reduzem a confiança no site. ' +
-        `Nomes próprios e termos técnicos podem aparecer aqui: adicione-os a ${PROJECT_DICTIONARY} (uma palavra por linha).`,
-      heuristic: 'Confiabilidade do conteúdo (ortografia)',
+      title: t('spelling.unknown.title'),
+      description: t('spelling.unknown.description', { n: unknown.length, language: speller.language, dictionary: projectDictionary() }),
+      heuristic: t('spelling.unknown.heuristic'),
       evidence: { screenshot: shot, snippet: lines.join('\n'), terms: unknown.map((u) => u.word) },
-      suggestion: 'Corrija as palavras usando as sugestões. Para termos corretos que o dicionário não conhece, inclua-os no dicionário do projeto.',
+      suggestion: t('spelling.unknown.suggestion'),
     });
   }
 
@@ -183,15 +184,15 @@ export async function checkSpelling(page, { base, add, shot, speller }) {
       source: 'check:spelling',
       category: 'content',
       severity: 'low',
-      title: 'Palavras em inglês no meio do texto',
-      description: `${foreign.length} palavra(s) em inglês num conteúdo em ${speller.language}. Quem não lê inglês pode não entender rótulos e botões.`,
-      heuristic: 'Nielsen #2: correspondência com o mundo real',
+      title: t('spelling.foreign.title'),
+      description: t('spelling.foreign.description', { n: foreign.length, language: speller.language }),
+      heuristic: t('spelling.foreign.heuristic'),
       evidence: {
         screenshot: shot,
         snippet: foreign.slice(0, LIST_LIMIT).map((f) => `${f.word}   "${f.context}"`).join('\n'),
         terms: foreign.map((f) => f.word),
       },
-      suggestion: 'Traduza os termos (ex.: "Pricing" → "Preços", "Get started" → "Começar"). Se o termo em inglês for intencional (marca, jargão do público), adicione-o ao dicionário do projeto.',
+      suggestion: t('spelling.foreign.suggestion'),
     });
   }
 }

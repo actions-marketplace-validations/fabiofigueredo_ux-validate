@@ -56,7 +56,7 @@ Para cada persona, use as ferramentas de navegador do Playwright MCP (`browser_r
 
 Personas com `vision: leitor-de-tela` navegam **sem olhar a tela**: use só o teclado (`browser_press_key`) e a árvore de acessibilidade (`browser_snapshot`), nunca `browser_click` em coordenadas ou elementos que o teclado não alcança. Se algo só funciona com o mouse, para ela é um bloqueio.
 
-Ajuste o rigor às características da persona (ex.: `vision: reduzida` aumenta a gravidade de contraste e fontes pequenas; `tech_literacy: baixa` aumenta a de jargão e ícones sem rótulo).
+Ajuste o rigor às características da persona (ex.: `vision: reduzida` aumenta a gravidade de contraste e fontes pequenas; `tech_literacy: baixa` aumenta a de jargão e ícones sem rótulo). Arquivos de persona podem usar valores em inglês (`low`, `reduced`, `screen-reader`); trate-os como `baixa`, `reduzida`, `leitor-de-tela`.
 
 ## Passo 3b: auditoria de acessibilidade (WAI-ARIA)
 
@@ -72,7 +72,7 @@ Faça uma vez por execução (não por persona), a menos que `--only` exclua `ac
 
 O dicionário (checagem `check:spelling`) aponta palavras desconhecidas e palavras em inglês no meio do texto. Revise esses achados:
 
-1. **Separe os falsos positivos:** nomes próprios, marcas, nomes de produtos e termos técnicos corretos. Não os registre como problema; liste-os no resumo final sugerindo incluí-los em `{{WORK_DIR}}/dicionario.txt` (uma palavra por linha).
+1. **Separe os falsos positivos:** nomes próprios, marcas, nomes de produtos e termos técnicos corretos. Não os registre como problema; liste-os no resumo final sugerindo incluí-los em `{{DICTIONARY}}` (uma palavra por linha).
 2. **Avalie as palavras em inglês pela persona:** "Home" pode ser aceitável para o Rafael, mas não para a Dona Maria. Se atrapalhar alguém, crie um achado próprio explicando o impacto e cite o id da checagem em `relatedChecks`.
 3. **Revise a gramática** dos textos das páginas visitadas, o que o dicionário não pega: concordância, crase, regência, pontuação, palavras que existem mas estão erradas no contexto (ex.: "mas" × "mais", "a" × "há", "concerteza"), mistura de "você" e "tu", frases truncadas. Registre com `category: "content"`, o texto exato em `evidence.snippet` e a correção em `suggestion`. Use `heuristic: "Gramática"`.
 

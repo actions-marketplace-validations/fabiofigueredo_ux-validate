@@ -29,7 +29,7 @@ Argumentos recebidos: `$ARGUMENTS`
 4. Corrija um problema de cada vez. Para cada um:
    - mostre o arquivo e a mudança em uma frase;
    - edite;
-   - em problemas de ortografia (`check:spelling`), corrija só as palavras realmente erradas. Nomes próprios, marcas e termos técnicos corretos vão para `{{WORK_DIR}}/dicionario.txt` (uma palavra por linha), não para o código.
+   - em problemas de ortografia (`check:spelling`), corrija só as palavras realmente erradas. Nomes próprios, marcas e termos técnicos corretos vão para `{{DICTIONARY}}` (uma palavra por linha), não para o código.
 5. Ao terminar, rode as checagens de novo para confirmar:
 
 ```bash

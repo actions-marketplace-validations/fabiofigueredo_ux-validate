@@ -4,6 +4,7 @@ import { confirm } from '@inquirer/prompts';
 import { loadConfig, latestRunDir, WORK_DIR } from './config.js';
 import { analyze } from './report.js';
 import { completeJson, checkCredentials, FatalLlmError } from './llm.js';
+import { t, formatNumber } from './i18n.js';
 
 /**
  * `ux-validate fix`: aplica as correções do relatório usando o modelo escolhido no setup
@@ -19,17 +20,8 @@ const SKIP_DIRS = new Set(['node_modules', '.git', WORK_DIR, 'dist', 'build', '.
 const MAX_FILE_BYTES = 200 * 1024;
 const MAX_SCAN_FILES = 3000;
 
-const SYSTEM_PROMPT = `Você corrige problemas de conteúdo, navegação, interface e acessibilidade em arquivos de uma aplicação web.
-Você recebe um arquivo do projeto e uma lista de problemas encontrados por um teste de UX. Para cada problema que pode ser corrigido neste arquivo, proponha edições.
-
-Regras:
-- Cada edição troca um trecho exato do arquivo ("find") por um novo trecho ("replace"). Copie "find" exatamente como está no arquivo, com espaços e quebras de linha, e inclua contexto suficiente para que ele apareça uma única vez.
-- Faça a menor mudança que resolve o problema. Mantenha o estilo, a indentação e as convenções do arquivo. Não reformate nem refatore o que não tem relação com o problema.
-- Prefira HTML nativo e semântico a ARIA (ex.: <button> em vez de <div role="button">), seguindo o WAI-ARIA Authoring Practices.
-- Textos para o usuário final ficam no idioma do site, claros e naturais.
-- Nunca invente dados: telefones, preços, endereços, depoimentos, números de clientes, nomes. Se a correção depende de uma informação que você não tem, pule o problema e explique o que falta.
-- Se o problema não está neste arquivo, ou a correção exige mudanças em outros arquivos, pule e explique.
-- Escreva "explanation" e "reason" em português, em uma frase.`;
+// O prompt de sistema segue o idioma da ferramenta (as explicações voltam nesse idioma).
+const systemPrompt = () => t('fix.systemPrompt');
 
 const SCHEMA = {
   type: 'object',
@@ -65,15 +57,12 @@ const SCHEMA = {
 export async function fix({ cwd, configPath, run, ids, severity = 'medium', yes = false, dryRun = false, llm = completeJson, log = console.log }) {
   const config = loadConfig(cwd, configPath);
   if (!config.standalone?.provider || !config.standalone?.model) {
-    throw new Error(
-      'Nenhum modelo configurado para correções. Rode "npx ux-validate init" e configure o modo standalone ' +
-        '(provedor, modelo e API key), ou use /persona-fix dentro do Claude Code.',
-    );
+    throw new Error(t('fix.noModel'));
   }
   // Confere a credencial antes de qualquer outra coisa (só quando usamos o cliente real).
   if (llm === completeJson) checkCredentials(config.standalone);
   const runDir = run ? path.resolve(cwd, run) : latestRunDir(cwd);
-  if (!runDir || !fs.existsSync(runDir)) throw new Error('Nenhuma execução encontrada. Rode "npx ux-validate check" ou /persona-test primeiro.');
+  if (!runDir || !fs.existsSync(runDir)) throw new Error(t('fix.noRun'));
 
   const checks = readJson(path.join(runDir, 'checks.json'));
   const agent = readJson(path.join(runDir, 'findings.json'));
@@ -81,10 +70,10 @@ export async function fix({ cwd, configPath, run, ids, severity = 'medium', yes 
 
   const wanted = ids ? new Set(ids.split(',').map((s) => s.trim().toUpperCase())) : null;
   const maxSeverity = SEVERITY_ORDER.indexOf(severity);
-  if (maxSeverity < 0) throw new Error(`Gravidade inválida: ${severity}. Use: ${SEVERITY_ORDER.join(', ')}.`);
+  if (maxSeverity < 0) throw new Error(t('fix.invalidSeverity', { value: severity, valid: SEVERITY_ORDER.join(', ') }));
   const selected = findings.filter((f) => (wanted ? wanted.has(f.id) : SEVERITY_ORDER.indexOf(f.severity) <= maxSeverity));
   if (!selected.length) {
-    log('Nenhum problema selecionado para corrigir.');
+    log(t('fix.nothingSelected'));
     return { results: [] };
   }
 
@@ -95,27 +84,27 @@ export async function fix({ cwd, configPath, run, ids, severity = 'medium', yes 
   for (const f of selected) {
     const file = locateSource(cwd, f, files);
     if (!file) {
-      results.push({ findingId: f.id, title: f.title, status: 'not-located', reason: 'Não encontrei o arquivo de origem no projeto.' });
+      results.push({ findingId: f.id, title: f.title, status: 'not-located', reason: t('fix.notLocated') });
       continue;
     }
     if (!byFile.has(file)) byFile.set(file, []);
     byFile.get(file).push(f);
   }
 
-  log(`\n${selected.length} problema(s) selecionado(s); ${byFile.size} arquivo(s) para corrigir.`);
+  log(t('fix.plan', { n: selected.length, files: byFile.size }));
   for (const [file, list] of byFile) log(`  ${file}  ←  ${list.map((f) => f.id).join(', ')}`);
   const notLocated = results.filter((r) => r.status === 'not-located');
-  if (notLocated.length) log(`  (sem arquivo identificado: ${notLocated.map((r) => r.findingId).join(', ')})`);
+  if (notLocated.length) log(t('fix.notLocatedList', { ids: notLocated.map((r) => r.findingId).join(', ') }));
   if (!byFile.size) return finish(runDir, results, { input: 0, output: 0 }, log);
 
   // 2. Confirma o uso de tokens antes de chamar a API.
   const chars = [...byFile.keys()].reduce((sum, file) => sum + fs.statSync(path.join(cwd, file)).size, 0);
   const estimate = Math.round((chars + 3000 * byFile.size) / 4);
   const { provider, model } = config.standalone;
-  log(`\nModelo: ${provider} · ${model}. Estimativa: ~${estimate.toLocaleString('pt-BR')} tokens de entrada, cobrados na sua conta.`);
+  log(t('fix.estimate', { provider, model, tokens: formatNumber(estimate) }));
   if (!yes) {
-    if (!process.stdin.isTTY) throw new Error('Confirmação necessária. Rode de novo com --yes para continuar sem perguntar.');
-    if (!(await confirm({ message: 'Chamar o modelo para propor as correções?', default: true }))) return { results };
+    if (!process.stdin.isTTY) throw new Error(t('fix.needsYes'));
+    if (!(await confirm({ message: t('fix.confirmCall'), default: true }))) return { results };
   }
 
   // 3. Pede as correções arquivo por arquivo, mostra o diff e aplica.
@@ -127,12 +116,12 @@ export async function fix({ cwd, configPath, run, ids, severity = 'medium', yes 
     const original = fs.readFileSync(abs, 'utf8');
     let answer;
     try {
-      answer = await llm(config.standalone, { system: SYSTEM_PROMPT, prompt: buildPrompt(file, original, list, config), schema: SCHEMA });
+      answer = await llm(config.standalone, { system: systemPrompt(), prompt: buildPrompt(file, original, list, config), schema: SCHEMA });
     } catch (err) {
       log(`  ✖ ${err.message}`);
       for (const f of list) results.push({ findingId: f.id, title: f.title, file, status: 'error', reason: err.message });
       if (err instanceof FatalLlmError) {
-        log('  Interrompido: corrija o problema acima e rode de novo.');
+        log(t('fix.stopped'));
         break;
       }
       continue;
@@ -142,21 +131,21 @@ export async function fix({ cwd, configPath, run, ids, severity = 'medium', yes 
 
     const { content, applied, failed } = applyEdits(original, answer.data.edits ?? [], new Set(list.map((f) => f.id)));
     for (const s of answer.data.skipped ?? []) {
-      log(`  – ${s.findingId}: pulado. ${s.reason}`);
+      log(t('fix.skippedLine', { id: s.findingId, reason: s.reason }));
       results.push({ findingId: s.findingId, title: titleOf(list, s.findingId), file, status: 'skipped', reason: s.reason });
     }
     for (const e of failed) {
-      log(`  ✖ ${e.findingId}: edição descartada (${e.reason}).`);
+      log(t('fix.failedLine', { id: e.findingId, reason: e.reason }));
       results.push({ findingId: e.findingId, title: titleOf(list, e.findingId), file, status: 'failed', reason: e.reason });
     }
     if (!applied.length) continue;
 
     for (const e of applied) {
-      log(`\n  ✔ ${e.findingId}: ${e.explanation}`);
+      log(t('fix.appliedLine', { id: e.findingId, explanation: e.explanation }));
       log(renderDiff(e.find, e.replace));
     }
     let write = !dryRun;
-    if (write && !yes) write = await confirm({ message: `Gravar ${applied.length} correção(ões) em ${file}?`, default: true });
+    if (write && !yes) write = await confirm({ message: t('fix.confirmWrite', { n: applied.length, file }), default: true });
     if (write) {
       const backup = path.join(backupDir, file);
       fs.mkdirSync(path.dirname(backup), { recursive: true });
@@ -176,13 +165,13 @@ function finish(runDir, results, usage, log, meta = {}) {
   fs.mkdirSync(path.join(runDir, 'fixes'), { recursive: true });
   fs.writeFileSync(path.join(runDir, 'fixes', 'fixes.json'), JSON.stringify(report, null, 2));
 
-  log('\nResumo:');
-  log(`  ${count('applied')} aplicada(s), ${count('proposed')} proposta(s) sem gravar, ${count('declined')} recusada(s) por você,`);
-  log(`  ${count('skipped')} pulada(s) pelo modelo, ${count('failed') + count('error')} com erro, ${count('not-located')} sem arquivo identificado.`);
-  log(`  Tokens usados: ${usage.input.toLocaleString('pt-BR')} de entrada, ${usage.output.toLocaleString('pt-BR')} de saída.`);
+  log(t('fix.summary.title'));
+  log(t('fix.summary.line1', { applied: count('applied'), proposed: count('proposed'), declined: count('declined') }));
+  log(t('fix.summary.line2', { skipped: count('skipped'), failed: count('failed') + count('error'), notLocated: count('not-located') }));
+  log(t('fix.summary.tokens', { input: formatNumber(usage.input), output: formatNumber(usage.output) }));
   if (count('applied')) {
-    log(`  Backup dos arquivos originais: ${path.relative(process.cwd(), path.join(runDir, 'fixes', 'backup'))}`);
-    log('  Revise as mudanças (ex.: git diff) e rode "npx ux-validate check" para confirmar as correções.');
+    log(t('fix.summary.backup', { dir: path.relative(process.cwd(), path.join(runDir, 'fixes', 'backup')) }));
+    log(t('fix.summary.review'));
   }
   return report;
 }
@@ -193,20 +182,20 @@ export function applyEdits(content, edits, allowedIds) {
   const failed = [];
   for (const e of edits) {
     if (!allowedIds.has(e.findingId)) {
-      failed.push({ ...e, reason: 'id de problema que não foi enviado para este arquivo' });
+      failed.push({ ...e, reason: t('fix.reasons.notSent') });
       continue;
     }
     if (!e.find) {
-      failed.push({ ...e, reason: 'trecho a substituir vazio' });
+      failed.push({ ...e, reason: t('fix.reasons.emptyFind') });
       continue;
     }
     const first = content.indexOf(e.find);
     if (first < 0) {
-      failed.push({ ...e, reason: 'o trecho a substituir não existe no arquivo' });
+      failed.push({ ...e, reason: t('fix.reasons.notFound') });
       continue;
     }
     if (content.indexOf(e.find, first + 1) >= 0) {
-      failed.push({ ...e, reason: 'o trecho a substituir aparece mais de uma vez' });
+      failed.push({ ...e, reason: t('fix.reasons.multiple') });
       continue;
     }
     content = content.slice(0, first) + e.replace + content.slice(first + e.find.length);
@@ -218,24 +207,24 @@ export function applyEdits(content, edits, allowedIds) {
 function buildPrompt(file, content, findings, config) {
   const issues = findings.map((f) => ({
     id: f.id,
-    categoria: f.category,
-    gravidade: f.severity,
-    titulo: f.title,
-    descricao: f.description,
-    pagina: f.page,
-    criterio: f.heuristic,
-    elemento: f.evidence?.selector,
-    trecho: f.evidence?.snippet,
-    sugestao: f.suggestion,
+    category: f.category,
+    severity: f.severity,
+    title: f.title,
+    description: f.description,
+    page: f.page,
+    criterion: f.heuristic,
+    element: f.evidence?.selector,
+    snippet: f.evidence?.snippet,
+    suggestion: f.suggestion,
   }));
   return [
-    `Idioma do conteúdo do site: ${config.language}.`,
-    `Arquivo: ${file}`,
+    t('fix.promptLanguage', { language: config.language }),
+    t('fix.promptFile', { file }),
     '<arquivo>',
     content,
     '</arquivo>',
     '',
-    'Problemas a corrigir neste arquivo:',
+    t('fix.promptIssues'),
     JSON.stringify(issues, null, 2),
   ].join('\n');
 }
@@ -312,11 +301,11 @@ function searchTerms(f) {
     if (raw.startsWith('<') && raw.length >= 8 && raw.length <= 200) terms.add(raw);
     // Texto visível dentro das tags e atributos marcantes (href, id, class, onclick…).
     for (const text of line.replace(/<[^>]*>/g, '\n').split('\n')) {
-      const t = text.replace(/^[…"\s]+|[…"\s]+$/g, '').trim();
-      if (t.length >= 8 && !/^(Destino|Linkad[oa]|HTTP)\b/.test(t)) terms.add(t.slice(0, 60));
+      const piece = text.replace(/^[…"\s]+|[…"\s]+$/g, '').trim();
+      if (piece.length >= 8 && !/^(Destino|Linkad[oa]|Target|Linked|HTTP)\b/.test(piece)) terms.add(piece.slice(0, 60));
     }
     // Link quebrado: procura pelo nome da página de destino (ex.: href="sobre.html").
-    const dest = line.match(/^Destino: (\S+)/);
+    const dest = line.match(/^(?:Destino|Target): (\S+)/);
     if (dest) {
       const name = decodeURIComponent(new URL(dest[1]).pathname.split('/').pop() ?? '');
       if (name.length >= 4) terms.add(name);

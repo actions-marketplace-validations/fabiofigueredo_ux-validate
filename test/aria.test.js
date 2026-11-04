@@ -6,6 +6,10 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { chromium } from 'playwright';
 import { runAriaChecks } from '../src/aria.js';
+import { setLocale } from '../src/i18n.js';
+
+// Estes testes conferem as mensagens em português.
+setLocale('pt-BR');
 
 const demo = (file) => pathToFileURL(path.resolve('examples/demo-site', file)).href;
 

@@ -23,6 +23,8 @@ expectations:               # opcional: o que ela espera encontrar
   - Letras grandes
 ```
 
+Valores em inglês (`low`, `medium`, `high`, `reduced`, `color-blind`, `screen-reader`, `basic`…) também são aceitos.
+
 ## Como as características mudam o teste
 
 | Característica | Efeito no comportamento | Efeito na avaliação |

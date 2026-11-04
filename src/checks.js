@@ -7,6 +7,7 @@ import { AxeBuilder } from '@axe-core/playwright';
 import { VIEWPORTS, loadConfig, newRunDir } from './config.js';
 import { runAriaChecks } from './aria.js';
 import { checkSpelling, createSpeller } from './spelling.js';
+import { t, getLocale } from './i18n.js';
 
 /**
  * Checagens determinísticas: dão o mesmo resultado com qualquer modelo de linguagem.
@@ -15,24 +16,34 @@ import { checkSpelling, createSpeller } from './spelling.js';
 
 const AXE_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'];
 const require = createRequire(import.meta.url);
-let AXE_LOCALE = null;
-try {
-  AXE_LOCALE = require('axe-core/locales/pt_BR.json');
-} catch {
-  // Sem tradução disponível: as mensagens do axe ficam em inglês.
+// Traduções das regras do axe (o axe já fala inglês; para os demais idiomas usamos o arquivo de locale dele).
+const AXE_LOCALE_FILES = { 'pt-BR': 'axe-core/locales/pt_BR.json' };
+const axeLocaleCache = {};
+function axeLocale() {
+  const file = AXE_LOCALE_FILES[getLocale()];
+  if (!file) return null;
+  if (!(file in axeLocaleCache)) {
+    try {
+      axeLocaleCache[file] = require(file);
+    } catch {
+      axeLocaleCache[file] = null; // sem tradução: as mensagens ficam em inglês
+    }
+  }
+  return axeLocaleCache[file];
 }
 
 const AXE_SEVERITY = { critical: 'critical', serious: 'high', moderate: 'medium', minor: 'low' };
 
 // Textos que não deveriam chegar ao usuário final (comuns em código gerado por IA).
+// Os padrões cobrem inglês e português, qualquer que seja o idioma da ferramenta.
 const LEFTOVER_PATTERNS = [
-  { re: /lorem ipsum|dolor sit amet/i, title: 'Texto de preenchimento (lorem ipsum)', severity: 'high' },
-  { re: /\b(TODO|FIXME|XXX)\b/, title: 'Marcador de desenvolvimento (TODO/FIXME) visível', severity: 'medium' },
-  { re: /\[object Object\]|\bundefined\b|\bNaN\b/, title: 'Valor de código exposto (undefined, NaN, [object Object])', severity: 'high' },
-  { re: /\{\{\s*[\w.]+\s*\}\}|\$\{[\w.]+\}/, title: 'Variável de template não renderizada', severity: 'high' },
-  { re: /as an ai (language )?model|como (um )?modelo de (linguagem|ia)/i, title: 'Resposta de IA colada no conteúdo', severity: 'high' },
-  { re: /\b(your|sua) (company|empresa) (name|aqui)\b|\bacme (inc|corp)\b|john doe|fulano de tal/i, title: 'Dado fictício de exemplo', severity: 'medium' },
-  { re: /\bplaceholder\b|\bsample text\b|texto de exemplo|em breve\.\.\./i, title: 'Texto provisório (placeholder)', severity: 'medium' },
+  { re: /lorem ipsum|dolor sit amet/i, key: 'lorem', severity: 'high' },
+  { re: /\b(TODO|FIXME|XXX)\b/, key: 'todo', severity: 'medium' },
+  { re: /\[object Object\]|\bundefined\b|\bNaN\b/, key: 'codeValue', severity: 'high' },
+  { re: /\{\{\s*[\w.]+\s*\}\}|\$\{[\w.]+\}/, key: 'template', severity: 'high' },
+  { re: /as an ai (language )?model|como (um )?modelo de (linguagem|ia)/i, key: 'aiText', severity: 'high' },
+  { re: /\b(your|sua) (company|empresa) (name|aqui)\b|\bacme (inc|corp)\b|john doe|fulano de tal/i, key: 'fakeData', severity: 'medium' },
+  { re: /\bplaceholder\b|\bsample text\b|lorem text|coming soon\.\.\.|texto de exemplo|em breve\.\.\./i, key: 'placeholder', severity: 'medium' },
 ];
 
 export async function runChecks({ cwd, configPath, out, url }) {
@@ -48,24 +59,24 @@ export async function runChecks({ cwd, configPath, out, url }) {
   const add = (f) => findings.push({ id: `C${String(findings.length + 1).padStart(3, '0')}`, ...f });
 
   try {
-    console.log(`Rastreando ${startUrl} (até ${config.crawl.maxPages} páginas)…`);
+    console.log(t('checks.crawling', { url: startUrl, max: config.crawl.maxPages }));
     const pages = await crawl(browser, startUrl, config, add);
-    if (!pages.length) throw new Error(`Não consegui abrir ${startUrl}. A aplicação está rodando?`);
+    if (!pages.length) throw new Error(t('checks.cannotOpen', { url: startUrl }));
 
     let speller = null;
     if (config.spelling.enabled) {
       try {
         speller = await createSpeller({ cwd, language: config.language, ignore: config.spelling.ignore });
-        if (!speller) console.warn(`⚠ Sem dicionário para o idioma "${config.language}"; ortografia não será verificada.`);
+        if (!speller) console.warn(t('checks.noDictionary', { language: config.language }));
       } catch (err) {
-        console.warn(`⚠ Verificação ortográfica desativada: ${err.message}`);
+        console.warn(t('checks.spellingDisabled', { message: err.message }));
       }
     }
 
     // Teclado e ARIA são testados uma vez por página, de preferência no desktop (onde se usa teclado).
     const keyboardViewport = config.viewports.includes('desktop') ? 'desktop' : config.viewports[0];
     for (const vpName of config.viewports) {
-      console.log(`Analisando ${pages.length} página(s) em ${vpName}…`);
+      console.log(t('checks.analyzing', { n: pages.length, viewport: vpName }));
       const context = await browser.newContext({ viewport: VIEWPORTS[vpName], ...pick(VIEWPORTS[vpName]) });
       for (const p of pages.filter((p) => p.ok)) {
         await inspectPage(context, p, vpName, runDir, add, {
@@ -82,6 +93,7 @@ export async function runChecks({ cwd, configPath, out, url }) {
     const result = {
       tool: 'ux-validate',
       kind: 'checks',
+      locale: getLocale(),
       url: startUrl,
       createdAt: new Date().toISOString(),
       viewports: config.viewports,
@@ -92,8 +104,13 @@ export async function runChecks({ cwd, configPath, out, url }) {
 
     const count = (s) => result.findings.filter((f) => f.severity === s).length;
     console.log(
-      `\n✔ ${result.findings.length} problema(s): ${count('critical')} crítico(s), ${count('high')} alto(s), ` +
-        `${count('medium')} médio(s), ${count('low')} baixo(s)`,
+      t('checks.summary', {
+        total: result.findings.length,
+        critical: count('critical'),
+        high: count('high'),
+        medium: count('medium'),
+        low: count('low'),
+      }),
     );
     console.log(`  ${path.relative(cwd, path.join(runDir, 'checks.json'))}`);
     return { runDir, result };
@@ -106,24 +123,19 @@ function axeFor(page) {
   return new AxeBuilder({ page }).withTags(AXE_TAGS);
 }
 
-// Regras recentes do axe que ainda não têm tradução oficial em pt-BR.
-const AXE_EXTRA_PT = {
-  'target-size': {
-    help: 'Alvos de toque devem ter pelo menos 24×24px ou espaço suficiente ao redor',
-    description: 'Garante que botões e links sejam fáceis de tocar sem acertar o vizinho por engano',
-  },
-};
-
-/** Textos da regra no idioma do relatório, quando houver tradução. */
+/** Textos da regra no idioma da ferramenta, quando houver tradução. */
 const axeText = (v) => {
-  const t = AXE_LOCALE?.rules?.[v.id] ?? (AXE_LOCALE ? AXE_EXTRA_PT[v.id] : null);
-  return { help: t?.help ?? v.help, description: t?.description ?? v.description };
+  const locale = axeLocale();
+  // Regras recentes do axe que ainda não têm tradução oficial ficam no nosso catálogo.
+  const extra = locale ? t(`checks.axeExtra.${v.id}`) : null;
+  const tr = locale?.rules?.[v.id] ?? (typeof extra === 'object' ? extra : null);
+  return { help: tr?.help ?? v.help, description: tr?.description ?? v.description };
 };
 
 /** ["wcag2aa", "wcag143"] -> "WCAG 1.4.3" */
 function wcagCriteria(tags) {
   const criteria = tags.filter((t) => /^wcag\d{3,}$/.test(t)).map((t) => `WCAG ${t.slice(4, 5)}.${t.slice(5, 6)}.${t.slice(6)}`);
-  return criteria.length ? criteria.join(', ') : 'Boas práticas de acessibilidade';
+  return criteria.length ? criteria.join(', ') : t('checks.axe.bestPractice');
 }
 
 const pick = ({ isMobile, hasTouch }) => ({ isMobile, hasTouch });
@@ -172,11 +184,11 @@ async function crawl(browser, startUrl, config, add) {
               source: 'check:links',
               category: 'navigation',
               severity: 'medium',
-              title: 'Link sem destino',
-              description: `O link "${link.text || '(sem texto)'}" aponta para "${raw || 'nada'}" e não leva a lugar nenhum.`,
+              title: t('checks.emptyLink.title'),
+              description: t('checks.emptyLink.description', { text: link.text || t('checks.noText'), href: raw || t('checks.nothing') }),
               page: pageUrl,
               evidence: { snippet: `<a href="${raw}">${link.text}</a>` },
-              suggestion: 'Aponte o link para a página correta ou remova-o até que o destino exista.',
+              suggestion: t('checks.emptyLink.suggestion'),
             });
           }
           continue;
@@ -203,11 +215,11 @@ async function crawl(browser, startUrl, config, add) {
               source: 'check:links',
               category: 'navigation',
               severity: 'low',
-              title: 'Link externo quebrado',
-              description: `"${link.text}" aponta para ${target.href}, que respondeu ${res?.status() ?? 'sem resposta'}.`,
+              title: t('checks.externalLink.title'),
+              description: t('checks.externalLink.description', { text: link.text, url: target.href, status: res?.status() ?? t('checks.noResponse') }),
               page: pageUrl,
-              evidence: { snippet: target.href },
-              suggestion: 'Atualize ou remova o link externo.',
+              evidence: { snippet: target.href, terms: [target.href] },
+              suggestion: t('checks.externalLink.suggestion'),
             });
           }
         }
@@ -244,7 +256,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
     const url = req.url();
     // Arquivo local que existe mas foi bloqueado (leitura do axe via file://): não é erro da aplicação.
     if (url.startsWith('file:') && fs.existsSync(fileURLToPath(url))) return;
-    failedRequests.push(`falhou ${url}`);
+    failedRequests.push(`${t('checks.failedRequest')} ${url}`);
   });
 
   await page.goto(entry.url, { waitUntil: 'networkidle', timeout: 20000 }).catch(() => {});
@@ -265,7 +277,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
       category: 'accessibility',
       severity: AXE_SEVERITY[v.impact] ?? 'medium',
       title: text.help,
-      description: `${text.description} (${v.nodes.length} elemento(s)).`,
+      description: t('checks.axe.description', { text: text.description, n: v.nodes.length }),
       heuristic: wcagCriteria(v.tags),
       rule: v.id,
       evidence: {
@@ -273,7 +285,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
         selector: v.nodes.slice(0, 5).map((n) => n.target.join(' ')).join(' | '),
         snippet: v.nodes[0]?.html?.slice(0, 300),
       },
-      suggestion: `${text.help}. Veja exemplos de correção na documentação da regra "${v.id}".`,
+      suggestion: t('checks.axe.suggestion', { help: text.help, rule: v.id }),
       helpUrl: v.helpUrl,
     });
   }
@@ -285,10 +297,10 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
       source: 'check:console',
       category: 'ui',
       severity: 'high',
-      title: 'Erros de JavaScript no console',
-      description: `${consoleErrors.length} erro(s) ao carregar a página. Funcionalidades podem estar quebradas.`,
+      title: t('checks.console.title'),
+      description: t('checks.console.description', { n: consoleErrors.length }),
       evidence: { snippet: [...new Set(consoleErrors)].slice(0, 5).join('\n') },
-      suggestion: 'Corrija os erros listados; eles costumam indicar botões ou componentes que não funcionam.',
+      suggestion: t('checks.console.suggestion'),
     });
   }
   if (failedRequests.length) {
@@ -297,10 +309,10 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
       source: 'check:network',
       category: 'ui',
       severity: 'medium',
-      title: 'Recursos que não carregaram',
-      description: `${failedRequests.length} requisição(ões) falharam (imagens, scripts, APIs).`,
+      title: t('checks.network.title'),
+      description: t('checks.network.description', { n: failedRequests.length }),
       evidence: { snippet: [...new Set(failedRequests)].slice(0, 8).join('\n') },
-      suggestion: 'Verifique caminhos de arquivos e endpoints de API.',
+      suggestion: t('checks.network.suggestion'),
     });
   }
 
@@ -324,11 +336,11 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
       source: 'check:layout',
       category: 'ui',
       severity: vpName === 'mobile' ? 'high' : 'medium',
-      title: 'Conteúdo maior que a tela (rolagem horizontal)',
-      description: `A página é ${layout.overflow}px mais larga que a tela em ${vpName}.`,
+      title: t('checks.overflow.title'),
+      description: t('checks.overflow.description', { px: layout.overflow, viewport: vpName }),
       heuristic: 'WCAG 1.4.10 (Reflow)',
       evidence: { screenshot: shot },
-      suggestion: 'Procure larguras fixas (width em px), imagens sem max-width: 100% ou tabelas sem rolagem própria.',
+      suggestion: t('checks.overflow.suggestion'),
     });
   }
   if (layout.tinyCount) {
@@ -337,10 +349,10 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
       source: 'check:layout',
       category: 'ui',
       severity: 'low',
-      title: 'Texto pequeno demais para ler',
-      description: `${layout.tinyCount} trecho(s) com fonte menor que 12px.`,
+      title: t('checks.tinyText.title'),
+      description: t('checks.tinyText.description', { n: layout.tinyCount }),
       evidence: { screenshot: shot, snippet: layout.tiny.join('\n') },
-      suggestion: 'Use no mínimo 14px para texto corrido e 12px para legendas.',
+      suggestion: t('checks.tinyText.suggestion'),
     });
   }
 
@@ -357,20 +369,20 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
         source: 'check:content',
         category: 'content',
         severity: pat.severity,
-        title: pat.title,
-        description: `Encontrado na página: "${m[0]}".`,
+        title: t(`checks.leftover.${pat.key}`),
+        description: t('checks.leftover.description', { match: m[0] }),
         evidence: { screenshot: shot, snippet: text.slice(Math.max(0, i - 60), i + 80).replace(/\s+/g, ' ').trim(), terms: [m[0]] },
-        suggestion: 'Substitua pelo conteúdo real ou remova o trecho.',
+        suggestion: t('checks.leftover.suggestion'),
       });
     }
     if (speller) await checkSpelling(page, { base, add, shot, speller }).catch((err) => {
-      if (process.env.DEBUG) console.error('Falha na verificação ortográfica:', err);
+      if (process.env.DEBUG) console.error('Spell check failed:', err);
     });
   }
   // Por último, porque interage com a página (Tab, cliques em botões de abrir/fechar).
   if (checkAria) {
     await runAriaChecks(page, { base, add, shot, runDir, entry, name: slug(entry.url) }).catch((err) => {
-      if (process.env.DEBUG) console.error('Falha nas checagens ARIA:', err);
+      if (process.env.DEBUG) console.error('ARIA checks failed:', err);
     });
   }
   await page.close();
@@ -385,26 +397,26 @@ function checkSiteWide(pages, add) {
         source: 'check:content',
         category: 'content',
         severity: 'low',
-        title: 'Páginas diferentes com o mesmo título',
-        description: `${group.length} páginas usam o título "${title || '(vazio)'}"; na aba do navegador e nos buscadores elas parecem iguais.`,
+        title: t('checks.duplicateTitle.title'),
+        description: t('checks.duplicateTitle.description', { n: group.length, title: title || t('checks.duplicateTitle.empty') }),
         page: group[0].url,
-        evidence: { snippet: group.map((p) => p.url).join('\n') },
-        suggestion: 'Dê a cada página um <title> que descreva seu conteúdo.',
+        evidence: { snippet: group.map((p) => p.url).join('\n'), terms: title ? [`<title>${title}</title>`] : [] },
+        suggestion: t('checks.duplicateTitle.suggestion'),
       });
     }
   }
   for (const p of pages.filter((p) => !p.ok)) {
-    const status = p.status ? `HTTP ${p.status}` : 'sem resposta';
+    const status = p.status ? `HTTP ${p.status}` : t('checks.noResponse');
     if (!p.linkedFrom?.length) {
       add({
         source: 'check:links',
         category: 'navigation',
         severity: 'critical',
-        title: `A página inicial não abre (${status})`,
-        description: `${p.url} respondeu ${status}.`,
+        title: t('checks.homeDown.title', { status }),
+        description: t('checks.homeDown.description', { url: p.url, status }),
         page: p.url,
         evidence: { snippet: status },
-        suggestion: 'Verifique se a aplicação está no ar e se a URL configurada está correta.',
+        suggestion: t('checks.homeDown.suggestion'),
       });
       continue;
     }
@@ -412,11 +424,15 @@ function checkSiteWide(pages, add) {
       source: 'check:links',
       category: 'navigation',
       severity: 'high',
-      title: p.status === 404 ? 'Link para página que não existe (404)' : 'Link interno quebrado',
-      description: `${p.linkedFrom.length} página(s) apontam para ${p.url}, que não abre (${status}).`,
+      title: p.status === 404 ? t('checks.brokenLink.title404') : t('checks.brokenLink.title'),
+      description: t('checks.brokenLink.description', { n: p.linkedFrom.length, url: p.url, status }),
       page: p.linkedFrom[0],
-      evidence: { snippet: `Destino: ${p.url}\nLinkado a partir de:\n${p.linkedFrom.join('\n')}` },
-      suggestion: 'Corrija o endereço do link ou crie a página de destino.',
+      evidence: {
+        snippet: `${t('checks.targetLabel')}: ${p.url}\n${t('checks.linkedFromLabel')}:\n${p.linkedFrom.join('\n')}`,
+        // O nome da página de destino ajuda o `fix` a achar o link no código (ex.: href="sobre.html").
+        terms: [decodeURIComponent(new URL(p.url).pathname.split('/').pop() ?? '')].filter((x) => x.length >= 4),
+      },
+      suggestion: t('checks.brokenLink.suggestion'),
     });
   }
 }

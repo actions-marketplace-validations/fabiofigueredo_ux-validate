@@ -4,6 +4,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createSpeller, findWords } from '../src/spelling.js';
+import { setLocale } from '../src/i18n.js';
+
+// Estes testes conferem as mensagens em português.
+setLocale('pt-BR');
 
 const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'uxv-spell-'));
 fs.mkdirSync(path.join(cwd, '.ux-validate'));

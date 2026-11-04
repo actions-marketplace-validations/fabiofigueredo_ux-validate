@@ -1,0 +1,20 @@
+# Example persona. Edit the goals to reflect what matters in YOUR app.
+id: raj-dev
+name: Raj
+description: >
+  29, software developer. Evaluates tools for his team on his work laptop.
+  Skims, wants to get straight to the point and compares with competitors in other tabs.
+viewport: desktop
+traits:
+  tech_literacy: high
+  vision: normal
+  patience: medium
+  language: en
+  reading_level: advanced
+goals:
+  - Compare the plans and understand the limits of each one
+  - Create a trial account
+  - Find the documentation or a technical page
+expectations:
+  - Clear prices, not "contact sales" for everything
+  - Quick sign-up

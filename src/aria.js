@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { t } from './i18n.js';
 
 /**
  * Checagens de acessibilidade baseadas no WAI-ARIA e no ARIA Authoring Practices Guide (APG).
@@ -125,30 +126,9 @@ async function checkStaticAria(page, { base, add, shot }) {
     return { roleNoFocus: pack(roleNoFocus), clickable: pack(clickable), fields: pack(fields) };
   }, WIDGET_ROLES);
 
-  report(add, base, shot, result.roleNoFocus, {
-    severity: 'high',
-    title: 'Widget com papel ARIA que não recebe foco do teclado',
-    description: (n) =>
-      `${n} elemento(s) declaram um papel interativo (role) mas não podem ser alcançados com Tab. Quem usa teclado ou leitor de tela ouve "botão", "aba"… e não consegue acioná-lo.`,
-    heuristic: 'WCAG 2.1.1, 4.1.2 · WAI-ARIA APG: Keyboard Interaction',
-    suggestion: 'Prefira o elemento nativo (<button>, <a href>, <input type="checkbox">). Se precisar do role, adicione tabindex="0" e trate Enter/Espaço (ou as setas, em widgets compostos).',
-  });
-  report(add, base, shot, result.clickable, {
-    severity: 'high',
-    title: 'Elemento clicável inacessível pelo teclado',
-    description: (n) =>
-      `${n} elemento(s) parecem clicáveis (onclick ou cursor de mão) mas não são botões nem links: não recebem foco e não são anunciados como interativos.`,
-    heuristic: 'WCAG 2.1.1, 4.1.2 · WAI-ARIA: primeira regra do ARIA (use HTML nativo)',
-    suggestion: 'Troque por <button type="button"> (ação) ou <a href> (navegação). Não basta adicionar role="button": ainda faltariam foco e teclado.',
-  });
-  report(add, base, shot, result.fields, {
-    severity: 'medium',
-    title: 'Campo de formulário identificado só pelo placeholder',
-    description: (n) =>
-      `${n} campo(s) não têm rótulo (label, aria-label ou aria-labelledby). O placeholder some ao digitar e não é anunciado de forma confiável por leitores de tela.`,
-    heuristic: 'WCAG 1.3.1, 3.3.2, 4.1.2',
-    suggestion: 'Adicione <label for="id-do-campo"> visível. Se o layout não permitir, use aria-label com o mesmo texto.',
-  });
+  report(add, base, shot, result.roleNoFocus, { severity: 'high', key: 'roleNoFocus' });
+  report(add, base, shot, result.clickable, { severity: 'high', key: 'clickable' });
+  report(add, base, shot, result.fields, { severity: 'medium', key: 'placeholderOnly' });
 }
 
 /** Percorre a página com Tab, como quem usa só o teclado. */
@@ -193,11 +173,11 @@ async function checkKeyboard(page, { base, add, shot }) {
           source: 'check:aria',
           category: 'accessibility',
           severity: 'critical',
-          title: 'Armadilha de teclado: o foco fica preso',
-          description: `Depois de chegar em "${info.label || info.selector}", apertar Tab não leva a lugar nenhum. Quem usa teclado fica preso e não consegue continuar na página.`,
-          heuristic: 'WCAG 2.1.2 (Sem armadilha de teclado)',
+          title: t('aria.trap.title'),
+          description: t('aria.trap.description', { name: info.label || info.selector }),
+          heuristic: t('aria.trap.heuristic'),
           evidence: { screenshot: shot, selector: info.selector, snippet: info.html },
-          suggestion: 'Verifique scripts que chamam focus() ou capturam a tecla Tab. Em diálogos modais, o foco deve circular dentro do diálogo e sair com Esc.',
+          suggestion: t('aria.trap.suggestion'),
         });
         break;
       }
@@ -216,22 +196,8 @@ async function checkKeyboard(page, { base, add, shot }) {
   const noIndicator = steps.filter((s) => !s.offscreen && unfocused[s.id] === s.style);
   const hiddenFocus = steps.filter((s) => s.offscreen);
 
-  report(add, base, shot, noIndicator.map(toItem), {
-    severity: 'high',
-    title: 'Foco do teclado invisível',
-    description: (n) =>
-      `${n} elemento(s) não mudam de aparência ao receber foco. Quem navega pelo teclado não sabe onde está na página.`,
-    heuristic: 'WCAG 2.4.7 (Foco visível)',
-    suggestion: 'Não remova o outline sem substituir. Use, por exemplo, :focus-visible { outline: 3px solid #1a5fd0; outline-offset: 2px; }.',
-  });
-  report(add, base, shot, hiddenFocus.map(toItem), {
-    severity: 'medium',
-    title: 'Foco vai para elemento escondido',
-    description: (n) =>
-      `${n} elemento(s) recebem foco mas estão fora da tela ou sem tamanho. O usuário aperta Tab e "some" da página.`,
-    heuristic: 'WCAG 2.4.3, 2.4.7',
-    suggestion: 'Elementos escondidos não devem receber foco: use hidden, display:none ou inert. Links "pular para o conteúdo" devem aparecer ao receber foco.',
-  });
+  report(add, base, shot, noIndicator.map(toItem), { severity: 'high', key: 'noIndicator' });
+  report(add, base, shot, hiddenFocus.map(toItem), { severity: 'medium', key: 'hiddenFocus' });
 }
 
 /** APG (Disclosure, Accordion, Menu Button): aria-expanded deve refletir se o conteúdo está aberto. */
@@ -273,14 +239,7 @@ async function checkExpandedState(page, { base, add, shot }) {
     await locator.click({ timeout: 2000, noWaitAfter: true }).catch(() => {}); // desfaz
   }
 
-  report(add, base, shot, stale, {
-    severity: 'medium',
-    title: 'aria-expanded não acompanha o abrir e fechar',
-    description: (n) =>
-      `${n} controle(s) abrem ou fecham conteúdo, mas o atributo aria-expanded não muda. O leitor de tela continua anunciando o estado antigo ("recolhido" quando está aberto).`,
-    heuristic: 'WCAG 4.1.2 · WAI-ARIA APG: Disclosure / Accordion',
-    suggestion: 'Ao abrir, defina aria-expanded="true"; ao fechar, "false". Ligue o botão ao conteúdo com aria-controls.',
-  });
+  report(add, base, shot, stale, { severity: 'medium', key: 'expanded' });
 }
 
 const toItem = (s) => ({ selector: s.selector, html: s.html, label: s.label });
@@ -292,9 +251,9 @@ function report(add, base, shot, items, spec) {
     source: 'check:aria',
     category: 'accessibility',
     severity: spec.severity,
-    title: spec.title,
-    description: spec.description(items.length),
-    heuristic: spec.heuristic,
+    title: t(`aria.${spec.key}.title`),
+    description: t(`aria.${spec.key}.description`, { n: items.length }),
+    heuristic: t(`aria.${spec.key}.heuristic`),
     evidence: {
       screenshot: shot,
       selector: items.slice(0, LIST_LIMIT).map((i) => i.selector).join(' | '),
@@ -303,6 +262,6 @@ function report(add, base, shot, items, spec) {
         .map((i) => i.html)
         .join('\n'),
     },
-    suggestion: spec.suggestion,
+    suggestion: t(`aria.${spec.key}.suggestion`),
   });
 }

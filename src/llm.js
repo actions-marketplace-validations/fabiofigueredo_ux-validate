@@ -3,22 +3,19 @@ import os from 'node:os';
 import path from 'node:path';
 import Anthropic from '@anthropic-ai/sdk';
 import { PROVIDERS } from './config.js';
+import { t } from './i18n.js';
 
 /** Erro que interrompe tudo (ex.: chave ausente ou inválida): não adianta tentar o próximo arquivo. */
 export class FatalLlmError extends Error {}
 
 function missingKey(envName) {
-  return new FatalLlmError(
-    `A variável de ambiente ${envName} não está definida. Defina-a com a sua API key e rode de novo:\n` +
-      `    PowerShell:   $env:${envName}="sua-chave"\n` +
-      `    macOS/Linux:  export ${envName}=sua-chave`,
-  );
+  return new FatalLlmError(t('llm.missingKey', { env: envName }));
 }
 
 /** Confere, antes de gastar qualquer token, se há credencial para o provedor configurado. */
 export function checkCredentials(standalone) {
   const provider = standalone?.provider;
-  if (!CLIENTS[provider]) throw new FatalLlmError(`Provedor desconhecido: "${provider}". Use: ${Object.keys(CLIENTS).join(', ')}.`);
+  if (!CLIENTS[provider]) throw new FatalLlmError(t('llm.unknownProvider', { provider, valid: Object.keys(CLIENTS).join(', ') }));
   if (provider === 'anthropic') {
     const envName = standalone.apiKeyEnv ?? 'ANTHROPIC_API_KEY';
     const hasProfile = process.env.ANTHROPIC_PROFILE || fs.existsSync(path.join(os.homedir(), '.config', 'anthropic'));
@@ -38,8 +35,8 @@ export function checkCredentials(standalone) {
 export async function completeJson(standalone, { system, prompt, schema }) {
   const provider = standalone?.provider;
   const call = CLIENTS[provider];
-  if (!call) throw new Error(`Provedor desconhecido: "${provider}". Use: ${Object.keys(CLIENTS).join(', ')}.`);
-  if (!standalone.model) throw new Error('Nenhum modelo configurado em standalone.model.');
+  if (!call) throw new Error(t('llm.unknownProvider', { provider, valid: Object.keys(CLIENTS).join(', ') }));
+  if (!standalone.model) throw new Error(t('llm.noModel'));
   return call(standalone, { system, prompt, schema });
 }
 
@@ -86,19 +83,19 @@ async function anthropic(standalone, { system, prompt, schema }) {
     // Streaming evita timeout em respostas longas; finalMessage() junta tudo no fim.
     message = await client.beta.messages.stream(params).finalMessage();
   } catch (err) {
-    if (err instanceof Anthropic.AuthenticationError) throw new FatalLlmError(`API key da Anthropic inválida ou sem permissão (${envName}).`);
-    if (err instanceof Anthropic.NotFoundError) throw new Error(`Modelo não encontrado: ${standalone.model}.`);
-    if (err instanceof Anthropic.RateLimitError) throw new Error('Limite de uso da API atingido. Tente de novo em alguns minutos.');
-    if (err instanceof Anthropic.BadRequestError) throw new Error(`Pedido recusado pela API: ${err.message}`);
-    if (err instanceof Anthropic.APIError) throw new Error(`Erro da API da Anthropic (${err.status}): ${err.message}`);
+    if (err instanceof Anthropic.AuthenticationError) throw new FatalLlmError(t('llm.invalidAnthropicKey', { env: envName }));
+    if (err instanceof Anthropic.NotFoundError) throw new Error(t('llm.modelNotFound', { model: standalone.model }));
+    if (err instanceof Anthropic.RateLimitError) throw new Error(t('llm.rateLimited'));
+    if (err instanceof Anthropic.BadRequestError) throw new Error(t('llm.badRequest', { message: err.message }));
+    if (err instanceof Anthropic.APIError) throw new Error(t('llm.apiError', { status: err.status, message: err.message }));
     if (/authentication method/i.test(err?.message ?? '')) throw missingKey(envName);
     throw err;
   }
 
   if (message.stop_reason === 'refusal') {
-    throw new Error(`O modelo recusou o pedido${message.stop_details?.explanation ? `: ${message.stop_details.explanation}` : ''}.`);
+    throw new Error(t('llm.refused', { explanation: message.stop_details?.explanation }));
   }
-  if (message.stop_reason === 'max_tokens') throw new Error('A resposta foi cortada por ser longa demais.');
+  if (message.stop_reason === 'max_tokens') throw new Error(t('llm.truncated'));
   const text = message.content.filter((b) => b.type === 'text').map((b) => b.text).join('');
   return {
     data: parseJson(text),
@@ -122,12 +119,12 @@ async function openai(standalone, { system, prompt, schema }) {
         { role: 'system', content: system },
         { role: 'user', content: prompt },
       ],
-      response_format: { type: 'json_schema', json_schema: { name: 'resultado', schema, strict: true } },
+      response_format: { type: 'json_schema', json_schema: { name: 'result', schema, strict: true } },
     },
   );
   const choice = body.choices?.[0];
-  if (choice?.message?.refusal) throw new Error(`O modelo recusou o pedido: ${choice.message.refusal}`);
-  if (choice?.finish_reason === 'length') throw new Error('A resposta foi cortada por ser longa demais.');
+  if (choice?.message?.refusal) throw new Error(t('llm.refused', { explanation: choice.message.refusal }));
+  if (choice?.finish_reason === 'length') throw new Error(t('llm.truncated'));
   return {
     data: parseJson(choice?.message?.content ?? ''),
     model: body.model ?? standalone.model,
@@ -143,13 +140,13 @@ async function google(standalone, { system, prompt, schema }) {
     { 'x-goog-api-key': key },
     {
       systemInstruction: { parts: [{ text: system }] },
-      contents: [{ role: 'user', parts: [{ text: `${prompt}\n\nResponda só com JSON neste formato (JSON Schema):\n${JSON.stringify(schema)}` }] }],
+      contents: [{ role: 'user', parts: [{ text: `${prompt}\n\n${t('llm.jsonFormat')}\n${JSON.stringify(schema)}` }] }],
       generationConfig: { responseMimeType: 'application/json' },
     },
   );
   const candidate = body.candidates?.[0];
-  if (!candidate) throw new Error(`O modelo não respondeu${body.promptFeedback?.blockReason ? ` (bloqueado: ${body.promptFeedback.blockReason})` : ''}.`);
-  if (candidate.finishReason === 'MAX_TOKENS') throw new Error('A resposta foi cortada por ser longa demais.');
+  if (!candidate) throw new Error(t('llm.noAnswer', { reason: body.promptFeedback?.blockReason }));
+  if (candidate.finishReason === 'MAX_TOKENS') throw new Error(t('llm.truncated'));
   return {
     data: parseJson((candidate.content?.parts ?? []).map((p) => p.text ?? '').join('')),
     model: body.modelVersion ?? standalone.model,
@@ -191,7 +188,7 @@ async function postJson(url, headers, payload) {
       signal: AbortSignal.timeout(10 * 60 * 1000),
     });
   } catch (err) {
-    throw new Error(`Não consegui conectar a ${new URL(url).host}: ${err.cause?.message ?? err.message}`);
+    throw new Error(t('llm.connect', { host: new URL(url).host, message: err.cause?.message ?? err.message }));
   }
   const text = await res.text();
   if (!res.ok) {
@@ -202,10 +199,10 @@ async function postJson(url, headers, payload) {
     } catch {
       // resposta não é JSON: mostra o começo do texto
     }
-    if (res.status === 401 || res.status === 403) throw new FatalLlmError(`API key inválida ou sem permissão (${res.status}): ${detail}`);
-    if (res.status === 404) throw new Error(`Modelo ou endereço não encontrado (404): ${detail}`);
-    if (res.status === 429) throw new Error('Limite de uso da API atingido. Tente de novo em alguns minutos.');
-    throw new Error(`Erro da API (${res.status}): ${detail}`);
+    if (res.status === 401 || res.status === 403) throw new FatalLlmError(t('llm.invalidKey', { status: res.status, detail }));
+    if (res.status === 404) throw new Error(t('llm.notFound', { detail }));
+    if (res.status === 429) throw new Error(t('llm.rateLimited'));
+    throw new Error(t('llm.httpError', { status: res.status, detail }));
   }
   return JSON.parse(text);
 }
@@ -215,6 +212,6 @@ function parseJson(text) {
   try {
     return JSON.parse(clean);
   } catch {
-    throw new Error('O modelo não devolveu um JSON válido.');
+    throw new Error(t('llm.invalidJson'));
   }
 }

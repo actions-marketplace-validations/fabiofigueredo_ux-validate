@@ -2,6 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { completeJson } from '../src/llm.js';
+import { setLocale } from '../src/i18n.js';
+
+// Estes testes conferem as mensagens em português.
+setLocale('pt-BR');
 
 /** Servidor local que imita a API de um provedor e guarda o pedido recebido. */
 async function fakeServer(handler) {

@@ -1,0 +1,20 @@
+# Example persona. Edit the goals to reflect what matters in YOUR app.
+id: margaret
+name: Margaret
+description: >
+  68, retired. Uses her phone for messaging and her banking app, sometimes with her
+  grandson's help. Reads slowly, prefers large text and distrusts sites that ask for personal data right away.
+viewport: mobile
+traits:
+  tech_literacy: low
+  vision: reduced
+  patience: low
+  language: en
+  reading_level: basic
+goals:
+  - Understand what the company offers
+  - Find out how much it costs
+  - Find a phone number to talk to a person
+expectations:
+  - Contact information visible without searching
+  - Simple text and large letters

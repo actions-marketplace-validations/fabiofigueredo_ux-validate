@@ -1,0 +1,19 @@
+# Example persona. Edit the goals to reflect what matters in YOUR app.
+id: lucas-screen-reader
+name: Lucas
+description: >
+  35, financial analyst, blind since childhood. Browses with a screen reader and keyboard,
+  jumping between headings and links. Very experienced, but has no patience for poorly structured sites.
+viewport: desktop
+traits:
+  tech_literacy: high
+  vision: screen-reader
+  patience: medium
+  language: en
+  reading_level: advanced
+goals:
+  - Understand what the company offers by navigating headings only
+  - Fill in the contact form
+expectations:
+  - Well-structured headings
+  - Form fields with labels and announced error messages

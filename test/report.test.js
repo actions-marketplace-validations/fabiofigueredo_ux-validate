@@ -2,6 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { analyze } from '../src/report.js';
+import { setLocale } from '../src/i18n.js';
+
+// Estes testes conferem as mensagens em português.
+setLocale('pt-BR');
 
 const agent = JSON.parse(fs.readFileSync(new URL('../examples/sample-findings.json', import.meta.url)));
 

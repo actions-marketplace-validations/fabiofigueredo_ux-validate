@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
+import { t, getLocale } from './i18n.js';
 
 export const WORK_DIR = '.ux-validate';
 export const RUNS_DIR = `${WORK_DIR}/runs`;
@@ -11,11 +12,12 @@ export const VIEWPORTS = {
   desktop: { width: 1440, height: 900, isMobile: false, hasTouch: false },
 };
 
+// O nome exibido de cada provedor está no catálogo de mensagens (providers.<id>).
 export const PROVIDERS = {
-  anthropic: { label: 'Anthropic (Claude)', apiKeyEnv: 'ANTHROPIC_API_KEY', defaultModel: 'claude-opus-5-5' },
-  openai: { label: 'OpenAI', apiKeyEnv: 'OPENAI_API_KEY' },
-  google: { label: 'Google (Gemini)', apiKeyEnv: 'GOOGLE_GENERATIVE_AI_API_KEY' },
-  ollama: { label: 'Ollama (modelo local)', baseUrl: 'http://localhost:11434' },
+  anthropic: { apiKeyEnv: 'ANTHROPIC_API_KEY', defaultModel: 'claude-opus-5-5' },
+  openai: { apiKeyEnv: 'OPENAI_API_KEY' },
+  google: { apiKeyEnv: 'GOOGLE_GENERATIVE_AI_API_KEY' },
+  ollama: { baseUrl: 'http://localhost:11434' },
 };
 
 const DEFAULTS = {
@@ -24,14 +26,13 @@ const DEFAULTS = {
   viewports: ['mobile', 'desktop'],
   crawl: { maxPages: 20, checkExternalLinks: false },
   agent: { maxStepsPerGoal: 15 },
-  language: 'pt-BR',
   spelling: { enabled: true, ignore: [] },
 };
 
 export function loadConfig(cwd, configPath = 'ux-validate.config.yml') {
   const file = path.resolve(cwd, configPath);
   if (!fs.existsSync(file)) {
-    throw new Error(`Configuração não encontrada em ${configPath}. Rode "npx ux-validate init" primeiro.`);
+    throw new Error(t('config.notFound', { path: configPath }));
   }
   const raw = YAML.parse(fs.readFileSync(file, 'utf8')) ?? {};
   const config = {
@@ -41,10 +42,12 @@ export function loadConfig(cwd, configPath = 'ux-validate.config.yml') {
     crawl: { ...DEFAULTS.crawl, ...raw.crawl },
     agent: { ...DEFAULTS.agent, ...raw.agent },
     spelling: { ...DEFAULTS.spelling, ...raw.spelling },
+    // Idioma do conteúdo (ortografia); sem valor, assume o idioma da ferramenta.
+    language: raw.language ?? getLocale(),
   };
   const unknown = config.viewports.filter((v) => !VIEWPORTS[v]);
   if (unknown.length) {
-    throw new Error(`Viewport desconhecido: ${unknown.join(', ')}. Use: ${Object.keys(VIEWPORTS).join(', ')}.`);
+    throw new Error(t('config.unknownViewport', { list: unknown.join(', '), valid: Object.keys(VIEWPORTS).join(', ') }));
   }
   return config;
 }

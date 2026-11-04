@@ -1,0 +1,323 @@
+{
+  "kind": "agent",
+  "createdAt": "2026-11-03T10:12:00Z",
+  "url": "http://localhost:4321/index.html",
+  "agent": {
+    "tool": "example (hand-written to show the format)"
+  },
+  "personas": [
+    {
+      "id": "dona-maria",
+      "name": "Dona Maria",
+      "viewport": "mobile",
+      "summary": "Understood little of what the company does and couldn't find a way to talk to anyone. The home page is too wide for the phone and the menu text is too small and too light.",
+      "goals": [
+        {
+          "goal": "Understand what the company offers",
+          "outcome": "fail",
+          "steps": 3,
+          "path": [
+            "http://localhost:4321/index.html"
+          ],
+          "notes": "The headline talks about 'innovative cloud solutions' and the text below is lorem ipsum; she couldn't tell what is being sold.",
+          "blockers": [
+            "A001"
+          ]
+        },
+        {
+          "goal": "Find out how much it costs",
+          "outcome": "partial",
+          "steps": 5,
+          "path": [
+            "http://localhost:4321/index.html",
+            "http://localhost:4321/planos.html"
+          ],
+          "notes": "Didn't recognize 'Pricing' in a Portuguese menu; reached the plans by trial and error. Saw 'R$ NaN/mês' on the home page and different prices on the plans page.",
+          "blockers": [
+            "A002",
+            "A003"
+          ]
+        },
+        {
+          "goal": "Find a phone or WhatsApp number to talk to someone",
+          "outcome": "fail",
+          "steps": 4,
+          "path": [
+            "http://localhost:4321/index.html",
+            "http://localhost:4321/contato.html"
+          ],
+          "notes": "The contact page only has a form; there is no phone or WhatsApp. She gave up.",
+          "blockers": [
+            "A004"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rafael-dev",
+      "name": "Rafael",
+      "viewport": "desktop",
+      "summary": "Found the plans quickly, but couldn't create an account: the free trial link leads to a page that doesn't exist.",
+      "goals": [
+        {
+          "goal": "Compare the plans and understand each one's limits",
+          "outcome": "partial",
+          "steps": 2,
+          "path": [
+            "http://localhost:4321/index.html",
+            "http://localhost:4321/planos.html"
+          ],
+          "notes": "The Starter plan limit shows up as '{{plan.limit}} usuários'.",
+          "blockers": []
+        },
+        {
+          "goal": "Create a trial account",
+          "outcome": "fail",
+          "steps": 3,
+          "path": [
+            "http://localhost:4321/planos.html",
+            "http://localhost:4321/cadastro.html"
+          ],
+          "notes": "'Começar teste grátis' leads to a 404; the home page's 'Get started' button does nothing.",
+          "blockers": [
+            "A005"
+          ]
+        },
+        {
+          "goal": "Find the documentation or a technical page",
+          "outcome": "fail",
+          "steps": 3,
+          "path": [
+            "http://localhost:4321/index.html"
+          ],
+          "notes": "There is no link to documentation; 'Blog' goes nowhere.",
+          "blockers": []
+        }
+      ]
+    },
+    {
+      "id": "lucas-leitor-de-tela",
+      "name": "Lucas",
+      "viewport": "desktop",
+      "summary": "The home page has no navigable headings and the contact form can't be submitted with the keyboard.",
+      "goals": [
+        {
+          "goal": "Understand what the company offers by navigating headings only",
+          "outcome": "fail",
+          "steps": 2,
+          "path": [
+            "http://localhost:4321/index.html"
+          ],
+          "notes": "The main headline is a styled div, so the screen reader doesn't announce it as a heading.",
+          "blockers": [
+            "A006"
+          ]
+        },
+        {
+          "goal": "Fill in the contact form",
+          "outcome": "fail",
+          "steps": 6,
+          "path": [
+            "http://localhost:4321/contato.html"
+          ],
+          "notes": "Fields have no label (placeholder only) and 'Enviar' is a div that can't receive focus.",
+          "blockers": [
+            "A007",
+            "A008"
+          ]
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "A001",
+      "category": "content",
+      "severity": "critical",
+      "title": "The home page doesn't say what the company sells",
+      "description": "The hero is a generic slogan followed by lorem ipsum. Someone who doesn't know the company leaves without knowing whether it's hosting, storage or something else.",
+      "personas": [
+        "dona-maria",
+        "rafael-dev"
+      ],
+      "page": "http://localhost:4321/index.html",
+      "heuristic": "Nielsen #2: match between system and the real world",
+      "evidence": {
+        "screenshot": "screenshots/index-html-mobile.png",
+        "snippet": "Soluções inovadoras em nuvem para o seu negócio / Lorem ipsum dolor sit amet…"
+      },
+      "suggestion": "Replace it with a concrete sentence, such as 'Store and share your company's files securely, from R$ 29/month' (in Portuguese).",
+      "sourceHint": {
+        "file": "examples/demo-site/index.html",
+        "line": 16
+      },
+      "confidence": "confirmed",
+      "relatedChecks": [
+        "C011"
+      ]
+    },
+    {
+      "id": "A002",
+      "category": "navigation",
+      "severity": "high",
+      "title": "English menu label ('Pricing') for a Brazilian audience",
+      "description": "The rest of the site is in Portuguese; people who don't read English didn't recognize 'Pricing' as prices.",
+      "personas": [
+        "dona-maria"
+      ],
+      "page": "http://localhost:4321/index.html",
+      "heuristic": "Nielsen #4: consistency and standards",
+      "evidence": {
+        "selector": "nav a[href='planos.html']",
+        "snippet": "<a href=\"planos.html\">Pricing</a>"
+      },
+      "suggestion": "Rename it to 'Planos e preços' on every page.",
+      "sourceHint": {
+        "file": "examples/demo-site/index.html",
+        "line": 9
+      },
+      "confidence": "confirmed"
+    },
+    {
+      "id": "A003",
+      "category": "content",
+      "severity": "high",
+      "title": "Inconsistent price across pages",
+      "description": "The home page shows 'R$ NaN/mês' and the plans page mentions 'from R$ 19/month', but the cheapest plan costs R$ 29. This breeds distrust.",
+      "personas": [
+        "dona-maria",
+        "rafael-dev"
+      ],
+      "page": "http://localhost:4321/planos.html",
+      "heuristic": "Content credibility",
+      "evidence": {
+        "screenshot": "screenshots/planos-html-mobile.png",
+        "snippet": "R$ 29/mês … Na página inicial dizemos \"a partir de R$ 19/mês\"."
+      },
+      "suggestion": "Use a single source for prices and show the same value on every page.",
+      "confidence": "confirmed",
+      "relatedChecks": [
+        "C013"
+      ]
+    },
+    {
+      "id": "A004",
+      "category": "content",
+      "severity": "high",
+      "title": "No phone number or WhatsApp",
+      "description": "The only way to get in touch is a form. For people who prefer to talk to a person, this is a blocker.",
+      "personas": [
+        "dona-maria"
+      ],
+      "page": "http://localhost:4321/contato.html",
+      "heuristic": "Nielsen #10: help and documentation",
+      "evidence": {
+        "screenshot": "screenshots/contato-html-mobile.png"
+      },
+      "suggestion": "Show a phone number and WhatsApp at the top of the contact page and in the footer of every page.",
+      "sourceHint": {
+        "file": "examples/demo-site/contato.html"
+      },
+      "confidence": "confirmed"
+    },
+    {
+      "id": "A005",
+      "category": "navigation",
+      "severity": "critical",
+      "title": "It's impossible to create an account",
+      "description": "The home page's 'Get started' button calls a function that doesn't exist, and 'Começar teste grátis' leads to a 404 page. There is no other way to sign up.",
+      "personas": [
+        "rafael-dev"
+      ],
+      "page": "http://localhost:4321/planos.html",
+      "heuristic": "Nielsen #3: user control and freedom",
+      "evidence": {
+        "selector": "a[href='cadastro.html'], button.cta",
+        "snippet": "<button class=\"cta\" onclick=\"startTrial()\">Get started</button>"
+      },
+      "suggestion": "Create the sign-up page and point both buttons to it.",
+      "sourceHint": {
+        "file": "examples/demo-site/planos.html",
+        "line": 16
+      },
+      "confidence": "confirmed",
+      "relatedChecks": [
+        "C032",
+        "C007"
+      ]
+    },
+    {
+      "id": "A006",
+      "category": "accessibility",
+      "severity": "high",
+      "title": "Main headline isn't a heading for screen readers",
+      "description": "The highlighted text is a div with a large font; people navigating by headings can't find it.",
+      "personas": [
+        "lucas-leitor-de-tela"
+      ],
+      "page": "http://localhost:4321/index.html",
+      "heuristic": "WCAG 1.3.1 · APG: landmarks and headings",
+      "evidence": {
+        "snippet": "<div style=\"font-size:32px;font-weight:bold\">Soluções inovadoras…</div>"
+      },
+      "suggestion": "Replace the div with an <h1>.",
+      "sourceHint": {
+        "file": "examples/demo-site/index.html",
+        "line": 16
+      },
+      "confidence": "confirmed",
+      "relatedChecks": [
+        "C006"
+      ]
+    },
+    {
+      "id": "A007",
+      "category": "accessibility",
+      "severity": "critical",
+      "title": "Contact form can't be submitted with the keyboard",
+      "description": "The fields have no label (only a placeholder, which disappears while typing) and 'Enviar' is a div with no focus and no button role.",
+      "personas": [
+        "lucas-leitor-de-tela",
+        "dona-maria"
+      ],
+      "page": "http://localhost:4321/contato.html",
+      "heuristic": "WCAG 2.1.1, 3.3.2 and 4.1.2",
+      "evidence": {
+        "selector": "form > div",
+        "snippet": "<div onclick=\"this.closest('form').requestSubmit()\">Enviar</div>"
+      },
+      "suggestion": "Use a visible <label> on each field and <button type=\"submit\">Enviar</button>.",
+      "sourceHint": {
+        "file": "examples/demo-site/contato.html",
+        "line": 9
+      },
+      "confidence": "confirmed",
+      "relatedChecks": [
+        "C023",
+        "C024"
+      ]
+    },
+    {
+      "id": "A008",
+      "category": "accessibility",
+      "severity": "high",
+      "title": "Form confirmation isn't announced to screen readers",
+      "description": "After submitting the contact form, the message \"Mensagem enviada com sucesso!\" appears on screen, but it isn't in a status/alert region. The screen reader announces nothing and Lucas doesn't know whether the message was sent.",
+      "personas": [
+        "lucas-leitor-de-tela"
+      ],
+      "page": "http://localhost:4321/contato.html",
+      "heuristic": "WCAG 4.1.3 (Status Messages) · WAI-ARIA: live regions",
+      "evidence": {
+        "selector": "#ok",
+        "snippet": "<p id=\"ok\" hidden>Mensagem enviada com sucesso!</p>"
+      },
+      "suggestion": "Keep the region on the page from the start with role=\"status\" (e.g. <p id=\"ok\" role=\"status\"></p>) and fill in the text on submit.",
+      "sourceHint": {
+        "file": "examples/demo-site/contato.html",
+        "line": 16
+      },
+      "confidence": "confirmed"
+    }
+  ]
+}

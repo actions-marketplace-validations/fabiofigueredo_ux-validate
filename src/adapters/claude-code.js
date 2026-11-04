@@ -40,13 +40,13 @@ function registerMcp(cwd) {
     try {
       data = JSON.parse(fs.readFileSync(file, 'utf8'));
     } catch {
-      return { rel, status: 'ignorado (JSON inválido; adicione o Playwright MCP manualmente)' };
+      return { rel, status: 'mcpInvalid' };
     }
     data.mcpServers ??= {};
-    if (data.mcpServers.playwright) return { rel, status: 'mantido (Playwright MCP já configurado)' };
+    if (data.mcpServers.playwright) return { rel, status: 'mcpKept' };
   }
   const existed = fs.existsSync(file);
   data.mcpServers.playwright = PLAYWRIGHT_MCP;
   fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');
-  return { rel, status: existed ? 'atualizado (Playwright MCP adicionado)' : 'criado' };
+  return { rel, status: existed ? 'mcpAdded' : 'created' };
 }

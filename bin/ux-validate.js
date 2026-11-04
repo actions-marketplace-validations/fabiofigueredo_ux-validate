@@ -1,20 +1,9 @@
 #!/usr/bin/env node
+import fs from 'node:fs';
+import path from 'node:path';
 import { parseArgs } from 'node:util';
-
-const HELP = `ux-validate — testes de conteúdo, navegação, interface e acessibilidade guiados por personas
-
-Uso:
-  ux-validate init   [--yes] [--force]          Configura o projeto e instala os comandos no seu agente de IA
-  ux-validate check  [--out <dir>] [--url <url>] Roda as checagens fixas (acessibilidade, links, ortografia, conteúdo)
-  ux-validate report [--run <dir>]               Gera report.md e report.html a partir de uma execução
-  ux-validate fix    [--run <dir>] [--ids A001,C003] [--severity high] [--dry-run] [--yes]
-                                                 Aplica as correções do relatório com o modelo configurado
-                                                 no setup (usa a sua API key e os seus tokens)
-
-Opções gerais:
-  --config <arquivo>   Caminho do arquivo de configuração (padrão: ux-validate.config.yml)
-  -h, --help           Mostra esta ajuda
-`;
+import YAML from 'yaml';
+import { t, setLocale, detectLocale, normalizeLocale } from '../src/i18n.js';
 
 const { positionals, values } = parseArgs({
   allowPositionals: true,
@@ -27,15 +16,19 @@ const { positionals, values } = parseArgs({
     ids: { type: 'string' },
     severity: { type: 'string' },
     'dry-run': { type: 'boolean' },
+    lang: { type: 'string' },
     config: { type: 'string', default: 'ux-validate.config.yml' },
     help: { type: 'boolean', short: 'h' },
   },
 });
 
+// Idioma da ferramenta: --lang > `locale` da configuração > idioma do sistema.
+setLocale(normalizeLocale(values.lang) ?? configLocale(values.config) ?? detectLocale());
+
 const [command] = positionals;
 
 if (values.help || !command) {
-  console.log(HELP);
+  console.log(t('cli.help'));
   process.exit(values.help ? 0 : 1);
 }
 
@@ -70,8 +63,8 @@ try {
       break;
     }
     default:
-      console.error(`Comando desconhecido: ${command}\n`);
-      console.log(HELP);
+      console.error(`${t('cli.unknownCommand', { command })}\n`);
+      console.log(t('cli.help'));
       process.exit(1);
   }
 } catch (err) {
@@ -79,4 +72,14 @@ try {
   console.error(`\n✖ ${err.message}`);
   if (process.env.DEBUG) console.error(err);
   process.exit(1);
+}
+
+function configLocale(configPath) {
+  try {
+    const file = path.resolve(process.cwd(), configPath);
+    if (!fs.existsSync(file)) return null;
+    return normalizeLocale(YAML.parse(fs.readFileSync(file, 'utf8'))?.locale);
+  } catch {
+    return null;
+  }
 }
