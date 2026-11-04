@@ -18,6 +18,9 @@ const { positionals, values } = parseArgs({
     'dry-run': { type: 'boolean' },
     lang: { type: 'string' },
     tools: { type: 'string' },
+    'fail-on': { type: 'string' },
+    'artifact-url': { type: 'string' },
+    'sarif-uploaded': { type: 'boolean' },
     config: { type: 'string', default: 'ux-validate.config.yml' },
     help: { type: 'boolean', short: 'h' },
   },
@@ -42,12 +45,29 @@ try {
     }
     case 'check': {
       const { runChecks } = await import('../src/checks.js');
-      await runChecks({ cwd: process.cwd(), configPath: values.config, out: values.out, url: values.url });
+      await runChecks({ cwd: process.cwd(), configPath: values.config, out: values.out, url: values.url, failOn: values['fail-on'] });
       break;
     }
     case 'report': {
       const { buildReport } = await import('../src/report.js');
       await buildReport({ cwd: process.cwd(), run: values.run });
+      break;
+    }
+    case 'sarif': {
+      const { writeSarif } = await import('../src/sarif.js');
+      await writeSarif({ cwd: process.cwd(), run: values.run, out: values.out });
+      break;
+    }
+    case 'comment': {
+      const { writeComment } = await import('../src/comment.js');
+      await writeComment({
+        cwd: process.cwd(),
+        run: values.run,
+        out: values.out,
+        artifactUrl: values['artifact-url'],
+        sarifUploaded: values['sarif-uploaded'],
+        failOn: values['fail-on'],
+      });
       break;
     }
     case 'persona': {

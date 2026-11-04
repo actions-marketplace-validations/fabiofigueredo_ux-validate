@@ -186,6 +186,64 @@ npx ux-validate fix              # apply the fixes with the model set up in init
 
 Results go in `.ux-validate/runs/<date-time>/` (already added to `.gitignore`).
 
+## GitHub Action
+
+Run the automated checks on every pull request, with a summary comment on the PR, annotations on the changed lines (SARIF / code scanning) and the full report as a downloadable artifact.
+
+```yaml
+# .github/workflows/ux-validate.yml
+name: ux-validate
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write   # PR comment
+  security-events: write # SARIF upload to code scanning
+
+jobs:
+  ux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - uses: fabiofigueredo/ux-validate@main
+        with:
+          start: npm run dev
+          url: http://localhost:3000
+          fail-on: critical
+```
+
+| Input | Default | What it does |
+|---|---|---|
+| `url` | `app.url` from the config | URL to test (a local server or a preview deployment) |
+| `start` | — | Command that starts the app in the background; the action waits for the URL to respond |
+| `wait-timeout` | `120` | Seconds to wait for the URL |
+| `working-directory` | `.` | Folder of the app (monorepos) |
+| `fail-on` | — (never fails) | Fail the job with issues of this severity or worse: `critical`, `high`, `medium`, `low` |
+| `comment` | `true` | Post a summary on the PR, updating the same comment on every push |
+| `sarif` | `true` | Upload SARIF to code scanning |
+| `language` | config `locale`, then English | `en` or `pt-BR` for the comment and report |
+
+Outputs: `issues`, `critical`, `high`, `report-dir`, `sarif-file`. The summary also appears in the job's summary page.
+
+Notes:
+
+- The action runs the **automated checks** (accessibility, WAI-ARIA, links, spelling, layout). The persona evaluation needs an AI tool and runs locally with `/persona-test`.
+- Code scanning is free on public repositories; on private ones it needs GitHub Advanced Security. Without it, the SARIF upload step is skipped with a warning and everything else still works.
+- On pull requests from forks, GitHub gives a read-only token: the comment step is skipped with a warning.
+- A sample workflow is in [`examples/github-workflow.yml`](examples/github-workflow.yml).
+
+Without the action, in any CI:
+
+```bash
+npx ux-validate check --url http://localhost:3000 --fail-on high   # exit code 2 when the threshold is hit
+npx ux-validate sarif --out ux-validate.sarif
+npx ux-validate comment --out comment.md
+```
+
 ## Personas
 
 A persona is a real kind of user of your app, written as a YAML file in `.ux-validate/personas/`. Setup creates three examples; to create your own:
@@ -289,6 +347,9 @@ src/fix.js                   automatic fixes from the report
 src/llm.js                   provider clients (Anthropic, OpenAI, Google, Ollama)
 src/persona.js               persona wizard and validation
 src/report.js                scores and report (Markdown + HTML)
+src/sarif.js                 SARIF export (GitHub code scanning)
+src/comment.js               pull request comment
+action.yml                   GitHub Action
 src/i18n.js                  tool language
 src/locales/                 messages in English (en.js) and Portuguese (pt-BR.js)
 src/adapters/                one adapter per AI tool
@@ -317,9 +378,9 @@ The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{C
 - [x] `/persona-fix` and `npx ux-validate fix` (apply fixes with the user's model)
 - [x] English and Portuguese
 - [x] Adapters for Cursor, Codex CLI and Gemini CLI
+- [x] GitHub Action with a PR comment and SARIF output
 - [x] `/persona-new` and `npx ux-validate persona new` (create personas)
 - [ ] Persona browsing from the terminal (no AI tool), with the model chosen in setup
-- [ ] GitHub Action with a PR comment and SARIF output
 - [ ] Repeat the browsing and only confirm issues that show up in more than one run
 
 ## Contributing

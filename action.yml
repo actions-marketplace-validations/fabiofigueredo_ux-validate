@@ -1,0 +1,253 @@
+name: ux-validate
+description: Automated UX, accessibility (WCAG + WAI-ARIA), link and spelling checks for web apps, with a pull request comment and SARIF for code scanning.
+author: Fabio Figueredo
+branding:
+  icon: eye
+  color: blue
+
+inputs:
+  url:
+    description: URL of the app to test. Defaults to app.url in ux-validate.config.yml.
+    required: false
+    default: ''
+  start:
+    description: Command that starts the app (e.g. "npm run dev"). It runs in the background in working-directory. Leave empty if the app is already running or deployed.
+    required: false
+    default: ''
+  wait-timeout:
+    description: Seconds to wait for the URL to respond.
+    required: false
+    default: '120'
+  working-directory:
+    description: Folder of the app (where ux-validate.config.yml and the source files are).
+    required: false
+    default: '.'
+  config:
+    description: Path to the config file, relative to working-directory. Optional.
+    required: false
+    default: ux-validate.config.yml
+  fail-on:
+    description: Fail the job when there are issues of this severity or worse (critical, high, medium, low). Empty = never fail.
+    required: false
+    default: ''
+  comment:
+    description: Post (and keep updating) a summary comment on the pull request.
+    required: false
+    default: 'true'
+  sarif:
+    description: Upload the issues as SARIF to GitHub code scanning (needs security-events write permission; on private repositories, GitHub Advanced Security).
+    required: false
+    default: 'true'
+  language:
+    description: Language of the comment and report (en or pt-BR). Defaults to locale in the config, then English.
+    required: false
+    default: ''
+  node-version:
+    description: Node.js version used to run ux-validate.
+    required: false
+    default: '22'
+  github-token:
+    description: Token used to post the pull request comment.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  issues:
+    description: Total number of issues found.
+    value: ${{ steps.counts.outputs.issues }}
+  critical:
+    description: Number of critical issues.
+    value: ${{ steps.counts.outputs.critical }}
+  high:
+    description: Number of high-severity issues.
+    value: ${{ steps.counts.outputs.high }}
+  report-dir:
+    description: Folder with checks.json, report.md, report.html, screenshots and the SARIF file.
+    value: ${{ steps.paths.outputs.run }}
+  sarif-file:
+    description: Path to the SARIF file.
+    value: ${{ steps.paths.outputs.sarif }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Install ux-validate and the browser
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        npm ci --omit=dev --no-audit --no-fund
+        npx playwright install --with-deps chromium
+
+    - name: Prepare paths
+      id: paths
+      shell: bash
+      run: |
+        run="$RUNNER_TEMP/ux-validate"
+        rm -rf "$run" && mkdir -p "$run"
+        echo "run=$run" >> "$GITHUB_OUTPUT"
+        echo "sarif=$run/ux-validate.sarif" >> "$GITHUB_OUTPUT"
+        echo "cli=$GITHUB_ACTION_PATH/bin/ux-validate.js" >> "$GITHUB_OUTPUT"
+
+    - name: Resolve the URL
+      id: url
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        INPUT_URL: ${{ inputs.url }}
+        INPUT_CONFIG: ${{ inputs.config }}
+        YAML_MODULE: ${{ github.action_path }}/node_modules/yaml
+      run: |
+        url="$INPUT_URL"
+        if [ -z "$url" ] && [ -f "$INPUT_CONFIG" ]; then
+          url=$(node -e 'const Y=require(process.env.YAML_MODULE);const c=Y.parse(require("fs").readFileSync(process.env.INPUT_CONFIG,"utf8"))||{};process.stdout.write((c.app&&c.app.url)||"")')
+        fi
+        if [ -z "$url" ]; then
+          echo "::error title=ux-validate::No URL to test. Set the 'url' input or app.url in $INPUT_CONFIG."
+          exit 1
+        fi
+        echo "url=$url" >> "$GITHUB_OUTPUT"
+
+    - name: Start the app
+      if: inputs.start != ''
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        START: ${{ inputs.start }}
+      run: |
+        nohup bash -c "$START" > "$RUNNER_TEMP/ux-validate-app.log" 2>&1 &
+        echo "Started: $START (log: $RUNNER_TEMP/ux-validate-app.log)"
+
+    - name: Wait for the app
+      shell: bash
+      env:
+        URL: ${{ steps.url.outputs.url }}
+        TIMEOUT: ${{ inputs.wait-timeout }}
+      run: |
+        case "$URL" in file:*) exit 0 ;; esac
+        for i in $(seq 1 "$TIMEOUT"); do
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$URL" || true)
+          if [ "$code" != "000" ] && [ "$code" -lt 500 ]; then echo "App is up ($code) after ${i}s"; exit 0; fi
+          sleep 1
+        done
+        echo "::error title=ux-validate::$URL did not respond within ${TIMEOUT}s."
+        if [ -f "$RUNNER_TEMP/ux-validate-app.log" ]; then tail -n 50 "$RUNNER_TEMP/ux-validate-app.log"; fi
+        exit 1
+
+    - name: Run the checks
+      id: check
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        CLI: ${{ steps.paths.outputs.cli }}
+        RUN: ${{ steps.paths.outputs.run }}
+        URL: ${{ steps.url.outputs.url }}
+        CONFIG: ${{ inputs.config }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        UX_VALIDATE_LOCALE: ${{ inputs.language }}
+      run: |
+        set +e
+        args=(check --out "$RUN" --url "$URL" --config "$CONFIG")
+        if [ -n "$FAIL_ON" ]; then args+=(--fail-on "$FAIL_ON"); fi
+        node "$CLI" "${args[@]}"
+        code=$?
+        set -e
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+        # 0 = ok, 2 = problemas acima do limite (--fail-on); qualquer outro código é erro real.
+        if [ "$code" != "0" ] && [ "$code" != "2" ]; then exit "$code"; fi
+        node "$CLI" report --run "$RUN"
+
+    - name: Count the issues
+      id: counts
+      shell: bash
+      env:
+        RUN: ${{ steps.paths.outputs.run }}
+      run: |
+        node -e '
+          const f = JSON.parse(require("fs").readFileSync(process.env.RUN + "/checks.json", "utf8")).findings;
+          const n = (s) => f.filter((x) => x.severity === s).length;
+          const out = require("fs").createWriteStream(process.env.GITHUB_OUTPUT, { flags: "a" });
+          out.end(`issues=${f.length}\ncritical=${n("critical")}\nhigh=${n("high")}\n`);
+        '
+
+    - name: Build the SARIF file
+      if: inputs.sarif == 'true'
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        CLI: ${{ steps.paths.outputs.cli }}
+        RUN: ${{ steps.paths.outputs.run }}
+        SARIF: ${{ steps.paths.outputs.sarif }}
+        UX_VALIDATE_LOCALE: ${{ inputs.language }}
+      run: node "$CLI" sarif --run "$RUN" --out "$SARIF"
+
+    - name: Upload the report
+      id: artifact
+      uses: actions/upload-artifact@v7
+      with:
+        name: ux-validate-report
+        path: ${{ steps.paths.outputs.run }}
+        retention-days: 14
+
+    - name: Upload SARIF to code scanning
+      id: upload-sarif
+      if: inputs.sarif == 'true'
+      continue-on-error: true
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: ${{ steps.paths.outputs.sarif }}
+        category: ux-validate
+
+    - name: Build the summary
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        CLI: ${{ steps.paths.outputs.cli }}
+        RUN: ${{ steps.paths.outputs.run }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
+        SARIF_OK: ${{ inputs.sarif == 'true' && steps.upload-sarif.outcome == 'success' }}
+        UX_VALIDATE_LOCALE: ${{ inputs.language }}
+      run: |
+        args=(comment --run "$RUN" --out "$RUN/comment.md")
+        if [ -n "$FAIL_ON" ]; then args+=(--fail-on "$FAIL_ON"); fi
+        if [ -n "$ARTIFACT_URL" ]; then args+=(--artifact-url "$ARTIFACT_URL"); fi
+        if [ "$SARIF_OK" = "true" ]; then args+=(--sarif-uploaded); fi
+        node "$CLI" "${args[@]}"
+        cat "$RUN/comment.md" >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Comment on the pull request
+      if: inputs.comment == 'true' && github.event.pull_request != null
+      continue-on-error: true
+      uses: actions/github-script@v9
+      env:
+        COMMENT_FILE: ${{ steps.paths.outputs.run }}/comment.md
+      with:
+        github-token: ${{ inputs.github-token }}
+        script: |
+          const fs = require('fs');
+          const body = fs.readFileSync(process.env.COMMENT_FILE, 'utf8');
+          const marker = '<!-- ux-validate-comment -->';
+          const { owner, repo } = context.repo;
+          const issue_number = context.payload.pull_request.number;
+          // Atualiza o comentário anterior do ux-validate em vez de criar um novo a cada push.
+          const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number, per_page: 100 });
+          const previous = comments.find((c) => c.body && c.body.startsWith(marker));
+          if (previous) {
+            await github.rest.issues.updateComment({ owner, repo, comment_id: previous.id, body });
+          } else {
+            await github.rest.issues.createComment({ owner, repo, issue_number, body });
+          }
+
+    - name: Apply the fail-on threshold
+      if: steps.check.outputs.exit-code == '2'
+      shell: bash
+      env:
+        FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        echo "::error title=ux-validate::Issues with severity '$FAIL_ON' or worse were found. See the report and the pull request comment."
+        exit 1

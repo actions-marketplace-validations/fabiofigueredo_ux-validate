@@ -29,12 +29,16 @@ const DEFAULTS = {
   spelling: { enabled: true, ignore: [] },
 };
 
-export function loadConfig(cwd, configPath = 'ux-validate.config.yml') {
+export const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low'];
+
+/** Com `optional`, a falta do arquivo não é erro: usa os valores padrão (ex.: CI com --url). */
+export function loadConfig(cwd, configPath = 'ux-validate.config.yml', { optional = false } = {}) {
   const file = path.resolve(cwd, configPath);
-  if (!fs.existsSync(file)) {
+  const exists = fs.existsSync(file);
+  if (!exists && !optional) {
     throw new Error(t('config.notFound', { path: configPath }));
   }
-  const raw = YAML.parse(fs.readFileSync(file, 'utf8')) ?? {};
+  const raw = exists ? (YAML.parse(fs.readFileSync(file, 'utf8')) ?? {}) : {};
   const config = {
     ...DEFAULTS,
     ...raw,

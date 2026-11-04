@@ -1,0 +1,30 @@
+# Exemplo / Example: copie para .github/workflows/ux-validate.yml no seu projeto.
+# Copy to .github/workflows/ux-validate.yml in your project.
+name: ux-validate
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write # comentário no PR / PR comment
+  security-events: write # SARIF no code scanning / SARIF to code scanning
+
+jobs:
+  ux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - run: npm ci
+
+      - uses: fabiofigueredo/ux-validate@main
+        with:
+          start: npm run dev # ou / or: npm run build && npm run preview
+          url: http://localhost:3000
+          fail-on: critical # falha o job com problemas críticos / fail on critical issues
+          # language: pt-BR

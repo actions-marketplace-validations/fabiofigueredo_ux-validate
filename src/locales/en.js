@@ -17,8 +17,13 @@ export default {
 Usage:
   ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini]
                                                  Set up the project and install the commands in your AI tools
-  ux-validate check  [--out <dir>] [--url <url>] Run the automated checks (accessibility, links, spelling, content)
+  ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
+                                                 Run the automated checks (accessibility, links, spelling, content)
   ux-validate report [--run <dir>]               Build report.md and report.html from a run
+  ux-validate sarif  [--run <dir>] [--out <file>]
+                                                 Export the issues as SARIF (GitHub code scanning)
+  ux-validate comment [--run <dir>] [--out <file>]
+                                                 Summary in Markdown for a pull request comment
   ux-validate persona new [--force]              Create a persona with a step-by-step wizard
   ux-validate persona validate [files…]          Check persona files (default: all in the project)
   ux-validate fix    [--run <dir>] [--ids A001,C003] [--severity high] [--dry-run] [--yes]
@@ -108,6 +113,8 @@ General options:
 
   checks: {
     crawling: 'Crawling {url} (up to {max} pages)…',
+    invalidFailOn: 'Invalid --fail-on value: {value}. Use: {valid}.',
+    failOn: ({ n, severity }) => `\n✖ ${n} ${n === 1 ? 'issue' : 'issues'} with severity "${severity}" or higher (--fail-on).`,
     cannotOpen: "Couldn't open {url}. Is the app running?",
     noDictionary: '⚠ No dictionary for language "{language}"; spelling will not be checked.',
     spellingDisabled: '⚠ Spell check disabled: {message}',
@@ -448,5 +455,23 @@ Rules:
       summary: '{ok} of {total} persona(s) valid.',
       failed: '{n} persona(s) with errors.',
     },
+  },
+
+  sarif: {
+    written: ({ n, file }) => `✔ SARIF with ${n} ${n === 1 ? 'result' : 'results'}: ${file}`,
+  },
+
+  comment: {
+    title: 'ux-validate',
+    noIssues: '✅ No issues found by the automated checks.',
+    failing: ({ n, severity }) => `❌ **${n} ${n === 1 ? 'issue' : 'issues'}** with severity ${severity.toLowerCase()} or higher: this check fails.`,
+    passing: ({ severity }) => `✅ No issues with severity ${severity.toLowerCase()} or higher.`,
+    allIssues: ({ n }) => `All issues (${n})`,
+    category: 'Category',
+    issue: 'Issue',
+    truncated: ({ n }) => `…and ${n} more. See the full report.`,
+    fullReport: '[Full report with screenshots]({url})',
+    codeScanning: 'Annotations on the changed lines and in the **Security → Code scanning** tab',
+    footer: 'Automated checks by ux-validate (accessibility, WAI-ARIA, links, spelling, layout). Persona evaluation runs in your AI tool with /persona-test.',
   },
 };

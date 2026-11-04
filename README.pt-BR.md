@@ -186,6 +186,65 @@ npx ux-validate fix              # aplica as correções com o modelo configurad
 
 Os resultados ficam em `.ux-validate/runs/<data-hora>/` (já incluído no `.gitignore`).
 
+## GitHub Action
+
+Roda as checagens fixas em todo pull request, com um comentário de resumo no PR, anotações nas linhas alteradas (SARIF / code scanning) e o relatório completo como artefato para baixar.
+
+```yaml
+# .github/workflows/ux-validate.yml
+name: ux-validate
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write   # comentário no PR
+  security-events: write # envio do SARIF ao code scanning
+
+jobs:
+  ux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - uses: fabiofigueredo/ux-validate@main
+        with:
+          start: npm run dev
+          url: http://localhost:3000
+          fail-on: critical
+          language: pt-BR
+```
+
+| Entrada | Padrão | O que faz |
+|---|---|---|
+| `url` | `app.url` da configuração | URL a testar (servidor local ou deploy de preview) |
+| `start` | — | Comando que sobe a aplicação em segundo plano; a Action espera a URL responder |
+| `wait-timeout` | `120` | Segundos de espera pela URL |
+| `working-directory` | `.` | Pasta da aplicação (monorepos) |
+| `fail-on` | — (nunca falha) | Falha o job com problemas dessa gravidade ou mais graves: `critical`, `high`, `medium`, `low` |
+| `comment` | `true` | Comenta o resumo no PR, atualizando o mesmo comentário a cada push |
+| `sarif` | `true` | Envia o SARIF para o code scanning |
+| `language` | `locale` da configuração, depois inglês | `en` ou `pt-BR` para o comentário e o relatório |
+
+Saídas: `issues`, `critical`, `high`, `report-dir`, `sarif-file`. O resumo também aparece na página de resumo do job.
+
+Observações:
+
+- A Action roda as **checagens fixas** (acessibilidade, WAI-ARIA, links, ortografia, layout). A avaliação por persona precisa de uma ferramenta de IA e roda localmente com `/persona-test`.
+- O code scanning é gratuito em repositórios públicos; nos privados, exige o GitHub Advanced Security. Sem ele, o envio do SARIF é pulado com um aviso e o resto funciona.
+- Em pull requests vindos de forks, o GitHub dá um token só de leitura: o comentário é pulado com um aviso.
+- Há um workflow de exemplo em [`examples/github-workflow.yml`](examples/github-workflow.yml).
+
+Sem a Action, em qualquer CI:
+
+```bash
+npx ux-validate check --url http://localhost:3000 --fail-on high   # código de saída 2 ao atingir o limite
+npx ux-validate sarif --out ux-validate.sarif
+npx ux-validate comment --out comment.md
+```
+
 ## Personas
 
 Uma persona é um tipo real de usuário da sua aplicação, escrito como um arquivo YAML em `.ux-validate/personas/`. O setup cria três exemplos; para criar as suas:
@@ -289,6 +348,9 @@ src/fix.js               correção automática a partir do relatório
 src/llm.js               clientes dos provedores (Anthropic, OpenAI, Google, Ollama)
 src/persona.js           assistente e validação de personas
 src/report.js            notas e relatório (Markdown + HTML)
+src/sarif.js             exportação SARIF (code scanning do GitHub)
+src/comment.js           comentário de pull request
+action.yml               GitHub Action
 src/i18n.js              idioma da ferramenta
 src/locales/             mensagens em inglês (en.js) e português (pt-BR.js)
 src/adapters/            um adapter por ferramenta de IA
@@ -311,9 +373,9 @@ Os comandos em `source/<idioma>/commands/` usam placeholders (`{{WORK_DIR}}`, `{
 - [x] `/persona-fix` e `npx ux-validate fix` (aplicar correções com o modelo do usuário)
 - [x] Inglês e português
 - [x] Adapters para Cursor, Codex CLI e Gemini CLI
+- [x] GitHub Action com comentário no PR e saída SARIF
 - [x] `/persona-new` e `npx ux-validate persona new` (criar personas)
 - [ ] Navegação com personas pelo terminal (sem ferramenta de IA), com o modelo escolhido no setup
-- [ ] GitHub Action com comentário no PR e saída SARIF
 - [ ] Repetir a navegação e só confirmar problemas que aparecem em mais de uma execução
 
 ### Adicionando um idioma

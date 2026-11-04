@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
-import { VIEWPORTS, loadConfig, newRunDir } from './config.js';
+import { VIEWPORTS, SEVERITY_ORDER, loadConfig, newRunDir } from './config.js';
 import { runAriaChecks } from './aria.js';
 import { checkSpelling, createSpeller } from './spelling.js';
 import { t, getLocale } from './i18n.js';
@@ -46,8 +46,11 @@ const LEFTOVER_PATTERNS = [
   { re: /\bplaceholder\b|\bsample text\b|lorem text|coming soon\.\.\.|texto de exemplo|em breve\.\.\./i, key: 'placeholder', severity: 'medium' },
 ];
 
-export async function runChecks({ cwd, configPath, out, url }) {
-  const config = loadConfig(cwd, configPath);
+export async function runChecks({ cwd, configPath, out, url, failOn }) {
+  if (failOn && !SEVERITY_ORDER.includes(failOn)) {
+    throw new Error(t('checks.invalidFailOn', { value: failOn, valid: SEVERITY_ORDER.join(', ') }));
+  }
+  const config = loadConfig(cwd, configPath, { optional: Boolean(url) });
   const startUrl = url ?? config.app.url;
   const runDir = out ? path.resolve(cwd, out) : newRunDir(cwd);
   fs.mkdirSync(path.join(runDir, 'screenshots'), { recursive: true });
@@ -113,6 +116,16 @@ export async function runChecks({ cwd, configPath, out, url }) {
       }),
     );
     console.log(`  ${path.relative(cwd, path.join(runDir, 'checks.json'))}`);
+
+    // --fail-on: código de saída 2 se houver problema dessa gravidade ou mais grave (para o CI).
+    if (failOn) {
+      const limit = SEVERITY_ORDER.indexOf(failOn);
+      const blocking = result.findings.filter((f) => SEVERITY_ORDER.indexOf(f.severity) <= limit).length;
+      if (blocking) {
+        console.log(t('checks.failOn', { n: blocking, severity: failOn }));
+        process.exitCode = 2;
+      }
+    }
     return { runDir, result };
   } finally {
     await browser.close();
@@ -184,6 +197,7 @@ async function crawl(browser, startUrl, config, add) {
               source: 'check:links',
               category: 'navigation',
               severity: 'medium',
+              rule: 'empty-link',
               title: t('checks.emptyLink.title'),
               description: t('checks.emptyLink.description', { text: link.text || t('checks.noText'), href: raw || t('checks.nothing') }),
               page: pageUrl,
@@ -215,6 +229,7 @@ async function crawl(browser, startUrl, config, add) {
               source: 'check:links',
               category: 'navigation',
               severity: 'low',
+              rule: 'broken-external-link',
               title: t('checks.externalLink.title'),
               description: t('checks.externalLink.description', { text: link.text, url: target.href, status: res?.status() ?? t('checks.noResponse') }),
               page: pageUrl,
@@ -297,6 +312,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
       source: 'check:console',
       category: 'ui',
       severity: 'high',
+      rule: 'console-errors',
       title: t('checks.console.title'),
       description: t('checks.console.description', { n: consoleErrors.length }),
       evidence: { snippet: [...new Set(consoleErrors)].slice(0, 5).join('\n') },
@@ -309,6 +325,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
       source: 'check:network',
       category: 'ui',
       severity: 'medium',
+      rule: 'failed-requests',
       title: t('checks.network.title'),
       description: t('checks.network.description', { n: failedRequests.length }),
       evidence: { snippet: [...new Set(failedRequests)].slice(0, 8).join('\n') },
@@ -336,6 +353,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
       source: 'check:layout',
       category: 'ui',
       severity: vpName === 'mobile' ? 'high' : 'medium',
+      rule: 'horizontal-overflow',
       title: t('checks.overflow.title'),
       description: t('checks.overflow.description', { px: layout.overflow, viewport: vpName }),
       heuristic: 'WCAG 1.4.10 (Reflow)',
@@ -349,6 +367,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
       source: 'check:layout',
       category: 'ui',
       severity: 'low',
+      rule: 'small-text',
       title: t('checks.tinyText.title'),
       description: t('checks.tinyText.description', { n: layout.tinyCount }),
       evidence: { screenshot: shot, snippet: layout.tiny.join('\n') },
@@ -369,6 +388,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
         source: 'check:content',
         category: 'content',
         severity: pat.severity,
+        rule: `leftover-${pat.key}`,
         title: t(`checks.leftover.${pat.key}`),
         description: t('checks.leftover.description', { match: m[0] }),
         evidence: { screenshot: shot, snippet: text.slice(Math.max(0, i - 60), i + 80).replace(/\s+/g, ' ').trim(), terms: [m[0]] },
@@ -397,6 +417,7 @@ function checkSiteWide(pages, add) {
         source: 'check:content',
         category: 'content',
         severity: 'low',
+        rule: 'duplicate-title',
         title: t('checks.duplicateTitle.title'),
         description: t('checks.duplicateTitle.description', { n: group.length, title: title || t('checks.duplicateTitle.empty') }),
         page: group[0].url,
@@ -412,6 +433,7 @@ function checkSiteWide(pages, add) {
         source: 'check:links',
         category: 'navigation',
         severity: 'critical',
+        rule: 'start-page-down',
         title: t('checks.homeDown.title', { status }),
         description: t('checks.homeDown.description', { url: p.url, status }),
         page: p.url,
@@ -424,6 +446,7 @@ function checkSiteWide(pages, add) {
       source: 'check:links',
       category: 'navigation',
       severity: 'high',
+      rule: 'broken-internal-link',
       title: p.status === 404 ? t('checks.brokenLink.title404') : t('checks.brokenLink.title'),
       description: t('checks.brokenLink.description', { n: p.linkedFrom.length, url: p.url, status }),
       page: p.linkedFrom[0],

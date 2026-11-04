@@ -17,8 +17,13 @@ export default {
 Uso:
   ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini]
                                                  Configura o projeto e instala os comandos nas suas ferramentas de IA
-  ux-validate check  [--out <dir>] [--url <url>] Roda as checagens fixas (acessibilidade, links, ortografia, conteúdo)
+  ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
+                                                 Roda as checagens fixas (acessibilidade, links, ortografia, conteúdo)
   ux-validate report [--run <dir>]               Gera report.md e report.html a partir de uma execução
+  ux-validate sarif  [--run <dir>] [--out <arquivo>]
+                                                 Exporta os problemas em SARIF (code scanning do GitHub)
+  ux-validate comment [--run <dir>] [--out <arquivo>]
+                                                 Resumo em Markdown para comentário de pull request
   ux-validate persona new [--force]              Cria uma persona com um assistente passo a passo
   ux-validate persona validate [arquivos…]       Confere arquivos de persona (padrão: todos do projeto)
   ux-validate fix    [--run <dir>] [--ids A001,C003] [--severity high] [--dry-run] [--yes]
@@ -108,6 +113,8 @@ Opções gerais:
 
   checks: {
     crawling: 'Rastreando {url} (até {max} páginas)…',
+    invalidFailOn: 'Valor inválido para --fail-on: {value}. Use: {valid}.',
+    failOn: ({ n, severity }) => `\n✖ ${n} problema(s) com gravidade "${severity}" ou maior (--fail-on).`,
     cannotOpen: 'Não consegui abrir {url}. A aplicação está rodando?',
     noDictionary: '⚠ Sem dicionário para o idioma "{language}"; ortografia não será verificada.',
     spellingDisabled: '⚠ Verificação ortográfica desativada: {message}',
@@ -446,5 +453,23 @@ Regras:
       summary: '{ok} de {total} persona(s) válidas.',
       failed: '{n} persona(s) com erro.',
     },
+  },
+
+  sarif: {
+    written: ({ n, file }) => `✔ SARIF com ${n} resultado(s): ${file}`,
+  },
+
+  comment: {
+    title: 'ux-validate',
+    noIssues: '✅ Nenhum problema encontrado pelas checagens fixas.',
+    failing: ({ n, severity }) => `❌ **${n} problema(s)** de nível ${severity.toLowerCase()} ou mais grave: esta verificação falha.`,
+    passing: ({ severity }) => `✅ Nenhum problema de nível ${severity.toLowerCase()} ou mais grave.`,
+    allIssues: ({ n }) => `Todos os problemas (${n})`,
+    category: 'Categoria',
+    issue: 'Problema',
+    truncated: ({ n }) => `…e mais ${n}. Veja o relatório completo.`,
+    fullReport: '[Relatório completo com screenshots]({url})',
+    codeScanning: 'Anotações nas linhas alteradas e na aba **Security → Code scanning**',
+    footer: 'Checagens fixas do ux-validate (acessibilidade, WAI-ARIA, links, ortografia, layout). A avaliação por persona roda na sua ferramenta de IA com /persona-test.',
   },
 };

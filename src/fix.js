@@ -292,7 +292,7 @@ export function locateSource(cwd, finding, files) {
   return best ?? byPageName();
 }
 
-function searchTerms(f) {
+export function searchTerms(f) {
   const terms = new Set(f.evidence?.terms ?? []);
   const snippet = f.evidence?.snippet ?? '';
   for (const line of snippet.split('\n')) {
