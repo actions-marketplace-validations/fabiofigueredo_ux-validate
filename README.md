@@ -136,7 +136,7 @@ And creates:
 | `.ux-validate/personas/*.yml` | Your personas |
 | `.ux-validate/references/` | Heuristics and formats the agent consults |
 | `.ux-validate/dictionary.txt` | Correct words the dictionary doesn't know |
-| `.claude/skills/persona-test/`, `persona-report/`, `persona-fix/` | Claude Code commands |
+| `.claude/skills/persona-test/`, `persona-report/`, `persona-fix/`, `persona-new/` | Claude Code commands |
 | `.mcp.json` | Registers the Playwright MCP (the agent's browser) |
 
 Use `--yes` to accept the defaults without questions and `--force` to overwrite existing files.
@@ -147,6 +147,7 @@ In Claude Code, inside your project:
 
 | Command | What it does |
 |---|---|
+| `/persona-new` | Creates a persona by talking with you about who uses the app |
 | `/persona-test` | Tests with every persona and builds the report |
 | `/persona-test margaret` | Tests with a single persona |
 | `/persona-test --only accessibility` | Evaluates a single category (`content`, `navigation`, `ui`, `accessibility`) |
@@ -158,6 +159,8 @@ In Claude Code, inside your project:
 From the terminal (useful in CI):
 
 ```bash
+npx ux-validate persona new      # create a persona with a step-by-step wizard
+npx ux-validate persona validate # check the persona files
 npx ux-validate check            # automated checks only
 npx ux-validate report           # report for the latest run
 npx ux-validate fix              # apply the fixes with the model set up in init
@@ -166,6 +169,13 @@ npx ux-validate fix              # apply the fixes with the model set up in init
 Results go in `.ux-validate/runs/<date-time>/` (already added to `.gitignore`).
 
 ## Personas
+
+A persona is a real kind of user of your app, written as a YAML file in `.ux-validate/personas/`. Setup creates three examples; to create your own:
+
+- **`/persona-new` in Claude Code:** the agent interviews you about the real user (who they are, which device, limitations, what they come to do), can look at your app to suggest goals, shows the file and saves it after you confirm. You can start with a description: `/persona-new older customer who shops on their phone`.
+- **`npx ux-validate persona new` in the terminal:** a step-by-step wizard with multiple-choice questions for each trait. It doesn't use a language model.
+
+Both check the file with `npx ux-validate persona validate`, which you can also run any time to check every persona in the project (required fields, valid values, repeated ids).
 
 ```yaml
 id: margaret
@@ -251,13 +261,14 @@ Open `report.html` in `.ux-validate/runs/<date-time>/`.
 ## Project structure
 
 ```
-bin/ux-validate.js           CLI (init, check, report, fix)
+bin/ux-validate.js           CLI (init, check, report, fix, persona)
 src/init.js                  interactive setup
 src/checks.js                automated checks (Playwright + axe-core)
 src/aria.js                  WAI-ARIA and keyboard checks
 src/spelling.js              spell check (Hunspell)
 src/fix.js                   automatic fixes from the report
 src/llm.js                   provider clients (Anthropic, OpenAI, Google, Ollama)
+src/persona.js               persona wizard and validation
 src/report.js                scores and report (Markdown + HTML)
 src/i18n.js                  tool language
 src/locales/                 messages in English (en.js) and Portuguese (pt-BR.js)
@@ -286,8 +297,8 @@ The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{C
 - [x] Accessibility with WAI-ARIA, and spell check
 - [x] `/persona-fix` and `npx ux-validate fix` (apply fixes with the user's model)
 - [x] English and Portuguese
+- [x] `/persona-new` and `npx ux-validate persona new` (create personas)
 - [ ] Adapters for Cursor, Codex CLI and Gemini CLI
-- [ ] `/persona-new` (create a persona through conversation)
 - [ ] Persona browsing from the terminal (no AI tool), with the model chosen in setup
 - [ ] GitHub Action with a PR comment and SARIF output
 - [ ] Repeat the browsing and only confirm issues that show up in more than one run

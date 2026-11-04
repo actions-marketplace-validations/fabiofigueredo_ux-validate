@@ -136,7 +136,7 @@ E cria:
 | `.ux-validate/personas/*.yml` | Suas personas |
 | `.ux-validate/references/` | Heurísticas e formatos que o agente consulta |
 | `.ux-validate/dicionario.txt` | Palavras corretas que o dicionário não conhece |
-| `.claude/skills/persona-test/`, `persona-report/`, `persona-fix/` | Comandos do Claude Code |
+| `.claude/skills/persona-test/`, `persona-report/`, `persona-fix/`, `persona-new/` | Comandos do Claude Code |
 | `.mcp.json` | Registra o Playwright MCP (o navegador do agente) |
 
 Use `--yes` para aceitar os padrões sem perguntas e `--force` para sobrescrever arquivos existentes.
@@ -147,6 +147,7 @@ No Claude Code, dentro do seu projeto:
 
 | Comando | O que faz |
 |---|---|
+| `/persona-new` | Cria uma persona conversando com você sobre quem usa a aplicação |
 | `/persona-test` | Testa com todas as personas e gera o relatório |
 | `/persona-test dona-maria` | Testa com uma persona só |
 | `/persona-test --only accessibility` | Avalia só uma categoria (`content`, `navigation`, `ui`, `accessibility`) |
@@ -158,6 +159,8 @@ No Claude Code, dentro do seu projeto:
 Pelo terminal (útil no CI):
 
 ```bash
+npx ux-validate persona new      # cria uma persona com um assistente passo a passo
+npx ux-validate persona validate # confere os arquivos de persona
 npx ux-validate check            # só as checagens fixas
 npx ux-validate report           # relatório da execução mais recente
 npx ux-validate fix              # aplica as correções com o modelo configurado no setup
@@ -166,6 +169,13 @@ npx ux-validate fix              # aplica as correções com o modelo configurad
 Os resultados ficam em `.ux-validate/runs/<data-hora>/` (já incluído no `.gitignore`).
 
 ## Personas
+
+Uma persona é um tipo real de usuário da sua aplicação, escrito como um arquivo YAML em `.ux-validate/personas/`. O setup cria três exemplos; para criar as suas:
+
+- **`/persona-new` no Claude Code:** o agente entrevista você sobre o usuário real (quem é, que aparelho usa, limitações, o que vem fazer), pode olhar a aplicação para sugerir objetivos, mostra o arquivo e grava depois da sua confirmação. Dá para começar com uma descrição: `/persona-new cliente idoso que compra pelo celular`.
+- **`npx ux-validate persona new` no terminal:** um assistente passo a passo, com perguntas de múltipla escolha para cada característica. Não usa modelo de linguagem.
+
+Os dois conferem o arquivo com `npx ux-validate persona validate`, que você também pode rodar a qualquer momento para checar todas as personas do projeto (campos obrigatórios, valores válidos, ids repetidos).
 
 ```yaml
 id: dona-maria
@@ -251,13 +261,14 @@ Abra o `report.html` em `.ux-validate/runs/<data-hora>/`.
 ## Estrutura do projeto
 
 ```
-bin/ux-validate.js       CLI (init, check, report, fix)
+bin/ux-validate.js       CLI (init, check, report, fix, persona)
 src/init.js              setup interativo
 src/checks.js            checagens determinísticas (Playwright + axe-core)
 src/aria.js              checagens de WAI-ARIA e teclado
 src/spelling.js          verificação ortográfica (Hunspell)
 src/fix.js               correção automática a partir do relatório
 src/llm.js               clientes dos provedores (Anthropic, OpenAI, Google, Ollama)
+src/persona.js           assistente e validação de personas
 src/report.js            notas e relatório (Markdown + HTML)
 src/i18n.js              idioma da ferramenta
 src/locales/             mensagens em inglês (en.js) e português (pt-BR.js)
@@ -281,7 +292,7 @@ Os comandos em `source/<idioma>/commands/` usam placeholders (`{{WORK_DIR}}`, `{
 - [x] Acessibilidade com WAI-ARIA e verificação ortográfica
 - [x] `/persona-fix` e `npx ux-validate fix` (aplicar correções com o modelo do usuário)
 - [x] Inglês e português
-- [ ] `/persona-new` (criar persona conversando)
+- [x] `/persona-new` e `npx ux-validate persona new` (criar personas)
 - [ ] Navegação com personas pelo terminal (sem ferramenta de IA), com o modelo escolhido no setup
 - [ ] GitHub Action com comentário no PR e saída SARIF
 - [ ] Repetir a navegação e só confirmar problemas que aparecem em mais de uma execução

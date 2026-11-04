@@ -18,6 +18,8 @@ Uso:
   ux-validate init   [--yes] [--force]          Configura o projeto e instala os comandos no seu agente de IA
   ux-validate check  [--out <dir>] [--url <url>] Roda as checagens fixas (acessibilidade, links, ortografia, conteúdo)
   ux-validate report [--run <dir>]               Gera report.md e report.html a partir de uma execução
+  ux-validate persona new [--force]              Cria uma persona com um assistente passo a passo
+  ux-validate persona validate [arquivos…]       Confere arquivos de persona (padrão: todos do projeto)
   ux-validate fix    [--run <dir>] [--ids A001,C003] [--severity high] [--dry-run] [--yes]
                                                  Aplica as correções do relatório com o modelo configurado
                                                  no setup (usa a sua API key e os seus tokens)
@@ -74,7 +76,7 @@ Opções gerais:
       '# mas que o dicionário não conhece. Linhas começando com # são ignoradas.\n',
     next: {
       title: '\nPróximos passos:',
-      personas: '  1. Revise as personas em {dir}/ (ou crie as suas).',
+      personas: '  1. Revise as personas em {dir}/ ou crie as suas: /persona-new (ou npx ux-validate persona new).',
       openTool: '  2. Abra o Claude Code neste projeto e aprove o servidor MCP "playwright".',
       runTest: '  3. Rode /persona-test  (ou /persona-test <persona> para uma só).',
       runFix: '  4. Para aplicar as correções do relatório: /persona-fix',
@@ -365,5 +367,65 @@ Regras:
     httpError: 'Erro da API ({status}): {detail}',
     invalidJson: 'O modelo não devolveu um JSON válido.',
     jsonFormat: 'Responda só com JSON neste formato (JSON Schema):',
+  },
+
+  persona: {
+    title: 'ux-validate: nova persona',
+    intro:
+      'Descreva um tipo real de usuário da sua aplicação, não um estereótipo. Objetivos devem ser tarefas\n' +
+      'concretas (ex.: "descobrir o preço do plano básico"), não desejos ("gostar do site").',
+    nameQ: 'Nome (ex.: Dona Maria):',
+    idQ: 'Identificador (usado no nome do arquivo e no relatório):',
+    idInvalid: 'Use só letras minúsculas, números e hífen (ex.: dona-maria ou rafael-dev).',
+    idExists: 'Já existe uma persona com o id "{id}". Escolha outro ou rode com --force para sobrescrever.',
+    descriptionQ: 'Descrição curta (idade, ocupação, contexto, como usa tecnologia):',
+    viewportQ: 'Em qual aparelho ela usa a sua aplicação?',
+    viewports: { mobile: 'Celular (mobile)', tablet: 'Tablet', desktop: 'Computador (desktop)' },
+    traits: {
+      tech_literacy: {
+        question: 'Familiaridade com tecnologia:',
+        options: ['Baixa: usa o básico, se perde com jargão e ícones sem texto', 'Média: usa aplicativos do dia a dia sem dificuldade', 'Alta: experiente, usa atalhos e recursos avançados'],
+      },
+      vision: {
+        question: 'Visão:',
+        options: ['Normal', 'Reduzida: precisa de letras grandes e bom contraste', 'Daltonismo: não distingue informação passada só por cor', 'Leitor de tela: cega, navega só com teclado e leitor de tela'],
+      },
+      patience: {
+        question: 'Paciência:',
+        options: ['Baixa: desiste após poucos passos sem progresso', 'Média', 'Alta: insiste até conseguir'],
+      },
+      reading_level: {
+        question: 'Nível de leitura:',
+        options: ['Básico: pula textos longos, tem dificuldade com termos técnicos', 'Intermediário', 'Avançado: lê tudo, entende textos técnicos'],
+      },
+    },
+    languageQ: 'Idioma em que ela lê (ex.: pt-BR, en, es):',
+    goalsHint: 'Objetivos: o que essa pessoa vem fazer na sua aplicação? Um por linha; deixe vazio para terminar.',
+    goalQ: 'Objetivo {n}:',
+    expectationsHint: 'Expectativas (opcional): o que ela espera encontrar? Deixe vazio para pular.',
+    expectationQ: 'Expectativa {n}:',
+    preview: 'Arquivo da persona:',
+    saveQ: 'Salvar esta persona?',
+    cancelled: 'Persona não salva.',
+    saved: '✔ Persona salva em {file}',
+    next: '  Teste com ela: /persona-test {id}',
+    fileHeader: '# Persona criada com "ux-validate persona new". Formato: .ux-validate/references/persona-format.md',
+    validate: {
+      parseError: 'YAML inválido: {message}',
+      notObject: 'o arquivo precisa conter os campos da persona (id, name, viewport, goals…)',
+      missingField: 'campo obrigatório ausente: {field}',
+      invalidId: 'id inválido "{id}": use letras minúsculas, números e hífen',
+      idMismatch: 'o id "{id}" é diferente do nome do arquivo ({file}); manter os dois iguais facilita achar a persona',
+      invalidViewport: 'viewport inválido "{value}"; use: {valid}',
+      goals: 'goals precisa ser uma lista de textos, com pelo menos um item',
+      expectations: 'expectations precisa ser uma lista de textos',
+      missingTrait: 'característica "{trait}" não definida; o agente vai supor um valor médio',
+      invalidTrait: 'valor inválido "{value}" para {trait}; use: {valid}',
+      duplicateId: 'o id "{id}" também é usado por {other}',
+      fileMissing: 'arquivo não encontrado',
+      noneFound: 'Nenhuma persona em {dir}. Crie uma com "npx ux-validate persona new" ou /persona-new.',
+      summary: '{ok} de {total} persona(s) válidas.',
+      failed: '{n} persona(s) com erro.',
+    },
   },
 };

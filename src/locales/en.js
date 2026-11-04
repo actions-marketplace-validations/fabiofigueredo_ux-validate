@@ -18,6 +18,8 @@ Usage:
   ux-validate init   [--yes] [--force]          Set up the project and install the commands in your AI tool
   ux-validate check  [--out <dir>] [--url <url>] Run the automated checks (accessibility, links, spelling, content)
   ux-validate report [--run <dir>]               Build report.md and report.html from a run
+  ux-validate persona new [--force]              Create a persona with a step-by-step wizard
+  ux-validate persona validate [files…]          Check persona files (default: all in the project)
   ux-validate fix    [--run <dir>] [--ids A001,C003] [--severity high] [--dry-run] [--yes]
                                                  Apply the report's fixes with the model set up in init
                                                  (uses your API key and your tokens)
@@ -74,7 +76,7 @@ General options:
       "# but unknown to the dictionary. Lines starting with # are ignored.\n",
     next: {
       title: '\nNext steps:',
-      personas: '  1. Review the personas in {dir}/ (or write your own).',
+      personas: '  1. Review the personas in {dir}/ or create your own: /persona-new (or npx ux-validate persona new).',
       openTool: '  2. Open Claude Code in this project and approve the "playwright" MCP server.',
       runTest: '  3. Run /persona-test  (or /persona-test <persona> for just one).',
       runFix: "  4. To apply the report's fixes: /persona-fix",
@@ -367,5 +369,65 @@ Rules:
     httpError: 'API error ({status}): {detail}',
     invalidJson: "The model didn't return valid JSON.",
     jsonFormat: 'Answer only with JSON in this format (JSON Schema):',
+  },
+
+  persona: {
+    title: 'ux-validate: new persona',
+    intro:
+      'Describe a real kind of user of your app, not a stereotype. Goals should be concrete tasks\n' +
+      '(e.g. "find the price of the basic plan"), not wishes ("like the site").',
+    nameQ: 'Name (e.g. Margaret):',
+    idQ: 'Identifier (used in the file name and the report):',
+    idInvalid: 'Use only lowercase letters, numbers and hyphens (e.g. margaret or raj-dev).',
+    idExists: 'A persona with the id "{id}" already exists. Pick another or run with --force to overwrite.',
+    descriptionQ: 'Short description (age, occupation, context, how they use technology):',
+    viewportQ: 'Which device do they use your app on?',
+    viewports: { mobile: 'Phone (mobile)', tablet: 'Tablet', desktop: 'Computer (desktop)' },
+    traits: {
+      tech_literacy: {
+        question: 'Familiarity with technology:',
+        options: ['Low: uses the basics, gets lost with jargon and icons without text', 'Medium: everyday apps without trouble', 'High: tech-savvy, uses shortcuts and advanced features'],
+      },
+      vision: {
+        question: 'Vision:',
+        options: ['Normal', 'Reduced: needs large text and good contrast', 'Color-blind: can\'t rely on color alone', 'Screen reader: blind, browses only with keyboard and screen reader'],
+      },
+      patience: {
+        question: 'Patience:',
+        options: ['Low: gives up after a few steps without progress', 'Medium', 'High: insists until it works'],
+      },
+      reading_level: {
+        question: 'Reading level:',
+        options: ['Basic: skips long text, struggles with technical terms', 'Intermediate', 'Advanced: reads everything, handles technical text'],
+      },
+    },
+    languageQ: 'Language they read (e.g. en, pt-BR, es):',
+    goalsHint: 'Goals: what does this person come to your app to do? One per line; leave empty to finish.',
+    goalQ: 'Goal {n}:',
+    expectationsHint: 'Expectations (optional): what do they expect to find? Leave empty to skip.',
+    expectationQ: 'Expectation {n}:',
+    preview: 'Persona file:',
+    saveQ: 'Save this persona?',
+    cancelled: 'Persona not saved.',
+    saved: '✔ Persona saved to {file}',
+    next: '  Test with it: /persona-test {id}',
+    fileHeader: '# Persona created with "ux-validate persona new". Format: .ux-validate/references/persona-format.md',
+    validate: {
+      parseError: 'invalid YAML: {message}',
+      notObject: 'the file must contain the persona fields (id, name, viewport, goals…)',
+      missingField: 'required field missing: {field}',
+      invalidId: 'invalid id "{id}": use lowercase letters, numbers and hyphens',
+      idMismatch: 'the id "{id}" differs from the file name ({file}); keeping them equal makes the persona easier to find',
+      invalidViewport: 'invalid viewport "{value}"; use: {valid}',
+      goals: 'goals must be a non-empty list of text items',
+      expectations: 'expectations must be a list of text items',
+      missingTrait: 'trait "{trait}" not set; the agent will assume an average value',
+      invalidTrait: 'invalid value "{value}" for {trait}; use: {valid}',
+      duplicateId: 'id "{id}" is also used by {other}',
+      fileMissing: 'file not found',
+      noneFound: 'No personas found in {dir}. Create one with "npx ux-validate persona new" or /persona-new.',
+      summary: '{ok} of {total} persona(s) valid.',
+      failed: '{n} persona(s) with errors.',
+    },
   },
 };

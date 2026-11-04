@@ -49,6 +49,18 @@ try {
       await buildReport({ cwd: process.cwd(), run: values.run });
       break;
     }
+    case 'persona': {
+      const { newPersona, validatePersonas } = await import('../src/persona.js');
+      const [, action, ...files] = positionals;
+      if (action === 'new') await newPersona({ cwd: process.cwd(), configPath: values.config, force: values.force });
+      else if (action === 'validate') validatePersonas({ cwd: process.cwd(), configPath: values.config, files });
+      else {
+        console.error(`${t('cli.unknownCommand', { command: `persona ${action ?? ''}`.trim() })}\n`);
+        console.log(t('cli.help'));
+        process.exit(1);
+      }
+      break;
+    }
     case 'fix': {
       const { fix } = await import('../src/fix.js');
       await fix({

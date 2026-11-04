@@ -34,6 +34,7 @@ const vars = (locale) => ({
   DICTIONARY: projectDictionary(locale),
   CHECK_CMD: 'npx ux-validate check',
   REPORT_CMD: 'npx ux-validate report',
+  PERSONA_VALIDATE_CMD: 'npx ux-validate persona validate',
 });
 
 export function loadCommands(locale = getLocale()) {

@@ -25,7 +25,7 @@ Write everything (findings, summaries, your answer) in English.
 ## Step 1: prepare
 
 1. Read `ux-validate.config.yml`. It has `app.url`, the `app.start` command (optional), the `viewports`, the personas folder and `agent.maxStepsPerGoal`.
-2. Read the personas in the configured folder (default `{{WORK_DIR}}/personas/*.yml`). The format is in `{{REFERENCES_DIR}}/persona-format.md`. If there are none, stop and suggest creating one from `{{REFERENCES_DIR}}/persona-format.md`.
+2. Read the personas in the configured folder (default `{{WORK_DIR}}/personas/*.yml`). The format is in `{{REFERENCES_DIR}}/persona-format.md`. If there are none, stop and suggest creating one with `/persona-new`. If a file looks invalid, run `{{PERSONA_VALIDATE_CMD}}` and show the errors.
 3. Check that the app responds at `app.url`. If it doesn't and there is an `app.start`, start it in the background and wait until it is available (up to ~60s). If it is still down, stop and explain to the user.
 
 ## Step 2: automated checks

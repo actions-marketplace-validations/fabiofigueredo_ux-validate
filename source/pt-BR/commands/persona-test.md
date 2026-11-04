@@ -23,7 +23,7 @@ Argumentos recebidos: `$ARGUMENTS`
 ## Passo 1: preparar
 
 1. Leia `ux-validate.config.yml`. Ele traz a `app.url`, o comando `app.start` (opcional), os `viewports`, a pasta de personas e `agent.maxStepsPerGoal`.
-2. Leia as personas na pasta configurada (padrão `{{WORK_DIR}}/personas/*.yml`). O formato está em `{{REFERENCES_DIR}}/persona-format.md`. Se não houver nenhuma, pare e sugira criar uma a partir de `{{REFERENCES_DIR}}/persona-format.md`.
+2. Leia as personas na pasta configurada (padrão `{{WORK_DIR}}/personas/*.yml`). O formato está em `{{REFERENCES_DIR}}/persona-format.md`. Se não houver nenhuma, pare e sugira criar uma com `/persona-new`. Se algum arquivo parecer inválido, rode `{{PERSONA_VALIDATE_CMD}}` e mostre os erros.
 3. Verifique se a aplicação responde na `app.url`. Se não responder e houver `app.start`, suba-a em segundo plano e espere ficar disponível (até ~60s). Se continuar fora do ar, pare e explique ao usuário.
 
 ## Passo 2: checagens fixas
