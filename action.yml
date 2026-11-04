@@ -1,5 +1,5 @@
 name: ux-validate
-description: Automated UX, accessibility (WCAG + WAI-ARIA), link and spelling checks for web apps, with a pull request comment and SARIF for code scanning.
+description: Accessibility (WCAG/WAI-ARIA), link, spelling and layout checks for web apps, with PR comment and SARIF annotations.
 author: Fabio Figueredo
 branding:
   icon: eye
