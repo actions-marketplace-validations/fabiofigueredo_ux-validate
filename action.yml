@@ -38,6 +38,10 @@ inputs:
     description: Upload the issues as SARIF to GitHub code scanning (needs security-events write permission; on private repositories, GitHub Advanced Security).
     required: false
     default: 'true'
+  upload-sarif:
+    description: Send the SARIF file to code scanning. Set to 'false' to only build the file (it stays in the report artifact), e.g. when testing on a demo site with issues on purpose.
+    required: false
+    default: 'true'
   language:
     description: Language of the comment and report (en or pt-BR). Defaults to locale in the config, then English.
     required: false
@@ -195,7 +199,7 @@ runs:
 
     - name: Upload SARIF to code scanning
       id: upload-sarif
-      if: inputs.sarif == 'true'
+      if: inputs.sarif == 'true' && inputs.upload-sarif == 'true'
       continue-on-error: true
       uses: github/codeql-action/upload-sarif@v4
       with:
@@ -210,7 +214,7 @@ runs:
         RUN: ${{ steps.paths.outputs.run }}
         FAIL_ON: ${{ inputs.fail-on }}
         ARTIFACT_URL: ${{ steps.artifact.outputs.artifact-url }}
-        SARIF_OK: ${{ inputs.sarif == 'true' && steps.upload-sarif.outcome == 'success' }}
+        SARIF_OK: ${{ inputs.sarif == 'true' && inputs.upload-sarif == 'true' && steps.upload-sarif.outcome == 'success' }}
         UX_VALIDATE_LOCALE: ${{ inputs.language }}
       run: |
         args=(comment --run "$RUN" --out "$RUN/comment.md")

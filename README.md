@@ -265,6 +265,7 @@ jobs:
 | `fail-on` | — (never fails) | Fail the job with issues of this severity or worse: `critical`, `high`, `medium`, `low` |
 | `comment` | `true` | Post a summary on the PR, updating the same comment on every push |
 | `sarif` | `true` | Upload SARIF to code scanning |
+| `upload-sarif` | `true` | With `false`, builds the SARIF file (kept in the report artifact) without sending it to code scanning, e.g. when testing on a demo site with issues on purpose |
 | `language` | config `locale`, then English | `en` or `pt-BR` for the comment and report |
 
 Outputs: `issues`, `critical`, `high`, `report-dir`, `sarif-file`. The summary also appears in the job's summary page.

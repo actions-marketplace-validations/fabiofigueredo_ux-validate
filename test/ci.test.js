@@ -91,9 +91,24 @@ test('comentário em português', () => {
 test('action.yml declara as entradas e usa as versões atuais das actions oficiais', () => {
   const action = YAML.parse(fs.readFileSync(new URL('../action.yml', import.meta.url), 'utf8'));
   assert.equal(action.runs.using, 'composite');
-  for (const input of ['url', 'start', 'fail-on', 'comment', 'sarif', 'language', 'working-directory']) assert.ok(action.inputs[input], input);
+  for (const input of ['url', 'start', 'fail-on', 'comment', 'sarif', 'upload-sarif', 'language', 'working-directory']) assert.ok(action.inputs[input], input);
   const uses = action.runs.steps.map((s) => s.uses).filter(Boolean);
   assert.deepEqual(uses, ['actions/setup-node@v7', 'actions/upload-artifact@v7', 'github/codeql-action/upload-sarif@v4', 'actions/github-script@v9']);
   const comment = action.runs.steps.find((s) => s.uses === 'actions/github-script@v9');
   assert.match(comment.with.script, /ux-validate-comment/, 'a Action procura o mesmo marcador do comentário');
+});
+
+test('SARIF: sem trecho que bata, usa a pasta onde os outros problemas foram localizados', () => {
+  const { repo, app, run } = project();
+  // Outro index.html no repositório (ex.: site de documentação) e um JSON de exemplo com os mesmos textos.
+  fs.mkdirSync(path.join(app, 'docs'), { recursive: true });
+  fs.writeFileSync(path.join(app, 'docs/index.html'), '<html lang="en"><p>Docs</p></html>\n');
+  fs.writeFileSync(path.join(app, 'sample.json'), JSON.stringify({ snippet: 'Lorem ipsum dolor sit amet', link: '<a href="#">Blog</a>' }));
+  const checks = JSON.parse(fs.readFileSync(path.join(run, 'checks.json'), 'utf8'));
+  checks.findings.push({ id: 'C004', severity: 'medium', source: 'check:axe', category: 'accessibility', rule: 'html-has-lang', page: 'http://localhost:3000/index.html', title: 'lang', description: 'd', evidence: { snippet: '<html>' } });
+  fs.writeFileSync(path.join(run, 'checks.json'), JSON.stringify(checks));
+  const sarif = buildSarif({ cwd: app, runDir: run });
+  const uris = sarif.runs[0].results.map((r) => r.locations[0].physicalLocation.artifactLocation.uri);
+  assert.deepEqual([...new Set(uris)], ['apps/web/src/index.html'], `tudo no arquivo da aplicação: ${uris}`);
+  assert.ok(repo);
 });

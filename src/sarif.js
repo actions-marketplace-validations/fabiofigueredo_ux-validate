@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { latestRunDir } from './config.js';
 import { analyze } from './report.js';
-import { listSourceFiles, locateSource, searchTerms } from './fix.js';
+import { listSourceFiles, locateAll, searchTerms } from './fix.js';
 import { t } from './i18n.js';
 
 /**
@@ -24,6 +24,7 @@ export function buildSarif({ cwd, runDir }) {
 
   const repoRoot = findRepoRoot(cwd);
   const files = listSourceFiles(cwd);
+  const locations = locateAll(cwd, findings, files);
   const rules = new Map();
   const results = [];
 
@@ -41,7 +42,7 @@ export function buildSarif({ cwd, runDir }) {
       });
     }
 
-    const location = sourceLocation(cwd, repoRoot, f, files);
+    const location = sourceLocation(cwd, repoRoot, f, locations.get(f));
     const text = [
       `${f.title}${f.page ? ` (${f.page})` : ''}`,
       f.description,
@@ -117,11 +118,10 @@ function fingerprint(ruleId, f) {
  * O code scanning exige um arquivo para cada resultado. Usa o arquivo de origem (sourceHint ou
  * localizado pela evidência) e a linha onde o trecho aparece; sem arquivo, aponta para a configuração.
  */
-function sourceLocation(cwd, repoRoot, f, files) {
-  const rel = locateSource(cwd, f, files);
+function sourceLocation(cwd, repoRoot, f, rel) {
   let file = rel;
   let line = f.sourceHint?.line ?? null;
-  if (rel && !line) line = findLine(path.join(cwd, rel), searchTerms(f));
+  if (rel && !line) line = findLine(path.join(cwd, rel), searchTerms(f), f.evidence?.snippet ?? '');
   if (!file) {
     file = fs.existsSync(path.join(cwd, 'ux-validate.config.yml')) ? 'ux-validate.config.yml' : null;
     line = 1;
@@ -136,12 +136,19 @@ function sourceLocation(cwd, repoRoot, f, files) {
   };
 }
 
-function findLine(file, terms) {
+function findLine(file, terms, snippet = '') {
   const lines = fs.readFileSync(file, 'utf8').split(/\r?\n/);
   for (const term of terms) {
     const first = term.split('\n')[0];
     const i = lines.findIndex((l) => l.includes(first));
     if (i >= 0) return i + 1;
+  }
+  // HTML renderizado diferente do fonte (ex.: <html> sem lang): usa a tag do trecho, se ela for única no arquivo.
+  const tag = snippet.trim().match(/^<([a-z][a-z0-9-]*)/i)?.[1];
+  if (tag) {
+    const re = new RegExp(`<${tag}[\\s>]`, 'i');
+    const hits = lines.map((l, i) => (re.test(l) ? i : -1)).filter((i) => i >= 0);
+    if (hits.length === 1) return hits[0] + 1;
   }
   return 1;
 }

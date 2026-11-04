@@ -81,8 +81,9 @@ export async function fix({ cwd, configPath, run, ids, severity = 'medium', yes 
   const files = listSourceFiles(cwd);
   const byFile = new Map();
   const results = [];
+  const locations = locateAll(cwd, selected, files);
   for (const f of selected) {
-    const file = locateSource(cwd, f, files);
+    const file = locations.get(f);
     if (!file) {
       results.push({ findingId: f.id, title: f.title, status: 'not-located', reason: t('fix.notLocated') });
       continue;
@@ -282,33 +283,101 @@ function sourceText(cwd, files, rel) {
   return text;
 }
 
-/** Arquivo indicado pelo agente (sourceHint) ou o arquivo onde aparecem os trechos da evidência. */
-export function locateSource(cwd, finding, files) {
-  const hint = finding.sourceHint?.file;
-  if (hint) {
-    const abs = path.resolve(cwd, hint);
-    const rel = path.relative(cwd, abs).split(path.sep).join('/');
-    if (!rel.startsWith('..') && !path.isAbsolute(rel) && fs.existsSync(abs) && files.includes(rel)) return rel;
-  }
+// Arquivos de dados e documentação (ex.: JSON de exemplo, README) costumam repetir os textos das páginas;
+// só entram quando nenhum arquivo de código ou marcação tem o trecho.
+const DATA_FILES = /\.(json|ya?ml|mdx?)$/i;
+// Endereços do próprio servidor (http://localhost:3000/...) aparecem na evidência, mas não no código-fonte.
+const LOCAL_URL = /^https?:\/\/(localhost|127\.\d+\.\d+\.\d+|\[::1\]|0\.0\.0\.0)(:\d+)?\//i;
 
-  const terms = searchTerms(finding);
-  const pageName = finding.page ? decodeURIComponent(new URL(finding.page).pathname.split('/').pop() || 'index.html') : '';
-  // Sem trecho que bata (ex.: HTML renderizado diferente do código-fonte): usa o arquivo com o nome da página.
-  const byPageName = () => (/\.html?$/i.test(pageName) ? files.find((f) => path.basename(f) === pageName) ?? null : null);
-  if (!terms.length) return byPageName();
-  let best = null;
-  let bestScore = 0;
+const pageNameOf = (finding) => {
+  if (!finding.page) return '';
+  try {
+    return decodeURIComponent(new URL(finding.page).pathname.split('/').pop() || 'index.html');
+  } catch {
+    return '';
+  }
+};
+
+/** Arquivo indicado pelo agente (sourceHint), se existir dentro do projeto. */
+function hintedFile(cwd, finding, files) {
+  const hint = finding.sourceHint?.file;
+  if (!hint) return null;
+  const abs = path.resolve(cwd, hint);
+  const rel = path.relative(cwd, abs).split(path.sep).join('/');
+  return !rel.startsWith('..') && !path.isAbsolute(rel) && fs.existsSync(abs) && files.includes(rel) ? rel : null;
+}
+
+/** Arquivo onde aparecem os trechos da evidência (código e marcação primeiro, dados depois). */
+function fileByContent(cwd, finding, files) {
+  let origin = null;
+  try {
+    origin = finding.page ? new URL(finding.page).origin : null;
+  } catch {
+    origin = null;
+  }
+  const terms = searchTerms(finding).filter((t) => !LOCAL_URL.test(t) && !(origin && t.startsWith(origin)));
+  if (!terms.length) return null;
+  const pageName = pageNameOf(finding);
+  const best = { code: { file: null, score: 0 }, data: { file: null, score: 0 } };
   for (const rel of files) {
     const text = sourceText(cwd, files, rel);
     let score = terms.reduce((s, t) => s + (text.includes(t) ? 1 : 0), 0);
     if (!score) continue;
     if (pageName && path.basename(rel) === pageName) score += 0.5; // desempate: arquivo com o nome da página
-    if (score > bestScore) {
-      best = rel;
-      bestScore = score;
-    }
+    const tier = DATA_FILES.test(rel) ? best.data : best.code;
+    if (score > tier.score) Object.assign(tier, { file: rel, score });
   }
-  return best ?? byPageName();
+  return best.code.file ?? best.data.file;
+}
+
+/**
+ * Sem trecho que bata (ex.: <html> sem lang, erro de console): usa o arquivo com o nome da página.
+ * Com vários candidatos (ex.: docs/index.html e site/index.html), fica com o da pasta onde os outros
+ * problemas da mesma execução foram localizados.
+ */
+function fileByPageName(finding, files, dirVotes) {
+  const pageName = pageNameOf(finding);
+  if (!/\.html?$/i.test(pageName)) return null;
+  const candidates = files.filter((f) => path.basename(f) === pageName);
+  if (candidates.length <= 1) return candidates[0] ?? null;
+  const votes = (f) => dirVotes?.get(path.posix.dirname(f)) ?? 0;
+  return [...candidates].sort((a, b) => votes(b) - votes(a))[0];
+}
+
+/** Localiza um problema isolado (sem o contexto dos demais problemas da execução). */
+export function locateSource(cwd, finding, files) {
+  return hintedFile(cwd, finding, files) ?? fileByContent(cwd, finding, files) ?? fileByPageName(finding, files);
+}
+
+/**
+ * Localiza todos os problemas de uma execução. Primeiro pelo sourceHint e pelo conteúdo; depois,
+ * os que sobraram vão para o arquivo mais usado pelos outros problemas da mesma página ou pasta.
+ */
+export function locateAll(cwd, findings, files) {
+  const located = new Map();
+  const pageVotes = new Map();
+  const dirVotes = new Map();
+  for (const f of findings) {
+    const file = hintedFile(cwd, f, files) ?? fileByContent(cwd, f, files);
+    located.set(f, file);
+    if (!file || DATA_FILES.test(file)) continue;
+    if (f.page) {
+      const votes = pageVotes.get(f.page) ?? new Map();
+      votes.set(file, (votes.get(file) ?? 0) + 1);
+      pageVotes.set(f.page, votes);
+    }
+    const dir = path.posix.dirname(file);
+    dirVotes.set(dir, (dirVotes.get(dir) ?? 0) + 1);
+  }
+  for (const f of findings) {
+    if (located.get(f)) continue;
+    const byName = fileByPageName(f, files, dirVotes);
+    const votes = pageVotes.get(f.page);
+    let file = byName;
+    if (!file && votes) file = [...votes.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    located.set(f, file ?? null);
+  }
+  return located;
 }
 
 export function searchTerms(f) {
@@ -328,6 +397,15 @@ export function searchTerms(f) {
     if (dest) {
       const name = decodeURIComponent(new URL(dest[1]).pathname.split('/').pop() ?? '');
       if (name.length >= 4) terms.add(name);
+    }
+    // Recurso que falhou (ex.: 404 http://localhost:3000/img/hero.png): procura pelo nome do arquivo.
+    for (const m of line.matchAll(/https?:\/\/[^\s"'<>]+/g)) {
+      try {
+        const name = decodeURIComponent(new URL(m[0]).pathname.split('/').pop() ?? '');
+        if (name.length >= 4 && name.includes('.')) terms.add(name);
+      } catch {
+        // URL inválida: ignora
+      }
     }
     for (const m of line.matchAll(/\b(?:href|src|id|class|onclick|placeholder|aria-[a-z]+)="([^"]{4,})"/g)) {
       terms.add(m[0]);

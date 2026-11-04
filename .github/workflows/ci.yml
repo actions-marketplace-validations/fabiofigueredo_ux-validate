@@ -28,7 +28,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-      security-events: write
+      # Sem security-events: o CI não envia SARIF (upload-sarif: 'false').
     steps:
       - uses: actions/checkout@v7
       - name: Run ux-validate (this repository's action)
@@ -39,6 +39,9 @@ jobs:
           url: http://localhost:4321/index.html
           # O site de demonstração tem problemas de propósito: aqui só conferimos que a Action funciona.
           fail-on: ''
+          # Gera o SARIF (conferido abaixo), mas não envia: os problemas de propósito do site de
+          # demonstração não devem aparecer como alertas na aba Security deste repositório.
+          upload-sarif: 'false'
       - name: Check the action's outputs
         env:
           ISSUES: ${{ steps.ux.outputs.issues }}

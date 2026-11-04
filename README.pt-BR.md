@@ -266,6 +266,7 @@ jobs:
 | `fail-on` | — (nunca falha) | Falha o job com problemas dessa gravidade ou mais graves: `critical`, `high`, `medium`, `low` |
 | `comment` | `true` | Comenta o resumo no PR, atualizando o mesmo comentário a cada push |
 | `sarif` | `true` | Envia o SARIF para o code scanning |
+| `upload-sarif` | `true` | Com `false`, gera o arquivo SARIF (fica no artefato do relatório) sem enviar ao code scanning, ex.: ao testar num site de demonstração com problemas de propósito |
 | `language` | `locale` da configuração, depois inglês | `en` ou `pt-BR` para o comentário e o relatório |
 
 Saídas: `issues`, `critical`, `high`, `report-dir`, `sarif-file`. O resumo também aparece na página de resumo do job.
