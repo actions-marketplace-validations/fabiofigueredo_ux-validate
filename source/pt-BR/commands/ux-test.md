@@ -1,11 +1,11 @@
 ---
-name: persona-test
+name: ux-test
 description: Testa conteúdo, navegação e interface da aplicação web do ponto de vista de cada persona e gera um relatório com os problemas e como corrigi-los.
 shortDescription: Testa a aplicação como cada persona
 argumentHint: "[persona] [--only content|navigation|ui|accessibility]"
 ---
 
-# /persona-test
+# /ux-test
 
 Você vai testar a aplicação **como se fosse cada persona**: tentar cumprir os objetivos dela no navegador, com as limitações dela, e avaliar conteúdo, navegação, interface e acessibilidade pelo ponto de vista dela. No fim, gera um relatório com evidências e sugestões de correção.
 
@@ -24,7 +24,13 @@ Argumentos recebidos: `$ARGUMENTS`
 ## Passo 1: preparar
 
 1. Leia `ux-validate.config.yml`. Ele traz a `app.url`, o comando `app.start` (opcional), os `viewports`, a pasta de personas e `agent.maxStepsPerGoal`.
-2. Leia as personas na pasta configurada (padrão `{{WORK_DIR}}/personas/*.yml`). O formato está em `{{REFERENCES_DIR}}/persona-format.md`. Se não houver nenhuma, pare e sugira criar uma com `/persona-new`. Se algum arquivo parecer inválido, rode `{{PERSONA_VALIDATE_CMD}}` e mostre os erros.
+2. Leia as personas na pasta configurada (padrão `{{WORK_DIR}}/personas/*.yml`). O formato está em `{{REFERENCES_DIR}}/persona-format.md`. Se algum arquivo parecer inválido, rode `{{PERSONA_VALIDATE_CMD}}` e mostre os erros.
+
+   **Se não houver nenhuma persona, este passo é obrigatório antes de qualquer teste:**
+   1. Rode `{{PERSONA_EXAMPLES_CMD}}` e mostre ao usuário as personas pré-definidas com as características de cada uma: quem é, aparelho, tecnologia, visão, paciência, leitura, objetivos e expectativas. Não resuma a ponto de esconder as características: o usuário decide a partir delas.
+   2. Pergunte o que ele prefere: **usar as pré-definidas** (todas ou só algumas), **criar as próprias** ou **as duas coisas**. Espere a resposta; não escolha por ele.
+   3. Para as pré-definidas escolhidas, rode `{{PERSONA_ADD_CMD}} <ids>` (ou `all`). Para criar, siga o fluxo do comando `/ux-persona` (conversa, confirmação, arquivo YAML, validação).
+   4. Só continue o teste quando houver pelo menos uma persona na pasta.
 3. Verifique se a aplicação responde na `app.url`. Se não responder e houver `app.start`, suba-a em segundo plano e espere ficar disponível (até ~60s). Se continuar fora do ar, pare e explique ao usuário.
 
 ## Passo 2: checagens fixas
@@ -95,4 +101,4 @@ Para cada achado seu, procure no código do projeto o arquivo provável. Busque 
    - os objetivos que falharam e o motivo, em uma linha cada;
    - os 5 problemas mais importantes, com o arquivo provável de correção;
    - o caminho do `report.html` para ver tudo com screenshots;
-   - a oferta de corrigir os problemas com `/persona-fix`, começando pelos críticos.
+   - a oferta de corrigir os problemas com `/ux-fix`, começando pelos críticos.

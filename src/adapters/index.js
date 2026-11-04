@@ -33,6 +33,8 @@ const vars = (locale) => ({
   CHECK_CMD: 'npx ux-validate check',
   REPORT_CMD: 'npx ux-validate report',
   PERSONA_VALIDATE_CMD: 'npx ux-validate persona validate',
+  PERSONA_EXAMPLES_CMD: 'npx ux-validate persona examples',
+  PERSONA_ADD_CMD: 'npx ux-validate persona add',
 });
 
 export function loadCommands(locale = getLocale()) {

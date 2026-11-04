@@ -4,6 +4,7 @@ import YAML from 'yaml';
 import { confirm, input, select } from '@inquirer/prompts';
 import { VIEWPORTS, loadConfig } from './config.js';
 import { t, getLocale } from './i18n.js';
+import { sourceDir } from './adapters/index.js';
 
 /**
  * Criação e validação de personas.
@@ -34,7 +35,7 @@ export function slugify(name) {
     .slice(0, 40);
 }
 
-function personasDir(cwd, configPath) {
+export function personasDir(cwd, configPath) {
   let dir = '.ux-validate/personas';
   try {
     dir = loadConfig(cwd, configPath).personas ?? dir;
@@ -139,6 +140,104 @@ async function collect(message, { min }) {
     if (!value) return items;
     items.push(value);
   }
+}
+
+/** Personas pré-definidas que acompanham o ux-validate, no idioma da ferramenta. */
+export function loadPresets(locale = getLocale()) {
+  const dir = path.join(sourceDir(locale), 'personas');
+  return fs
+    .readdirSync(dir)
+    .filter((f) => /\.ya?ml$/.test(f))
+    .sort()
+    .map((file) => {
+      const content = fs.readFileSync(path.join(dir, file), 'utf8');
+      return { file, content, persona: YAML.parse(content) };
+    });
+}
+
+/** Ficha de uma persona para o terminal: quem é, aparelho, características, objetivos e expectativas. */
+export function describePersona(p) {
+  const locale = getLocale();
+  const label = (trait, value) => {
+    const values = TRAITS[trait];
+    let i = values[locale]?.indexOf(value) ?? -1;
+    if (i < 0) i = values.en.indexOf(value);
+    if (i < 0) i = values['pt-BR'].indexOf(value);
+    const option = i >= 0 ? t(`persona.traits.${trait}.options`)[i] : value;
+    return `${t(`persona.labels.${trait}`)}: ${option}`;
+  };
+  const lines = [`● ${p.name} (${p.id})`];
+  if (p.description) lines.push(...wrap(String(p.description).trim(), 4));
+  if (p.viewport) lines.push(`    ${t('persona.labels.viewport')}: ${t(`persona.viewports.${p.viewport}`)}`);
+  for (const trait of Object.keys(TRAITS)) {
+    if (p.traits?.[trait] != null) lines.push(`    ${label(trait, String(p.traits[trait]))}`);
+  }
+  if (p.goals?.length) {
+    lines.push(`    ${t('persona.labels.goals')}:`);
+    for (const g of p.goals) lines.push(`      - ${g}`);
+  }
+  if (p.expectations?.length) {
+    lines.push(`    ${t('persona.labels.expectations')}:`);
+    for (const e of p.expectations) lines.push(`      - ${e}`);
+  }
+  return lines.join('\n');
+}
+
+function wrap(text, indent, width = 96) {
+  const out = [];
+  let line = '';
+  for (const word of text.split(/\s+/)) {
+    if (line && indent + line.length + word.length + 1 > width) {
+      out.push(' '.repeat(indent) + line);
+      line = word;
+    } else line = line ? `${line} ${word}` : word;
+  }
+  if (line) out.push(' '.repeat(indent) + line);
+  return out;
+}
+
+/** `ux-validate persona examples`: mostra as personas pré-definidas e suas características. */
+export function showPresets({ log = console.log } = {}) {
+  const presets = loadPresets();
+  log(`\n${t('persona.presets.title')}\n`);
+  for (const { persona } of presets) log(`${describePersona(persona)}\n`);
+  log(t('persona.presets.howToAdd', { ids: presets.map((p) => p.persona.id).join(' ') }));
+  return presets;
+}
+
+/**
+ * `ux-validate persona add <ids…|all>`: copia personas pré-definidas para a pasta do projeto.
+ * Não sobrescreve arquivos existentes sem `force`.
+ */
+export function addPresets({ cwd, configPath, ids = [], force = false, log = console.log }) {
+  const presets = loadPresets();
+  const all = presets.map((p) => p.persona.id);
+  const wanted = !ids.length || ids.includes('all') ? all : ids;
+  const unknown = wanted.filter((id) => !all.includes(id));
+  if (unknown.length) throw new Error(t('persona.presets.unknown', { list: unknown.join(', '), valid: all.join(', ') }));
+
+  const dir = personasDir(cwd, configPath);
+  fs.mkdirSync(dir, { recursive: true });
+  const results = [];
+  for (const { file, content, persona } of presets) {
+    if (!wanted.includes(persona.id)) continue;
+    const target = path.join(dir, file);
+    const rel = path.relative(cwd, target).split(path.sep).join('/');
+    if (fs.existsSync(target) && !force) {
+      results.push({ rel, status: 'kept' });
+      continue;
+    }
+    fs.writeFileSync(target, content);
+    results.push({ rel, status: 'created' });
+  }
+  for (const r of results) log(`  ${t(`status.${r.status}`).padEnd(10)} ${r.rel}`);
+  return results;
+}
+
+/** Quantas personas o projeto já tem. */
+export function countPersonas(cwd, configPath) {
+  const dir = personasDir(cwd, configPath);
+  return fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => /\.ya?ml$/.test(f)).length : 0;
 }
 
 /** Confere um arquivo de persona. Devolve os erros e avisos encontrados. */

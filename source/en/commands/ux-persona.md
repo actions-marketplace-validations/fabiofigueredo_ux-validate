@@ -1,13 +1,13 @@
 ---
-name: persona-new
+name: ux-persona
 description: Creates a persona for ux-validate tests by talking with the user about who uses the app, and saves the file in .ux-validate/personas/.
 shortDescription: Create a new persona
 argumentHint: "[free description, e.g. \"older customer who shops on their phone\"]"
 ---
 
-# /persona-new
+# /ux-persona
 
-You'll help the user create a persona: a real kind of user of the app, with traits that change how `/persona-test` runs its tests. Talk it through, propose, and only save after confirmation.
+You'll help the user create a persona: a real kind of user of the app, with traits that change how `/ux-test` runs its tests. Talk it through, propose, and only save after confirmation.
 
 Arguments received: `$ARGUMENTS` (an optional free description of the persona).
 
@@ -23,7 +23,7 @@ Talk to the user in English.
 
 ## Steps
 
-1. Read `{{REFERENCES_DIR}}/persona-format.md` and list the personas that already exist in the folder set in `ux-validate.config.yml` (default `{{WORK_DIR}}/personas/`). If there are any, show a one-line summary of each: the new persona should be **different** from them.
+1. Read `{{REFERENCES_DIR}}/persona-format.md` and list the personas that already exist in the folder set in `ux-validate.config.yml` (default `{{WORK_DIR}}/personas/`). If there are any, show a one-line summary of each: the new persona should be **different** from them. If the user doesn't know the predefined ones yet, show them with `{{PERSONA_EXAMPLES_CMD}}`: one of them may already fit (`{{PERSONA_ADD_CMD}} <id>`).
 2. If the arguments already describe the persona, start from them. Otherwise, ask who the person is.
 3. Find out what's missing by talking:
    - who they are (approximate age, occupation, context of use) → `description`;
@@ -42,4 +42,4 @@ Talk to the user in English.
 ```
 
    Fix any errors.
-8. Answer with a one-line summary of the persona and the next step: `/persona-test <id>`. If the project's personas are similar to each other, suggest creating a very different one (another device, another limitation, another goal).
+8. Answer with a one-line summary of the persona and the next step: `/ux-test <id>`. If the project's personas are similar to each other, suggest creating a very different one (another device, another limitation, another goal).

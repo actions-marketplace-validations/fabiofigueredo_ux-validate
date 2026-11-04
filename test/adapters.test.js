@@ -18,8 +18,8 @@ test('adapter do Claude Code cria skills e preserva servidores MCP existentes', 
   fs.writeFileSync(path.join(dir, '.mcp.json'), JSON.stringify({ mcpServers: { outro: { command: 'x' } } }));
   claudeCode.install({ cwd: dir, commands: loadCommands(), force: false });
 
-  const skill = fs.readFileSync(path.join(dir, '.claude/skills/persona-test/SKILL.md'), 'utf8');
-  assert.match(skill, /^---\nname: persona-test\n/);
+  const skill = fs.readFileSync(path.join(dir, '.claude/skills/ux-test/SKILL.md'), 'utf8');
+  assert.match(skill, /^---\nname: ux-test\n/);
   assert.match(skill, /disable-model-invocation: true/);
 
   const mcp = JSON.parse(fs.readFileSync(path.join(dir, '.mcp.json'), 'utf8'));

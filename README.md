@@ -13,7 +13,7 @@ Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Marg
 ## How it works
 
 ```
-/persona-test
+/ux-test
    │
    ├─ 1. Automated checks  (npx ux-validate check)
    │     axe-core, WAI-ARIA and keyboard, broken links, console errors,
@@ -32,7 +32,7 @@ Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Marg
          scores by persona, goals achieved, issues with evidence
          and suggested fixes → report.md + report.html
 
-/persona-fix  or  npx ux-validate fix
+/ux-fix  or  npx ux-validate fix
    └─ applies the fixes to the code, showing each change before saving
 ```
 
@@ -40,22 +40,22 @@ ux-validate runs **inside your AI tool**: the model used is whichever one that t
 
 ## Supported AI tools
 
-Setup installs the same commands (`persona-test`, `persona-report`, `persona-fix`, `persona-new`) in each tool's own format, plus the Playwright MCP server the agent uses as its browser. You can pick several tools at once.
+Setup installs the same commands (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`) in each tool's own format, plus the Playwright MCP server the agent uses as its browser. You can pick several tools at once.
 
 | Tool | Commands are installed in | How to call them | Browser (MCP) registered in |
 |---|---|---|---|
-| **Claude Code** | `.claude/skills/<name>/SKILL.md` | `/persona-test` | `.mcp.json` |
-| **Cursor** | `.cursor/commands/<name>.md` | `/persona-test` in the agent chat | `.cursor/mcp.json` |
-| **Codex CLI** | `.agents/skills/<name>/SKILL.md` (with `agents/openai.yaml`) | `$persona-test` | `.codex/config.toml` |
-| **Gemini CLI** | `.gemini/commands/<name>.toml` | `/persona-test` | `.gemini/settings.json` |
+| **Claude Code** | `.claude/skills/<name>/SKILL.md` | `/ux-test` | `.mcp.json` |
+| **Cursor** | `.cursor/commands/<name>.md` | `/ux-test` in the agent chat | `.cursor/mcp.json` |
+| **Codex CLI** | `.agents/skills/<name>/SKILL.md` (with `agents/openai.yaml`) | `$ux-test` | `.codex/config.toml` |
+| **Gemini CLI** | `.gemini/commands/<name>.toml` | `/ux-test` | `.gemini/settings.json` |
 
 Notes:
 
 - The commands only run when you call them: the tests open a browser and use tokens. In Claude Code this is `disable-model-invocation`; in Codex, `allow_implicit_invocation: false`.
 - Codex reads `.codex/config.toml` and Gemini reads `.gemini/settings.json` only in folders you **trust**; accept the prompt the first time you open the project.
 - Existing config files are preserved: setup only adds the `playwright` server if it isn't there.
-- Gemini CLI also reads `.agents/skills/`. If you install both Codex and Gemini, Gemini may list the Codex skills too; use the `/persona-…` commands, and Gemini asks for confirmation before activating any skill.
-- Arguments go after the command name in every tool, e.g. `/persona-test margaret` or `$persona-test margaret`.
+- Gemini CLI also reads `.agents/skills/`. If you install both Codex and Gemini, Gemini may list the Codex skills too; use the `/ux-…` commands, and Gemini asks for confirmation before activating any skill.
+- Arguments go after the command name in every tool, e.g. `/ux-test margaret` or `$ux-test margaret`.
 
 ## Languages
 
@@ -84,13 +84,13 @@ Spelling is checked **offline**, with Hunspell and the LibreOffice dictionaries.
 - Flags unknown words with suggested corrections (`recieve` → `receive`) and, in Portuguese or Spanish content, English words in the middle of the text.
 - Ignores proper names, brands (`WhatsApp`), acronyms, URLs, emails and template variables.
 - Correct words the dictionary doesn't know (your company name, technical terms) go in `.ux-validate/dictionary.txt` (or `dicionario.txt` when the tool runs in Portuguese; both are read), one per line, or in `spelling.ignore` in the config.
-- In `/persona-test`, the agent reviews these findings, discards false positives and reviews the **grammar** ("their" × "there", "its" × "it's"…), which the dictionary doesn't catch.
+- In `/ux-test`, the agent reviews these findings, discards false positives and reviews the **grammar** ("their" × "there", "its" × "it's"…), which the dictionary doesn't catch.
 
 ## Applying the fixes
 
 After the report, ux-validate can fix the code for you, in two ways:
 
-| | `/persona-fix` (in Claude Code) | `npx ux-validate fix` (in the terminal) |
+| | `/ux-fix` (in Claude Code) | `npx ux-validate fix` (in the terminal) |
 |---|---|---|
 | **Model** | Whatever Claude Code is using | The provider and model chosen in setup: Anthropic, OpenAI, Google or Ollama (local) |
 | **Cost** | Usage of your Claude Code account | Tokens billed to **your** provider account, with **your** API key |
@@ -145,7 +145,7 @@ Setup asks for:
 - the **screen sizes** (mobile, tablet, desktop);
 - the **language of the content**, for the spell check;
 - whether to set up a **model to apply fixes from the terminal** (`npx ux-validate fix`): **provider** (Anthropic, OpenAI, Google, Ollama), **model** and the name of the environment variable holding your API key;
-- whether to create **example personas**.
+- **which personas to use** (mandatory step): setup shows the predefined personas with each one's characteristics, and you choose to use them (all or only some), create your own right there, or both. See [Personas](#personas).
 
 And creates:
 
@@ -157,7 +157,9 @@ And creates:
 | `.ux-validate/dictionary.txt` | Correct words the dictionary doesn't know |
 | The commands and MCP files for each chosen tool | See [Supported AI tools](#supported-ai-tools) |
 
-Use `--yes` to accept the defaults without questions, `--tools claude-code,cursor,codex,gemini` to choose the tools without questions, and `--force` to overwrite existing files.
+Use `--yes` to accept the defaults without questions, `--tools claude-code,cursor,codex,gemini` to choose the tools without questions, `--personas all|none|margaret,raj-dev` to choose the predefined personas without questions (default: `all`), and `--force` to overwrite existing files.
+
+> **Upgrading from an earlier version?** The agent commands were renamed: `/persona-test` → `/ux-test`, `/persona-report` → `/ux-report`, `/persona-fix` → `/ux-fix` and `/persona-new` → `/ux-persona`. Run `npx ux-validate init` again: it installs the new ones and removes the old ones it had created.
 
 ## Usage
 
@@ -165,18 +167,20 @@ In your AI tool, inside your project (in Codex, use `$` instead of `/`):
 
 | Command | What it does |
 |---|---|
-| `/persona-new` | Creates a persona by talking with you about who uses the app |
-| `/persona-test` | Tests with every persona and builds the report |
-| `/persona-test margaret` | Tests with a single persona |
-| `/persona-test --only accessibility` | Evaluates a single category (`content`, `navigation`, `ui`, `accessibility`) |
-| `/persona-report` | Rebuilds the latest run's report and drafts a fix plan |
-| `/persona-report --compare` | Shows what was resolved, what remains and what's new |
-| `/persona-fix` | Applies the report's fixes (critical, high and medium) |
-| `/persona-fix A001,C003` | Applies only the fixes for these issues |
+| `/ux-persona` | Creates a persona by talking with you about who uses the app |
+| `/ux-test` | Tests with every persona and builds the report |
+| `/ux-test margaret` | Tests with a single persona |
+| `/ux-test --only accessibility` | Evaluates a single category (`content`, `navigation`, `ui`, `accessibility`) |
+| `/ux-report` | Rebuilds the latest run's report and drafts a fix plan |
+| `/ux-report --compare` | Shows what was resolved, what remains and what's new |
+| `/ux-fix` | Applies the report's fixes (critical, high and medium) |
+| `/ux-fix A001,C003` | Applies only the fixes for these issues |
 
 From the terminal (useful in CI):
 
 ```bash
+npx ux-validate persona examples # show the predefined personas and their characteristics
+npx ux-validate persona add all  # copy the predefined ones into the project (or: add margaret)
 npx ux-validate persona new      # create a persona with a step-by-step wizard
 npx ux-validate persona validate # check the persona files
 npx ux-validate check            # automated checks only
@@ -231,7 +235,7 @@ Outputs: `issues`, `critical`, `high`, `report-dir`, `sarif-file`. The summary a
 
 Notes:
 
-- The action runs the **automated checks** (accessibility, WAI-ARIA, links, spelling, layout). The persona evaluation needs an AI tool and runs locally with `/persona-test`.
+- The action runs the **automated checks** (accessibility, WAI-ARIA, links, spelling, layout). The persona evaluation needs an AI tool and runs locally with `/ux-test`.
 - Code scanning is free on public repositories; on private ones it needs GitHub Advanced Security. Without it, the SARIF upload step is skipped with a warning and everything else still works.
 - On pull requests from forks, GitHub gives a read-only token: the comment step is skipped with a warning.
 - A sample workflow is in [`examples/github-workflow.yml`](examples/github-workflow.yml).
@@ -246,9 +250,21 @@ npx ux-validate comment --out comment.md
 
 ## Personas
 
-A persona is a real kind of user of your app, written as a YAML file in `.ux-validate/personas/`. Setup creates three examples; to create your own:
+A persona is a real kind of user of your app, written as a YAML file in `.ux-validate/personas/`. There's no test without at least one persona, so **choosing personas is a mandatory step**: during setup and, if the folder is empty, at the start of `/ux-test`, which shows the predefined personas and asks what you prefer before opening the browser.
 
-- **`/persona-new` in Claude Code:** the agent interviews you about the real user (who they are, which device, limitations, what they come to do), can look at your app to suggest goals, shows the file and saves it after you confirm. You can start with a description: `/persona-new older customer who shops on their phone`.
+### Predefined personas
+
+| Persona | Who they are | Device | Tech literacy | Vision | Patience | Reading | Goals |
+|---|---|---|---|---|---|---|---|
+| **Margaret** (`margaret`) | 68, retired; uses messaging and her banking app, sometimes with her grandson's help | Phone | Low | Reduced | Low | Basic | Understand what the company offers; find out the price; find a phone number |
+| **Lucas** (`lucas-screen-reader`) | 35, financial analyst, blind since childhood; uses a screen reader and keyboard | Computer | High | Screen reader | Medium | Advanced | Understand the offer by navigating headings only; fill in the contact form |
+| **Raj** (`raj-dev`) | 29, developer; evaluates tools for the team and compares with competitors | Computer | High | Normal | Medium | Advanced | Compare plans and limits; create a trial account; find the docs |
+
+To see the full card (with expectations) run `npx ux-validate persona examples`; to add them later, `npx ux-validate persona add <id>` or `all`. Adjust the goals to your product.
+
+### Create your own
+
+- **`/ux-persona` in Claude Code:** the agent interviews you about the real user (who they are, which device, limitations, what they come to do), can look at your app to suggest goals, shows the file and saves it after you confirm. You can start with a description: `/ux-persona older customer who shops on their phone`.
 - **`npx ux-validate persona new` in the terminal:** a step-by-step wizard with multiple-choice questions for each trait. It doesn't use a language model.
 
 Both check the file with `npx ux-validate persona validate`, which you can also run any time to check every persona in the project (required fields, valid values, repeated ids).
@@ -321,7 +337,7 @@ npx ux-validate report
 
 Open `report.html` in `.ux-validate/runs/<date-time>/`.
 
-**4. Run the persona test:** open the `test-project` folder in VS Code, open Claude Code, approve the `playwright` MCP server (or enable it with `/mcp`) and type `/persona-test margaret`.
+**4. Run the persona test:** open the `test-project` folder in VS Code, open Claude Code, approve the `playwright` MCP server (or enable it with `/mcp`) and type `/ux-test margaret`.
 
 `examples/sample-findings.en.json` shows the kind of result the agent produces.
 
@@ -329,7 +345,7 @@ Open `report.html` in `.ux-validate/runs/<date-time>/`.
 
 | Symptom | Fix |
 |---|---|
-| `/persona-test` doesn't show up | The open folder must be the project where you ran `init` (the one with `.claude/`, `.cursor/`, `.agents/` or `.gemini/`). In Gemini CLI, run `/commands reload` |
+| `/ux-test` doesn't show up | The open folder must be the project where you ran `init` (the one with `.claude/`, `.cursor/`, `.agents/` or `.gemini/`). In Gemini CLI, run `/commands reload` |
 | The agent has no browser tools | Approve or enable the `playwright` MCP server in your tool; in Codex and Gemini, trust the project folder |
 | Error saying the browser wasn't found | Run `npx playwright install chromium` in the project |
 | "The start page doesn't open" | Check that the app is running and that `app.url` is right |
@@ -372,14 +388,14 @@ The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{C
 
 ## Roadmap
 
-- [x] Interactive setup, Claude Code adapter, `/persona-test` and `/persona-report`
+- [x] Interactive setup, Claude Code adapter, `/ux-test` and `/ux-report`
 - [x] Automated checks and report with scores by persona
 - [x] Accessibility with WAI-ARIA, and spell check
-- [x] `/persona-fix` and `npx ux-validate fix` (apply fixes with the user's model)
+- [x] `/ux-fix` and `npx ux-validate fix` (apply fixes with the user's model)
 - [x] English and Portuguese
 - [x] Adapters for Cursor, Codex CLI and Gemini CLI
 - [x] GitHub Action with a PR comment and SARIF output
-- [x] `/persona-new` and `npx ux-validate persona new` (create personas)
+- [x] `/ux-persona` and `npx ux-validate persona new` (create personas)
 - [ ] Persona browsing from the terminal (no AI tool), with the model chosen in setup
 - [ ] Repeat the browsing and only confirm issues that show up in more than one run
 

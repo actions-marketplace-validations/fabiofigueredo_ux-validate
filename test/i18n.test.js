@@ -38,8 +38,8 @@ test('comandos e referências existem nos dois idiomas, com os mesmos arquivos',
     assert.equal(en, pt, sub);
   }
   assert.deepEqual(fs.readdirSync(path.join(sourceDir('en'), 'commands')), fs.readdirSync(path.join(sourceDir('pt-BR'), 'commands')));
-  const en = loadCommands('en').find((c) => c.name === 'persona-test');
-  const pt = loadCommands('pt-BR').find((c) => c.name === 'persona-test');
+  const en = loadCommands('en').find((c) => c.name === 'ux-test');
+  const pt = loadCommands('pt-BR').find((c) => c.name === 'ux-test');
   assert.match(en.body, /Step 1: prepare/);
   assert.match(en.body, /\.ux-validate\/dictionary\.txt/);
   assert.match(pt.body, /Passo 1: preparar/);
@@ -71,6 +71,6 @@ test('init em inglês grava config, dicionário e personas em inglês', async ()
   assert.match(config, /^language: en$/m);
   assert.ok(fs.existsSync(path.join(dir, '.ux-validate/dictionary.txt')));
   assert.ok(fs.existsSync(path.join(dir, '.ux-validate/personas/margaret.yml')));
-  assert.match(fs.readFileSync(path.join(dir, '.claude/skills/persona-fix/SKILL.md'), 'utf8'), /Applies the fixes/);
+  assert.match(fs.readFileSync(path.join(dir, '.claude/skills/ux-fix/SKILL.md'), 'utf8'), /Applies the fixes/);
   assert.ok(logs.some((l) => /Next steps/.test(l)));
 });

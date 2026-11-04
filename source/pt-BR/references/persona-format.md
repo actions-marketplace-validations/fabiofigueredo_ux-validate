@@ -2,7 +2,7 @@
 
 Cada persona é um arquivo `.yml` na pasta de personas (padrão `.ux-validate/personas/`).
 
-Para criar uma: `/persona-new` no Claude Code (conversando) ou `npx ux-validate persona new` no terminal (assistente passo a passo). Para conferir os arquivos: `npx ux-validate persona validate`.
+Para criar uma: `/ux-persona` no Claude Code (conversando) ou `npx ux-validate persona new` no terminal (assistente passo a passo). Para conferir os arquivos: `npx ux-validate persona validate`.
 
 ```yaml
 id: dona-maria              # identificador curto, sem espaços (usado no relatório)

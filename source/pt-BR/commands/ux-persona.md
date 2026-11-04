@@ -1,13 +1,13 @@
 ---
-name: persona-new
+name: ux-persona
 description: Cria uma persona para os testes do ux-validate conversando com o usuário sobre quem usa a aplicação, e grava o arquivo em .ux-validate/personas/.
 shortDescription: Cria uma nova persona
 argumentHint: "[descrição livre, ex.: \"cliente idoso que compra pelo celular\"]"
 ---
 
-# /persona-new
+# /ux-persona
 
-Você vai ajudar o usuário a criar uma persona: um tipo real de usuário da aplicação, com características que mudam como os testes do `/persona-test` são feitos. Converse, proponha e só grave depois da confirmação.
+Você vai ajudar o usuário a criar uma persona: um tipo real de usuário da aplicação, com características que mudam como os testes do `/ux-test` são feitos. Converse, proponha e só grave depois da confirmação.
 
 Argumentos recebidos: `$ARGUMENTS` (uma descrição livre da persona, opcional).
 
@@ -21,7 +21,7 @@ Argumentos recebidos: `$ARGUMENTS` (uma descrição livre da persona, opcional).
 
 ## Passos
 
-1. Leia `{{REFERENCES_DIR}}/persona-format.md` e liste as personas que já existem na pasta configurada em `ux-validate.config.yml` (padrão `{{WORK_DIR}}/personas/`). Se houver, mostre um resumo de uma linha de cada uma: a nova persona deve ser **diferente** delas.
+1. Leia `{{REFERENCES_DIR}}/persona-format.md` e liste as personas que já existem na pasta configurada em `ux-validate.config.yml` (padrão `{{WORK_DIR}}/personas/`). Se houver, mostre um resumo de uma linha de cada uma: a nova persona deve ser **diferente** delas. Se o usuário ainda não conhece as pré-definidas, mostre-as com `{{PERSONA_EXAMPLES_CMD}}`: talvez uma delas já sirva (`{{PERSONA_ADD_CMD}} <id>`).
 2. Se os argumentos já descrevem a persona, parta deles. Senão, pergunte quem é a pessoa.
 3. Descubra, conversando, o que falta:
    - quem é (idade aproximada, ocupação, contexto de uso) → `description`;
@@ -40,4 +40,4 @@ Argumentos recebidos: `$ARGUMENTS` (uma descrição livre da persona, opcional).
 ```
 
    Corrija os erros, se houver.
-8. Responda com um resumo de uma linha da persona e o próximo passo: `/persona-test <id>`. Se as personas do projeto forem parecidas entre si, sugira criar outra bem diferente (outro aparelho, outra limitação, outro objetivo).
+8. Responda com um resumo de uma linha da persona e o próximo passo: `/ux-test <id>`. Se as personas do projeto forem parecidas entre si, sugira criar outra bem diferente (outro aparelho, outra limitação, outro objetivo).

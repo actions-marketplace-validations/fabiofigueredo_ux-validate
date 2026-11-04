@@ -8,11 +8,12 @@ import { ADAPTERS, sourceDir, loadCommands } from './adapters/index.js';
 import { writeFile } from './files.js';
 import { projectDictionary } from './spelling.js';
 import { t, getLocale, setLocale } from './i18n.js';
+import { loadPresets, describePersona, addPresets, newPersona, countPersonas } from './persona.js';
 
 const CONTENT_LANGUAGES = ['pt-BR', 'en', 'es', 'other'];
 
-export async function init({ cwd, yes = false, force = false, tools }) {
-  const answers = yes ? defaultAnswers(tools) : await ask();
+export async function init({ cwd, yes = false, force = false, tools, personas }) {
+  const answers = yes ? defaultAnswers(tools, personas) : await ask();
   setLocale(answers.locale);
   // Carrega os comandos antes de gravar qualquer arquivo, para não deixar uma instalação pela metade.
   const commands = loadCommands(answers.locale);
@@ -29,26 +30,78 @@ export async function init({ cwd, yes = false, force = false, tools }) {
 
   results.push(writeFile(cwd, projectDictionary(answers.locale), t('init.dictionaryTemplate')));
 
-  if (answers.examplePersonas) {
-    for (const file of fs.readdirSync(path.join(source, 'personas'))) {
-      const content = fs.readFileSync(path.join(source, 'personas', file), 'utf8');
-      results.push(writeFile(cwd, `${WORK_DIR}/personas/${file}`, content));
-    }
-  }
+  if (answers.presetIds.length) results.push(...addPresets({ cwd, ids: answers.presetIds, log: () => {} }));
 
   for (const id of answers.targets) {
     const adapter = ADAPTERS.find((a) => a.id === id);
     results.push(...adapter.install({ cwd, commands, force }));
   }
 
+  results.push(...removeLegacyCommands(cwd));
   results.push(ensureGitignore(cwd));
 
   console.log('');
   for (const r of results) console.log(`  ${t(`status.${r.status}`).padEnd(10)} ${r.rel}`);
-  printNextSteps(answers);
+
+  // Passo obrigatório: sem personas não há teste. A criação roda depois de gravar a configuração,
+  // para o assistente usar a pasta de personas e o idioma do conteúdo escolhidos.
+  if (answers.createPersonas) await createPersonas(cwd);
+
+  printNextSteps(answers, cwd);
 }
 
-function defaultAnswers(tools) {
+/** Assistente de criação em sequência: pelo menos uma persona, depois quantas o usuário quiser. */
+async function createPersonas(cwd) {
+  let created = 0;
+  for (;;) {
+    console.log(t('init.createIntro', { n: created + 1 }));
+    if (await newPersona({ cwd })) created++;
+    else if (!created && countPersonas(cwd) === 0) {
+      console.log(t('init.needOne'));
+      continue;
+    }
+    if (!(await confirm({ message: t('init.createAnotherQ'), default: false }))) return created;
+  }
+}
+
+/**
+ * Até a versão 0.x os comandos se chamavam persona-test, persona-report, persona-fix e persona-new.
+ * Remove as cópias geradas pelo ux-validate (só as que mencionam o ux-validate) para não ficarem duplicadas.
+ */
+const LEGACY_NAMES = ['persona-test', 'persona-report', 'persona-fix', 'persona-new'];
+const LEGACY_PATHS = (name) => [
+  { rel: `.claude/skills/${name}`, check: 'SKILL.md' },
+  { rel: `.agents/skills/${name}`, check: 'SKILL.md' },
+  { rel: `.cursor/commands/${name}.md` },
+  { rel: `.gemini/commands/${name}.toml` },
+];
+
+export function removeLegacyCommands(cwd) {
+  const results = [];
+  for (const name of LEGACY_NAMES) {
+    for (const { rel, check } of LEGACY_PATHS(name)) {
+      const target = path.join(cwd, rel);
+      const file = check ? path.join(target, check) : target;
+      if (!fs.existsSync(file) || !fs.readFileSync(file, 'utf8').includes('ux-validate')) continue;
+      fs.rmSync(target, { recursive: true, force: true });
+      results.push({ rel, status: 'removed' });
+    }
+  }
+  return results;
+}
+
+/** --personas all | none | id,id (modo não interativo). */
+function presetIdsFromOption(value = 'all') {
+  const all = loadPresets().map((p) => p.persona.id);
+  const ids = value.split(',').map((s) => s.trim()).filter(Boolean);
+  if (!ids.length || ids.includes('all')) return all;
+  if (ids.includes('none')) return [];
+  const unknown = ids.filter((id) => !all.includes(id));
+  if (unknown.length) throw new Error(t('init.unknownPersonas', { list: unknown.join(', '), valid: all.join(', ') }));
+  return ids;
+}
+
+function defaultAnswers(tools, personas) {
   const locale = getLocale();
   const targets = tools ? tools.split(',').map((s) => s.trim()).filter(Boolean) : ['claude-code'];
   const unknown = targets.filter((id) => !ADAPTERS.some((a) => a.id === id));
@@ -61,7 +114,8 @@ function defaultAnswers(tools) {
     viewports: ['mobile', 'desktop'],
     language: locale,
     standalone: null,
-    examplePersonas: true,
+    presetIds: presetIdsFromOption(personas),
+    createPersonas: false,
   };
 }
 
@@ -109,7 +163,7 @@ async function ask() {
     choices: CONTENT_LANGUAGES.map((value) => ({ name: t(`init.languages.${value}`), value })),
   });
 
-  // Na ferramenta de IA (ex.: /persona-fix no Claude Code) o modelo é o da própria ferramenta.
+  // Na ferramenta de IA (ex.: /ux-fix no Claude Code) o modelo é o da própria ferramenta.
   // Pelo terminal (npx ux-validate fix, CI), o ux-validate chama o provedor direto, com a chave do usuário.
   let standalone = null;
   console.log(t('init.fixIntro'));
@@ -125,9 +179,30 @@ async function ask() {
     if (info.baseUrl) standalone.baseUrl = await input({ message: t('init.baseUrlQ'), default: info.baseUrl });
   }
 
-  const examplePersonas = await confirm({ message: t('init.examplesQ'), default: true });
+  const { presetIds, createPersonas } = await askPersonas();
 
-  return { locale, targets, url, start, viewports, language, standalone, examplePersonas };
+  return { locale, targets, url, start, viewports, language, standalone, presetIds, createPersonas };
+}
+
+/** Passo obrigatório: mostra as personas pré-definidas e pede para usar, criar ou as duas coisas. */
+async function askPersonas() {
+  const presets = loadPresets();
+  console.log(t('init.personasIntro'));
+  for (const { persona } of presets) console.log(`${describePersona(persona)}\n`);
+
+  const choice = await select({
+    message: t('init.personasQ'),
+    choices: ['presets', 'create', 'both'].map((value) => ({ name: t(`init.personaChoices.${value}`), value })),
+  });
+  let presetIds = [];
+  if (choice !== 'create') {
+    presetIds = await checkbox({
+      message: t('init.presetsQ'),
+      required: true,
+      choices: presets.map(({ persona }) => ({ name: `${persona.name} (${persona.id})`, value: persona.id, checked: true })),
+    });
+  }
+  return { presetIds, createPersonas: choice !== 'presets' };
 }
 
 function validateUrl(value) {
@@ -167,9 +242,11 @@ function ensureGitignore(cwd) {
   return { rel: '.gitignore', status: current ? 'updated' : 'created' };
 }
 
-function printNextSteps(a) {
+function printNextSteps(a, cwd) {
   console.log(t('init.next.title'));
-  console.log(t('init.next.personas', { dir: `${WORK_DIR}/personas` }));
+  const n = countPersonas(cwd);
+  const dir = `${WORK_DIR}/personas`;
+  console.log(n ? t('init.next.personas', { dir, n }) : t('init.next.noPersonas', { dir }));
   if (a.targets.length) {
     console.log(t('init.next.useTools'));
     for (const id of a.targets) console.log(t(`init.next.tools.${id}`));

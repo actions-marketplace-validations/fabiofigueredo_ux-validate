@@ -127,5 +127,5 @@ test('fix --dry-run não altera arquivos', async () => {
 test('fix sem modelo configurado explica como configurar', async () => {
   const { dir } = project();
   fs.writeFileSync(path.join(dir, 'ux-validate.config.yml'), 'app:\n  url: http://x\n');
-  await assert.rejects(fix({ cwd: dir, yes: true, log: () => {} }), /persona-fix/);
+  await assert.rejects(fix({ cwd: dir, yes: true, log: () => {} }), /ux-fix/);
 });

@@ -82,3 +82,31 @@ test('as personas de exemplo dos dois idiomas são válidas', () => {
 test('sem personas, explica como criar', () => {
   assert.throws(() => validatePersonas({ cwd: tmp(), log: () => {} }), /persona new/);
 });
+
+test('personas pré-definidas: ficha com as características e cópia para o projeto', async () => {
+  const { loadPresets, describePersona, addPresets, showPresets } = await import('../src/persona.js');
+  const presets = loadPresets('en');
+  assert.deepEqual(presets.map((p) => p.persona.id), ['lucas-screen-reader', 'margaret', 'raj-dev']);
+  const card = describePersona(presets.find((p) => p.persona.id === 'margaret').persona);
+  assert.match(card, /● Margaret \(margaret\)/);
+  assert.match(card, /Device: Phone \(mobile\)/);
+  assert.match(card, /Vision: Reduced/);
+  assert.match(card, /Goals:\n {6}- Understand what the company offers/);
+
+  setLocale('pt-BR');
+  try {
+    // Valores em inglês também aparecem com o rótulo traduzido.
+    assert.match(describePersona({ ...valid, traits: { ...valid.traits, vision: 'screen-reader' } }), /Visão: Leitor de tela/);
+    const out = [];
+    showPresets({ log: (l) => out.push(l) });
+    assert.match(out.join('\n'), /Dona Maria \(dona-maria\)[\s\S]*npx ux-validate persona add all/);
+  } finally {
+    setLocale('en');
+  }
+
+  const dir = tmp();
+  const results = addPresets({ cwd: dir, ids: ['margaret'], log: () => {} });
+  assert.deepEqual(results, [{ rel: '.ux-validate/personas/margaret.yml', status: 'created' }]);
+  assert.equal(addPresets({ cwd: dir, ids: ['all'], log: () => {} }).filter((r) => r.status === 'kept').length, 1);
+  assert.throws(() => addPresets({ cwd: dir, ids: ['nobody'], log: () => {} }), /Unknown predefined persona: nobody/);
+});

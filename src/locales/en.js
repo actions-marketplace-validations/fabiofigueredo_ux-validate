@@ -9,13 +9,14 @@ export default {
     mcpInvalid: 'skipped (invalid JSON; add the Playwright MCP manually)',
     mcpKept: 'kept (Playwright MCP already set up)',
     mcpAdded: 'updated (Playwright MCP added)',
+    removed: 'removed (old command name)',
   },
 
   cli: {
     help: `ux-validate — persona-based testing of content, navigation, UI and accessibility
 
 Usage:
-  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini]
+  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini] [--personas all|none|id,id]
                                                  Set up the project and install the commands in your AI tools
   ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
                                                  Run the automated checks (accessibility, links, spelling, content)
@@ -26,6 +27,8 @@ Usage:
                                                  Summary in Markdown for a pull request comment
   ux-validate persona new [--force]              Create a persona with a step-by-step wizard
   ux-validate persona validate [files…]          Check persona files (default: all in the project)
+  ux-validate persona examples                   Show the predefined personas and their characteristics
+  ux-validate persona add <id…|all> [--force]    Copy predefined personas into the project
   ux-validate fix    [--run <dir>] [--ids A001,C003] [--severity high] [--dry-run] [--yes]
                                                  Apply the report's fixes with the model set up in init
                                                  (uses your API key and your tokens)
@@ -74,7 +77,20 @@ General options:
     modelQ: 'Model:',
     apiKeyEnvQ: 'Name of the environment variable that holds your API key (the key is never stored in the file):',
     baseUrlQ: 'Server address:',
-    examplesQ: 'Create example personas?',
+    personasIntro:
+      '\n  Personas: ux-validate tests your app through the eyes of each persona, so the project needs at least one.\n' +
+      '  You can use the predefined personas below, create your own, or both.\n',
+    personasQ: 'Which personas do you want to use?',
+    personaChoices: {
+      presets: 'Use the predefined personas',
+      create: 'Create my own personas now',
+      both: 'Use the predefined ones and create my own too',
+    },
+    presetsQ: 'Which predefined personas? (space toggles)',
+    createIntro: '\nNow create your persona ({n}).',
+    createAnotherQ: 'Create another persona?',
+    needOne: 'The project needs at least one persona. Let\'s create the first one.',
+    unknownPersonas: 'Invalid value for --personas: {list}. Use all, none or ids among: {valid}.',
     invalidUrl: 'Invalid URL. Example: http://localhost:3000',
     fileMissing: "That file doesn't exist. Check the path or use a server URL (http://...).",
     urlProtocol: 'Use a URL that starts with http://, https:// or file://',
@@ -88,21 +104,24 @@ General options:
       "# but unknown to the dictionary. Lines starting with # are ignored.\n",
     next: {
       title: '\nNext steps:',
-      personas: '  1. Review the personas in {dir}/ or create your own (npx ux-validate persona new, or the persona-new command below).',
+      personas: ({ dir, n }) =>
+        `  1. ${n} persona(s) in ${dir}/. Adjust their goals to your product; to add more, use npx ux-validate persona new or the ux-persona command below.`,
+      noPersonas: ({ dir }) =>
+        `  1. No personas in ${dir}/ yet. Before testing, pick the predefined ones (npx ux-validate persona examples) or create your own (npx ux-validate persona new). ux-test will ask for this too.`,
       useTools: '  2. In your AI tool:',
       tools: {
         'claude-code':
-          '     • Claude Code: open it in this project, approve the "playwright" MCP server and run /persona-test.\n' +
-          '       Also: /persona-new, /persona-report, /persona-fix',
+          '     • Claude Code: open it in this project, approve the "playwright" MCP server and run /ux-test.\n' +
+          '       Also: /ux-persona, /ux-report, /ux-fix',
         cursor:
-          '     • Cursor: open this project, enable the "playwright" MCP server in the MCP settings and run /persona-test in the agent chat.\n' +
-          '       Also: /persona-new, /persona-report, /persona-fix',
+          '     • Cursor: open this project, enable the "playwright" MCP server in the MCP settings and run /ux-test in the agent chat.\n' +
+          '       Also: /ux-persona, /ux-report, /ux-fix',
         codex:
-          '     • Codex CLI: run codex in this project and trust it (so .codex/config.toml loads the browser), then type $persona-test.\n' +
-          '       Also: $persona-new, $persona-report, $persona-fix',
+          '     • Codex CLI: run codex in this project and trust it (so .codex/config.toml loads the browser), then type $ux-test.\n' +
+          '       Also: $ux-persona, $ux-report, $ux-fix',
         gemini:
-          '     • Gemini CLI: run gemini in this project (trust the folder if asked, so .gemini/settings.json loads the browser) and type /persona-test.\n' +
-          '       Also: /persona-new, /persona-report, /persona-fix',
+          '     • Gemini CLI: run gemini in this project (trust the folder if asked, so .gemini/settings.json loads the browser) and type /ux-test.\n' +
+          '       Also: /ux-persona, /ux-report, /ux-fix',
       },
       cliFix: '\n  Fixes from the terminal: npx ux-validate fix (model {provider} · {model}).',
       setKey: '  First, set {env} to your API key:',
@@ -272,7 +291,7 @@ General options:
   report: {
     title: 'ux-validate report',
     generated: '✔ Report generated:',
-    noRun: 'No run found. Run /persona-test or "npx ux-validate check".',
+    noRun: 'No run found. Run /ux-test or "npx ux-validate check".',
     noData: 'Neither checks.json nor findings.json in {dir}.',
     invalidJson: '{file} is not valid JSON: {message}',
     generalPersona: 'Overall (no persona)',
@@ -291,9 +310,9 @@ General options:
     fixFirst: 'Fix first',
     noTop: 'No critical or high issues. 🎉',
     applyFixes:
-      '**To apply the fixes:** run `/persona-fix` in Claude Code (uses the tool\'s model and account) or `npx ux-validate fix` in the terminal (uses the model and API key set up in init). Both show each change before saving.',
+      '**To apply the fixes:** run `/ux-fix` in Claude Code (uses the tool\'s model and account) or `npx ux-validate fix` in the terminal (uses the model and API key set up in init). Both show each change before saving.',
     applyFixesHtml:
-      '<strong>To apply the fixes:</strong> run <code>/persona-fix</code> in Claude Code (uses the tool\'s model and account) or <code>npx ux-validate fix</code> in the terminal (uses the model and API key set up in init). Both show each change before saving.',
+      '<strong>To apply the fixes:</strong> run <code>/ux-fix</code> in Claude Code (uses the tool\'s model and account) or <code>npx ux-validate fix</code> in the terminal (uses the model and API key set up in init). Both show each change before saving.',
     noIssues: 'No issues found.',
     noIssuesHtml: 'No issues found. 🎉',
     severity: 'Severity',
@@ -329,8 +348,8 @@ General options:
   fix: {
     noModel:
       'No model set up for fixes. Run "npx ux-validate init" and set up a model for the terminal ' +
-      '(provider, model and API key), or use /persona-fix inside Claude Code.',
-    noRun: 'No run found. Run "npx ux-validate check" or /persona-test first.',
+      '(provider, model and API key), or use /ux-fix inside Claude Code.',
+    noRun: 'No run found. Run "npx ux-validate check" or /ux-test first.',
     invalidSeverity: 'Invalid severity: {value}. Use: {valid}.',
     nothingSelected: 'No issues selected to fix.',
     notLocated: "Couldn't find the source file in the project.",
@@ -409,6 +428,20 @@ Rules:
     descriptionQ: 'Short description (age, occupation, context, how they use technology):',
     viewportQ: 'Which device do they use your app on?',
     viewports: { mobile: 'Phone (mobile)', tablet: 'Tablet', desktop: 'Computer (desktop)' },
+    labels: {
+      viewport: 'Device',
+      tech_literacy: 'Tech literacy',
+      vision: 'Vision',
+      patience: 'Patience',
+      reading_level: 'Reading',
+      goals: 'Goals',
+      expectations: 'Expectations',
+    },
+    presets: {
+      title: 'ux-validate predefined personas:',
+      howToAdd: 'To use them in the project: npx ux-validate persona add all (or only some: npx ux-validate persona add {ids})',
+      unknown: 'Unknown predefined persona: {list}. Available: {valid}.',
+    },
     traits: {
       tech_literacy: {
         question: 'Familiarity with technology:',
@@ -436,7 +469,7 @@ Rules:
     saveQ: 'Save this persona?',
     cancelled: 'Persona not saved.',
     saved: '✔ Persona saved to {file}',
-    next: '  Test with it: /persona-test {id}',
+    next: '  Test with it: /ux-test {id}',
     fileHeader: '# Persona created with "ux-validate persona new". Format: .ux-validate/references/persona-format.md',
     validate: {
       parseError: 'invalid YAML: {message}',
@@ -451,7 +484,7 @@ Rules:
       invalidTrait: 'invalid value "{value}" for {trait}; use: {valid}',
       duplicateId: 'id "{id}" is also used by {other}',
       fileMissing: 'file not found',
-      noneFound: 'No personas found in {dir}. Create one with "npx ux-validate persona new" or /persona-new.',
+      noneFound: 'No personas found in {dir}. Create one with "npx ux-validate persona new" or /ux-persona.',
       summary: '{ok} of {total} persona(s) valid.',
       failed: '{n} persona(s) with errors.',
     },
@@ -472,6 +505,6 @@ Rules:
     truncated: ({ n }) => `…and ${n} more. See the full report.`,
     fullReport: '[Full report with screenshots]({url})',
     codeScanning: 'Annotations on the changed lines and in the **Security → Code scanning** tab',
-    footer: 'Automated checks by ux-validate (accessibility, WAI-ARIA, links, spelling, layout). Persona evaluation runs in your AI tool with /persona-test.',
+    footer: 'Automated checks by ux-validate (accessibility, WAI-ARIA, links, spelling, layout). Persona evaluation runs in your AI tool with /ux-test.',
   },
 };

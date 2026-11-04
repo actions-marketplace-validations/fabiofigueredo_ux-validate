@@ -1,11 +1,11 @@
 ---
-name: persona-fix
+name: ux-fix
 description: Applies the fixes from the latest ux-validate report to the code, one at a time, showing each change and checking the result.
 shortDescription: Apply the fixes from the report
 argumentHint: "[ids, e.g. A001,C003] [--severity critical|high|medium|low] [--run <folder>]"
 ---
 
-# /persona-fix
+# /ux-fix
 
 Fixes the issues from the ux-validate report in the code. You use your own editing tools; usage is billed to the user's account in this tool.
 

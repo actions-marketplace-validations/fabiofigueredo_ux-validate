@@ -1,11 +1,11 @@
 ---
-name: persona-test
+name: ux-test
 description: Tests the web app's content, navigation, interface and accessibility from each persona's point of view and writes a report with the issues and how to fix them.
 shortDescription: Test the app as each persona
 argumentHint: "[persona] [--only content|navigation|ui|accessibility]"
 ---
 
-# /persona-test
+# /ux-test
 
 You will test the app **as if you were each persona**: try to achieve their goals in the browser, with their limitations, and evaluate content, navigation, interface and accessibility from their point of view. At the end, you produce a report with evidence and suggested fixes.
 
@@ -26,7 +26,13 @@ Write everything (findings, summaries, your answer) in English.
 ## Step 1: prepare
 
 1. Read `ux-validate.config.yml`. It has `app.url`, the `app.start` command (optional), the `viewports`, the personas folder and `agent.maxStepsPerGoal`.
-2. Read the personas in the configured folder (default `{{WORK_DIR}}/personas/*.yml`). The format is in `{{REFERENCES_DIR}}/persona-format.md`. If there are none, stop and suggest creating one with `/persona-new`. If a file looks invalid, run `{{PERSONA_VALIDATE_CMD}}` and show the errors.
+2. Read the personas in the configured folder (default `{{WORK_DIR}}/personas/*.yml`). The format is in `{{REFERENCES_DIR}}/persona-format.md`. If a file looks invalid, run `{{PERSONA_VALIDATE_CMD}}` and show the errors.
+
+   **If there are no personas, this step is mandatory before any test:**
+   1. Run `{{PERSONA_EXAMPLES_CMD}}` and show the user the predefined personas with each one's characteristics: who they are, device, tech literacy, vision, patience, reading level, goals and expectations. Don't summarize so much that the characteristics disappear: the user decides based on them.
+   2. Ask what they prefer: **use the predefined ones** (all or only some), **create their own**, or **both**. Wait for the answer; don't choose for them.
+   3. For the chosen predefined personas, run `{{PERSONA_ADD_CMD}} <ids>` (or `all`). To create one, follow the `/ux-persona` flow (conversation, confirmation, YAML file, validation).
+   4. Only continue the test once the folder has at least one persona.
 3. Check that the app responds at `app.url`. If it doesn't and there is an `app.start`, start it in the background and wait until it is available (up to ~60s). If it is still down, stop and explain to the user.
 
 ## Step 2: automated checks
@@ -97,4 +103,4 @@ For each of your findings, look in the project's code for the likely file. Searc
    - the goals that failed and why, one line each;
    - the 5 most important issues, with the likely file to fix;
    - the path to `report.html` to see everything with screenshots;
-   - an offer to fix the issues with `/persona-fix`, starting with the critical ones.
+   - an offer to fix the issues with `/ux-fix`, starting with the critical ones.

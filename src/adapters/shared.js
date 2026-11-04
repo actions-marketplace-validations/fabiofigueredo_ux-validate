@@ -27,10 +27,10 @@ export function registerJsonMcp(cwd, rel) {
   return { rel, status: existed ? 'mcpAdded' : 'created' };
 }
 
-/** Troca o marcador de argumentos e o prefixo dos comandos (/persona-x → $persona-x no Codex). */
+/** Troca o marcador de argumentos e o prefixo dos comandos (/ux-x → $ux-x no Codex). */
 export function adaptBody(body, { args, prefix = '/' }) {
   let out = body.replaceAll('`$ARGUMENTS`', args).replaceAll('$ARGUMENTS', args);
   // Função de substituição: com uma string, um prefixo "$" seria lido como padrão especial ($$, $1…).
-  if (prefix !== '/') out = out.replace(/(^|[\s`(])\/(persona-[a-z]+)/g, (_, before, name) => `${before}${prefix}${name}`);
+  if (prefix !== '/') out = out.replace(/(^|[\s`(])\/(ux-(?:test|report|fix|persona))\b/g, (_, before, name) => `${before}${prefix}${name}`);
   return out;
 }

@@ -18,6 +18,7 @@ const { positionals, values } = parseArgs({
     'dry-run': { type: 'boolean' },
     lang: { type: 'string' },
     tools: { type: 'string' },
+    personas: { type: 'string' },
     'fail-on': { type: 'string' },
     'artifact-url': { type: 'string' },
     'sarif-uploaded': { type: 'boolean' },
@@ -40,7 +41,13 @@ try {
   switch (command) {
     case 'init': {
       const { init } = await import('../src/init.js');
-      await init({ cwd: process.cwd(), yes: values.yes || Boolean(values.tools), force: values.force, tools: values.tools });
+      await init({
+        cwd: process.cwd(),
+        yes: values.yes || Boolean(values.tools) || Boolean(values.personas),
+        force: values.force,
+        tools: values.tools,
+        personas: values.personas,
+      });
       break;
     }
     case 'check': {
@@ -71,10 +78,12 @@ try {
       break;
     }
     case 'persona': {
-      const { newPersona, validatePersonas } = await import('../src/persona.js');
+      const { newPersona, validatePersonas, showPresets, addPresets } = await import('../src/persona.js');
       const [, action, ...files] = positionals;
       if (action === 'new') await newPersona({ cwd: process.cwd(), configPath: values.config, force: values.force });
       else if (action === 'validate') validatePersonas({ cwd: process.cwd(), configPath: values.config, files });
+      else if (action === 'examples') showPresets();
+      else if (action === 'add') addPresets({ cwd: process.cwd(), configPath: values.config, ids: files, force: values.force });
       else {
         console.error(`${t('cli.unknownCommand', { command: `persona ${action ?? ''}`.trim() })}\n`);
         console.log(t('cli.help'));

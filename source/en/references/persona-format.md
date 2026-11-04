@@ -2,7 +2,7 @@
 
 Each persona is a `.yml` file in the personas folder (default `.ux-validate/personas/`).
 
-To create one: `/persona-new` in Claude Code (by talking it through) or `npx ux-validate persona new` in the terminal (step-by-step wizard). To check the files: `npx ux-validate persona validate`.
+To create one: `/ux-persona` in Claude Code (by talking it through) or `npx ux-validate persona new` in the terminal (step-by-step wizard). To check the files: `npx ux-validate persona validate`.
 
 ```yaml
 id: margaret                # short identifier, no spaces (used in the report)

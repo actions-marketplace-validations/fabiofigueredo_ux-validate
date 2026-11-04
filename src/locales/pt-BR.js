@@ -9,13 +9,14 @@ export default {
     mcpInvalid: 'ignorado (JSON inválido; adicione o Playwright MCP manualmente)',
     mcpKept: 'mantido (Playwright MCP já configurado)',
     mcpAdded: 'atualizado (Playwright MCP adicionado)',
+    removed: 'removido (nome antigo do comando)',
   },
 
   cli: {
     help: `ux-validate — testes de conteúdo, navegação, interface e acessibilidade guiados por personas
 
 Uso:
-  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini]
+  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini] [--personas all|none|id,id]
                                                  Configura o projeto e instala os comandos nas suas ferramentas de IA
   ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
                                                  Roda as checagens fixas (acessibilidade, links, ortografia, conteúdo)
@@ -26,6 +27,8 @@ Uso:
                                                  Resumo em Markdown para comentário de pull request
   ux-validate persona new [--force]              Cria uma persona com um assistente passo a passo
   ux-validate persona validate [arquivos…]       Confere arquivos de persona (padrão: todos do projeto)
+  ux-validate persona examples                   Mostra as personas pré-definidas e suas características
+  ux-validate persona add <id…|all> [--force]    Copia personas pré-definidas para o projeto
   ux-validate fix    [--run <dir>] [--ids A001,C003] [--severity high] [--dry-run] [--yes]
                                                  Aplica as correções do relatório com o modelo configurado
                                                  no setup (usa a sua API key e os seus tokens)
@@ -74,7 +77,20 @@ Opções gerais:
     modelQ: 'Modelo:',
     apiKeyEnvQ: 'Nome da variável de ambiente que guarda a sua API key (a chave não fica no arquivo):',
     baseUrlQ: 'Endereço do servidor:',
-    examplesQ: 'Criar personas de exemplo?',
+    personasIntro:
+      '\n  Personas: o ux-validate testa a aplicação pelo olhar de cada persona, então o projeto precisa de pelo menos uma.\n' +
+      '  Você pode usar as personas pré-definidas abaixo, criar as suas ou as duas coisas.\n',
+    personasQ: 'Quais personas você quer usar?',
+    personaChoices: {
+      presets: 'Usar as personas pré-definidas',
+      create: 'Criar minhas próprias personas agora',
+      both: 'Usar as pré-definidas e criar as minhas também',
+    },
+    presetsQ: 'Quais personas pré-definidas? (espaço marca ou desmarca)',
+    createIntro: '\nAgora crie a sua persona ({n}).',
+    createAnotherQ: 'Criar outra persona?',
+    needOne: 'O projeto precisa de pelo menos uma persona. Vamos criar a primeira.',
+    unknownPersonas: 'Valor inválido para --personas: {list}. Use all, none ou ids entre: {valid}.',
     invalidUrl: 'URL inválida. Exemplo: http://localhost:3000',
     fileMissing: 'Esse arquivo não existe. Confira o caminho ou use a URL de um servidor (http://...).',
     urlProtocol: 'Use uma URL que comece com http://, https:// ou file://',
@@ -88,21 +104,24 @@ Opções gerais:
       '# mas que o dicionário não conhece. Linhas começando com # são ignoradas.\n',
     next: {
       title: '\nPróximos passos:',
-      personas: '  1. Revise as personas em {dir}/ ou crie as suas (npx ux-validate persona new, ou o comando persona-new abaixo).',
+      personas: ({ dir, n }) =>
+        `  1. ${n} persona(s) em ${dir}/. Ajuste os objetivos ao seu produto; para criar mais, use npx ux-validate persona new ou o comando ux-persona abaixo.`,
+      noPersonas: ({ dir }) =>
+        `  1. Nenhuma persona em ${dir}/ ainda. Antes de testar, escolha as pré-definidas (npx ux-validate persona examples) ou crie as suas (npx ux-validate persona new). O ux-test também vai pedir isso.`,
       useTools: '  2. Na sua ferramenta de IA:',
       tools: {
         'claude-code':
-          '     • Claude Code: abra neste projeto, aprove o servidor MCP "playwright" e rode /persona-test.\n' +
-          '       Também: /persona-new, /persona-report, /persona-fix',
+          '     • Claude Code: abra neste projeto, aprove o servidor MCP "playwright" e rode /ux-test.\n' +
+          '       Também: /ux-persona, /ux-report, /ux-fix',
         cursor:
-          '     • Cursor: abra este projeto, ative o servidor MCP "playwright" nas configurações de MCP e rode /persona-test no chat do agente.\n' +
-          '       Também: /persona-new, /persona-report, /persona-fix',
+          '     • Cursor: abra este projeto, ative o servidor MCP "playwright" nas configurações de MCP e rode /ux-test no chat do agente.\n' +
+          '       Também: /ux-persona, /ux-report, /ux-fix',
         codex:
-          '     • Codex CLI: rode codex neste projeto e marque-o como confiável (para o .codex/config.toml carregar o navegador), depois digite $persona-test.\n' +
-          '       Também: $persona-new, $persona-report, $persona-fix',
+          '     • Codex CLI: rode codex neste projeto e marque-o como confiável (para o .codex/config.toml carregar o navegador), depois digite $ux-test.\n' +
+          '       Também: $ux-persona, $ux-report, $ux-fix',
         gemini:
-          '     • Gemini CLI: rode gemini neste projeto (confie na pasta se ele perguntar, para o .gemini/settings.json carregar o navegador) e digite /persona-test.\n' +
-          '       Também: /persona-new, /persona-report, /persona-fix',
+          '     • Gemini CLI: rode gemini neste projeto (confie na pasta se ele perguntar, para o .gemini/settings.json carregar o navegador) e digite /ux-test.\n' +
+          '       Também: /ux-persona, /ux-report, /ux-fix',
       },
       cliFix: '\n  Correções pelo terminal: npx ux-validate fix (modelo {provider} · {model}).',
       setKey: '  Antes, defina a variável {env} com a sua API key:',
@@ -270,7 +289,7 @@ Opções gerais:
   report: {
     title: 'Relatório ux-validate',
     generated: '✔ Relatório gerado:',
-    noRun: 'Nenhuma execução encontrada. Rode /persona-test ou "npx ux-validate check".',
+    noRun: 'Nenhuma execução encontrada. Rode /ux-test ou "npx ux-validate check".',
     noData: 'Nem checks.json nem findings.json em {dir}.',
     invalidJson: '{file} não é um JSON válido: {message}',
     generalPersona: 'Geral (sem persona)',
@@ -289,9 +308,9 @@ Opções gerais:
     fixFirst: 'Corrigir primeiro',
     noTop: 'Nenhum problema crítico ou alto. 🎉',
     applyFixes:
-      '**Para aplicar as correções:** rode `/persona-fix` no Claude Code (usa o modelo e a conta da ferramenta) ou `npx ux-validate fix` no terminal (usa o modelo e a API key configurados no setup). Ambos mostram cada mudança antes de gravar.',
+      '**Para aplicar as correções:** rode `/ux-fix` no Claude Code (usa o modelo e a conta da ferramenta) ou `npx ux-validate fix` no terminal (usa o modelo e a API key configurados no setup). Ambos mostram cada mudança antes de gravar.',
     applyFixesHtml:
-      '<strong>Para aplicar as correções:</strong> rode <code>/persona-fix</code> no Claude Code (usa o modelo e a conta da ferramenta) ou <code>npx ux-validate fix</code> no terminal (usa o modelo e a API key configurados no setup). Ambos mostram cada mudança antes de gravar.',
+      '<strong>Para aplicar as correções:</strong> rode <code>/ux-fix</code> no Claude Code (usa o modelo e a conta da ferramenta) ou <code>npx ux-validate fix</code> no terminal (usa o modelo e a API key configurados no setup). Ambos mostram cada mudança antes de gravar.',
     noIssues: 'Nenhum problema encontrado.',
     noIssuesHtml: 'Nenhum problema encontrado. 🎉',
     severity: 'Gravidade',
@@ -327,8 +346,8 @@ Opções gerais:
   fix: {
     noModel:
       'Nenhum modelo configurado para correções. Rode "npx ux-validate init" e configure um modelo para o terminal ' +
-      '(provedor, modelo e API key), ou use /persona-fix dentro do Claude Code.',
-    noRun: 'Nenhuma execução encontrada. Rode "npx ux-validate check" ou /persona-test primeiro.',
+      '(provedor, modelo e API key), ou use /ux-fix dentro do Claude Code.',
+    noRun: 'Nenhuma execução encontrada. Rode "npx ux-validate check" ou /ux-test primeiro.',
     invalidSeverity: 'Gravidade inválida: {value}. Use: {valid}.',
     nothingSelected: 'Nenhum problema selecionado para corrigir.',
     notLocated: 'Não encontrei o arquivo de origem no projeto.',
@@ -407,6 +426,20 @@ Regras:
     descriptionQ: 'Descrição curta (idade, ocupação, contexto, como usa tecnologia):',
     viewportQ: 'Em qual aparelho ela usa a sua aplicação?',
     viewports: { mobile: 'Celular (mobile)', tablet: 'Tablet', desktop: 'Computador (desktop)' },
+    labels: {
+      viewport: 'Aparelho',
+      tech_literacy: 'Tecnologia',
+      vision: 'Visão',
+      patience: 'Paciência',
+      reading_level: 'Leitura',
+      goals: 'Objetivos',
+      expectations: 'Expectativas',
+    },
+    presets: {
+      title: 'Personas pré-definidas do ux-validate:',
+      howToAdd: 'Para usar no projeto: npx ux-validate persona add all (ou só algumas: npx ux-validate persona add {ids})',
+      unknown: 'Persona pré-definida desconhecida: {list}. Disponíveis: {valid}.',
+    },
     traits: {
       tech_literacy: {
         question: 'Familiaridade com tecnologia:',
@@ -434,7 +467,7 @@ Regras:
     saveQ: 'Salvar esta persona?',
     cancelled: 'Persona não salva.',
     saved: '✔ Persona salva em {file}',
-    next: '  Teste com ela: /persona-test {id}',
+    next: '  Teste com ela: /ux-test {id}',
     fileHeader: '# Persona criada com "ux-validate persona new". Formato: .ux-validate/references/persona-format.md',
     validate: {
       parseError: 'YAML inválido: {message}',
@@ -449,7 +482,7 @@ Regras:
       invalidTrait: 'valor inválido "{value}" para {trait}; use: {valid}',
       duplicateId: 'o id "{id}" também é usado por {other}',
       fileMissing: 'arquivo não encontrado',
-      noneFound: 'Nenhuma persona em {dir}. Crie uma com "npx ux-validate persona new" ou /persona-new.',
+      noneFound: 'Nenhuma persona em {dir}. Crie uma com "npx ux-validate persona new" ou /ux-persona.',
       summary: '{ok} de {total} persona(s) válidas.',
       failed: '{n} persona(s) com erro.',
     },
@@ -470,6 +503,6 @@ Regras:
     truncated: ({ n }) => `…e mais ${n}. Veja o relatório completo.`,
     fullReport: '[Relatório completo com screenshots]({url})',
     codeScanning: 'Anotações nas linhas alteradas e na aba **Security → Code scanning**',
-    footer: 'Checagens fixas do ux-validate (acessibilidade, WAI-ARIA, links, ortografia, layout). A avaliação por persona roda na sua ferramenta de IA com /persona-test.',
+    footer: 'Checagens fixas do ux-validate (acessibilidade, WAI-ARIA, links, ortografia, layout). A avaliação por persona roda na sua ferramenta de IA com /ux-test.',
   },
 };
