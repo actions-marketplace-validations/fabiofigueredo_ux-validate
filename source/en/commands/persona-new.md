@@ -1,6 +1,7 @@
 ---
 name: persona-new
 description: Creates a persona for ux-validate tests by talking with the user about who uses the app, and saves the file in .ux-validate/personas/.
+shortDescription: Create a new persona
 argumentHint: "[free description, e.g. \"older customer who shops on their phone\"]"
 ---
 

@@ -15,7 +15,8 @@ export default {
     help: `ux-validate — testes de conteúdo, navegação, interface e acessibilidade guiados por personas
 
 Uso:
-  ux-validate init   [--yes] [--force]          Configura o projeto e instala os comandos no seu agente de IA
+  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini]
+                                                 Configura o projeto e instala os comandos nas suas ferramentas de IA
   ux-validate check  [--out <dir>] [--url <url>] Roda as checagens fixas (acessibilidade, links, ortografia, conteúdo)
   ux-validate report [--run <dir>]               Gera report.md e report.html a partir de uma execução
   ux-validate persona new [--force]              Cria uma persona com um assistente passo a passo
@@ -30,6 +31,11 @@ Opções gerais:
   -h, --help           Mostra esta ajuda
 `,
     unknownCommand: 'Comando desconhecido: {command}',
+  },
+
+  adapters: {
+    argsFromMessage: 'o texto que o usuário escreveu junto com o comando (pode estar vazio)',
+    explicitOnly: 'Rode só quando o usuário chamar {invoke} explicitamente.',
   },
 
   config: {
@@ -49,6 +55,7 @@ Opções gerais:
     localeQ: 'Idioma do ux-validate (mensagens, relatório e instruções do agente):',
     targetsQ: 'Em qual ferramenta de IA você vai usar os comandos?',
     soon: '(em breve)',
+    unknownTool: 'Ferramenta de IA desconhecida: {list}. Use: {valid}.',
     urlQ: 'URL da aplicação a ser testada (ex.: http://localhost:3000):',
     startQ: 'Comando para subir a aplicação (opcional, ex.: npm run dev):',
     viewportsQ: 'Tamanhos de tela:',
@@ -76,10 +83,22 @@ Opções gerais:
       '# mas que o dicionário não conhece. Linhas começando com # são ignoradas.\n',
     next: {
       title: '\nPróximos passos:',
-      personas: '  1. Revise as personas em {dir}/ ou crie as suas: /persona-new (ou npx ux-validate persona new).',
-      openTool: '  2. Abra o Claude Code neste projeto e aprove o servidor MCP "playwright".',
-      runTest: '  3. Rode /persona-test  (ou /persona-test <persona> para uma só).',
-      runFix: '  4. Para aplicar as correções do relatório: /persona-fix',
+      personas: '  1. Revise as personas em {dir}/ ou crie as suas (npx ux-validate persona new, ou o comando persona-new abaixo).',
+      useTools: '  2. Na sua ferramenta de IA:',
+      tools: {
+        'claude-code':
+          '     • Claude Code: abra neste projeto, aprove o servidor MCP "playwright" e rode /persona-test.\n' +
+          '       Também: /persona-new, /persona-report, /persona-fix',
+        cursor:
+          '     • Cursor: abra este projeto, ative o servidor MCP "playwright" nas configurações de MCP e rode /persona-test no chat do agente.\n' +
+          '       Também: /persona-new, /persona-report, /persona-fix',
+        codex:
+          '     • Codex CLI: rode codex neste projeto e marque-o como confiável (para o .codex/config.toml carregar o navegador), depois digite $persona-test.\n' +
+          '       Também: $persona-new, $persona-report, $persona-fix',
+        gemini:
+          '     • Gemini CLI: rode gemini neste projeto (confie na pasta se ele perguntar, para o .gemini/settings.json carregar o navegador) e digite /persona-test.\n' +
+          '       Também: /persona-new, /persona-report, /persona-fix',
+      },
       cliFix: '\n  Correções pelo terminal: npx ux-validate fix (modelo {provider} · {model}).',
       setKey: '  Antes, defina a variável {env} com a sua API key:',
       keyPowerShell: '    PowerShell:  $env:{env}="sua-chave"',

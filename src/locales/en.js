@@ -15,7 +15,8 @@ export default {
     help: `ux-validate — persona-based testing of content, navigation, UI and accessibility
 
 Usage:
-  ux-validate init   [--yes] [--force]          Set up the project and install the commands in your AI tool
+  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini]
+                                                 Set up the project and install the commands in your AI tools
   ux-validate check  [--out <dir>] [--url <url>] Run the automated checks (accessibility, links, spelling, content)
   ux-validate report [--run <dir>]               Build report.md and report.html from a run
   ux-validate persona new [--force]              Create a persona with a step-by-step wizard
@@ -30,6 +31,11 @@ General options:
   -h, --help           Show this help
 `,
     unknownCommand: 'Unknown command: {command}',
+  },
+
+  adapters: {
+    argsFromMessage: 'the text the user wrote together with the command (it may be empty)',
+    explicitOnly: 'Run only when the user explicitly invokes {invoke}.',
   },
 
   config: {
@@ -49,6 +55,7 @@ General options:
     localeQ: 'Language of ux-validate (messages, report and agent instructions):',
     targetsQ: 'Which AI tool will you use the commands in?',
     soon: '(coming soon)',
+    unknownTool: 'Unknown AI tool: {list}. Use: {valid}.',
     urlQ: 'URL of the app to test (e.g. http://localhost:3000):',
     startQ: 'Command to start the app (optional, e.g. npm run dev):',
     viewportsQ: 'Screen sizes:',
@@ -76,10 +83,22 @@ General options:
       "# but unknown to the dictionary. Lines starting with # are ignored.\n",
     next: {
       title: '\nNext steps:',
-      personas: '  1. Review the personas in {dir}/ or create your own: /persona-new (or npx ux-validate persona new).',
-      openTool: '  2. Open Claude Code in this project and approve the "playwright" MCP server.',
-      runTest: '  3. Run /persona-test  (or /persona-test <persona> for just one).',
-      runFix: "  4. To apply the report's fixes: /persona-fix",
+      personas: '  1. Review the personas in {dir}/ or create your own (npx ux-validate persona new, or the persona-new command below).',
+      useTools: '  2. In your AI tool:',
+      tools: {
+        'claude-code':
+          '     • Claude Code: open it in this project, approve the "playwright" MCP server and run /persona-test.\n' +
+          '       Also: /persona-new, /persona-report, /persona-fix',
+        cursor:
+          '     • Cursor: open this project, enable the "playwright" MCP server in the MCP settings and run /persona-test in the agent chat.\n' +
+          '       Also: /persona-new, /persona-report, /persona-fix',
+        codex:
+          '     • Codex CLI: run codex in this project and trust it (so .codex/config.toml loads the browser), then type $persona-test.\n' +
+          '       Also: $persona-new, $persona-report, $persona-fix',
+        gemini:
+          '     • Gemini CLI: run gemini in this project (trust the folder if asked, so .gemini/settings.json loads the browser) and type /persona-test.\n' +
+          '       Also: /persona-new, /persona-report, /persona-fix',
+      },
       cliFix: '\n  Fixes from the terminal: npx ux-validate fix (model {provider} · {model}).',
       setKey: '  First, set {env} to your API key:',
       keyPowerShell: '    PowerShell:  $env:{env}="your-key"',

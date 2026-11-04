@@ -6,6 +6,9 @@ import { WORK_DIR } from '../config.js';
 import { getLocale } from '../i18n.js';
 import { projectDictionary } from '../spelling.js';
 import claudeCode from './claude-code.js';
+import cursor from './cursor.js';
+import codex from './codex.js';
+import gemini from './gemini.js';
 
 const SOURCE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../source');
 
@@ -18,14 +21,9 @@ export function sourceDir(locale = getLocale()) {
 /**
  * Cada adapter traduz os comandos de `source/<idioma>/commands` para o formato de uma ferramenta.
  * Para adicionar uma ferramenta nova, crie um arquivo neste diretório com
- * { id, label, available, install({ cwd, commands, force }) } e registre-o aqui.
+ * { id, label, available, invoke(name), install({ cwd, commands, force }) } e registre-o aqui.
  */
-export const ADAPTERS = [
-  claudeCode,
-  { id: 'cursor', label: 'Cursor', available: false },
-  { id: 'codex', label: 'Codex CLI', available: false },
-  { id: 'gemini', label: 'Gemini CLI', available: false },
-];
+export const ADAPTERS = [claudeCode, cursor, codex, gemini];
 
 /** Placeholders que os comandos podem usar; mantém os textos independentes da ferramenta. */
 const vars = (locale) => ({

@@ -1,6 +1,7 @@
 ---
 name: persona-report
 description: Gera ou atualiza o relatório da última execução do ux-validate e resume as prioridades de correção (opcionalmente comparando com a execução anterior).
+shortDescription: Gera o relatório e o plano de correção
 argumentHint: "[pasta da execução] [--compare]"
 ---
 

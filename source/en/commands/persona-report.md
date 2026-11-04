@@ -1,6 +1,7 @@
 ---
 name: persona-report
 description: Builds or refreshes the report for the latest ux-validate run and summarizes what to fix first (optionally comparing with the previous run).
+shortDescription: Build the report and fix plan
 argumentHint: "[run folder] [--compare]"
 ---
 

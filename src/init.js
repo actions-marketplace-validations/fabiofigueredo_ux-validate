@@ -11,8 +11,8 @@ import { t, getLocale, setLocale } from './i18n.js';
 
 const CONTENT_LANGUAGES = ['pt-BR', 'en', 'es', 'other'];
 
-export async function init({ cwd, yes = false, force = false }) {
-  const answers = yes ? defaultAnswers() : await ask();
+export async function init({ cwd, yes = false, force = false, tools }) {
+  const answers = yes ? defaultAnswers(tools) : await ask();
   setLocale(answers.locale);
   // Carrega os comandos antes de gravar qualquer arquivo, para não deixar uma instalação pela metade.
   const commands = loadCommands(answers.locale);
@@ -48,11 +48,14 @@ export async function init({ cwd, yes = false, force = false }) {
   printNextSteps(answers);
 }
 
-function defaultAnswers() {
+function defaultAnswers(tools) {
   const locale = getLocale();
+  const targets = tools ? tools.split(',').map((s) => s.trim()).filter(Boolean) : ['claude-code'];
+  const unknown = targets.filter((id) => !ADAPTERS.some((a) => a.id === id));
+  if (unknown.length) throw new Error(t('init.unknownTool', { list: unknown.join(', '), valid: ADAPTERS.map((a) => a.id).join(', ') }));
   return {
     locale,
-    targets: ['claude-code'],
+    targets,
     url: 'http://localhost:3000',
     start: '',
     viewports: ['mobile', 'desktop'],
@@ -84,6 +87,7 @@ async function ask() {
       checked: a.id === 'claude-code',
       disabled: a.available ? false : t('init.soon'),
     })),
+    // Várias ferramentas podem ser escolhidas: cada uma recebe os comandos no seu formato.
   });
 
   const url = await input({ message: t('init.urlQ'), default: 'http://localhost:3000', validate: validateUrl });
@@ -166,10 +170,9 @@ function ensureGitignore(cwd) {
 function printNextSteps(a) {
   console.log(t('init.next.title'));
   console.log(t('init.next.personas', { dir: `${WORK_DIR}/personas` }));
-  if (a.targets.includes('claude-code')) {
-    console.log(t('init.next.openTool'));
-    console.log(t('init.next.runTest'));
-    console.log(t('init.next.runFix'));
+  if (a.targets.length) {
+    console.log(t('init.next.useTools'));
+    for (const id of a.targets) console.log(t(`init.next.tools.${id}`));
   }
   if (a.standalone) {
     console.log(t('init.next.cliFix', { provider: a.standalone.provider, model: a.standalone.model }));

@@ -1,6 +1,7 @@
 ---
 name: persona-fix
 description: Aplica no código as correções apontadas no último relatório do ux-validate, uma de cada vez, mostrando cada mudança e verificando o resultado.
+shortDescription: Aplica as correções do relatório
 argumentHint: "[ids, ex.: A001,C003] [--severity critical|high|medium|low] [--run <pasta>]"
 ---
 

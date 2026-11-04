@@ -8,7 +8,7 @@ Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Marg
 
 ![ux-validate report with scores by persona and goals achieved](docs/report-example.png)
 
-> **Status:** early version (0.1). Works with Claude Code; other AI tools are on the [roadmap](#roadmap).
+> **Status:** early version (0.1). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
 
 ## How it works
 
@@ -37,6 +37,25 @@ Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Marg
 ```
 
 ux-validate runs **inside your AI tool**: the model used is whichever one that tool is using.
+
+## Supported AI tools
+
+Setup installs the same commands (`persona-test`, `persona-report`, `persona-fix`, `persona-new`) in each tool's own format, plus the Playwright MCP server the agent uses as its browser. You can pick several tools at once.
+
+| Tool | Commands are installed in | How to call them | Browser (MCP) registered in |
+|---|---|---|---|
+| **Claude Code** | `.claude/skills/<name>/SKILL.md` | `/persona-test` | `.mcp.json` |
+| **Cursor** | `.cursor/commands/<name>.md` | `/persona-test` in the agent chat | `.cursor/mcp.json` |
+| **Codex CLI** | `.agents/skills/<name>/SKILL.md` (with `agents/openai.yaml`) | `$persona-test` | `.codex/config.toml` |
+| **Gemini CLI** | `.gemini/commands/<name>.toml` | `/persona-test` | `.gemini/settings.json` |
+
+Notes:
+
+- The commands only run when you call them: the tests open a browser and use tokens. In Claude Code this is `disable-model-invocation`; in Codex, `allow_implicit_invocation: false`.
+- Codex reads `.codex/config.toml` and Gemini reads `.gemini/settings.json` only in folders you **trust**; accept the prompt the first time you open the project.
+- Existing config files are preserved: setup only adds the `playwright` server if it isn't there.
+- Gemini CLI also reads `.agents/skills/`. If you install both Codex and Gemini, Gemini may list the Codex skills too; use the `/persona-…` commands, and Gemini asks for confirmation before activating any skill.
+- Arguments go after the command name in every tool, e.g. `/persona-test margaret` or `$persona-test margaret`.
 
 ## Languages
 
@@ -102,7 +121,7 @@ $env:ANTHROPIC_API_KEY="your-key"
 
 ## Installation
 
-Requirements: **Node.js 20+** and **[Claude Code](https://claude.com/claude-code)** (terminal or the VS Code extension).
+Requirements: **Node.js 20+** and one of the supported AI tools: **Claude Code**, **Cursor**, **Codex CLI** or **Gemini CLI**.
 
 In the project you want to test:
 
@@ -121,7 +140,7 @@ npx ux-validate init
 Setup asks for:
 
 - the **tool's language** (English or Portuguese);
-- **which AI tool** you'll use the commands in (today: Claude Code; Cursor, Codex and Gemini CLI coming soon);
+- **which AI tools** you'll use the commands in (Claude Code, Cursor, Codex CLI, Gemini CLI; one or more);
 - the app's **URL** and, optionally, the command to start it;
 - the **screen sizes** (mobile, tablet, desktop);
 - the **language of the content**, for the spell check;
@@ -136,14 +155,13 @@ And creates:
 | `.ux-validate/personas/*.yml` | Your personas |
 | `.ux-validate/references/` | Heuristics and formats the agent consults |
 | `.ux-validate/dictionary.txt` | Correct words the dictionary doesn't know |
-| `.claude/skills/persona-test/`, `persona-report/`, `persona-fix/`, `persona-new/` | Claude Code commands |
-| `.mcp.json` | Registers the Playwright MCP (the agent's browser) |
+| The commands and MCP files for each chosen tool | See [Supported AI tools](#supported-ai-tools) |
 
-Use `--yes` to accept the defaults without questions and `--force` to overwrite existing files.
+Use `--yes` to accept the defaults without questions, `--tools claude-code,cursor,codex,gemini` to choose the tools without questions, and `--force` to overwrite existing files.
 
 ## Usage
 
-In Claude Code, inside your project:
+In your AI tool, inside your project (in Codex, use `$` instead of `/`):
 
 | Command | What it does |
 |---|---|
@@ -253,7 +271,8 @@ Open `report.html` in `.ux-validate/runs/<date-time>/`.
 
 | Symptom | Fix |
 |---|---|
-| `/persona-test` doesn't show up | The open folder must be the project where you ran `init` (the one with `.claude/`) |
+| `/persona-test` doesn't show up | The open folder must be the project where you ran `init` (the one with `.claude/`, `.cursor/`, `.agents/` or `.gemini/`). In Gemini CLI, run `/commands reload` |
+| The agent has no browser tools | Approve or enable the `playwright` MCP server in your tool; in Codex and Gemini, trust the project folder |
 | Error saying the browser wasn't found | Run `npx playwright install chromium` in the project |
 | "The start page doesn't open" | Check that the app is running and that `app.url` is right |
 | You want to change the URL after setup | Edit `app.url` in `ux-validate.config.yml` |
@@ -282,7 +301,7 @@ test/                        tests (npm test)
 
 ### Adding an AI tool
 
-The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{CHECK_CMD}}`…) and don't depend on any tool. To support a new one, create `src/adapters/<tool>.js` with `{ id, label, available: true, install({ cwd, commands, force }) }`, writing the commands in the format that tool understands, and register it in `src/adapters/index.js`.
+The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{CHECK_CMD}}`…) and don't depend on any tool. To support a new one, create `src/adapters/<tool>.js` with `{ id, label, available: true, invoke(name), install({ cwd, commands, force }) }`, writing the commands in the format that tool understands (`src/adapters/shared.js` has helpers to adapt the argument placeholder and register the MCP server), register it in `src/adapters/index.js`, and add its next-step line to `init.next.tools` in the message catalogs.
 
 ### Adding a language
 
@@ -297,8 +316,8 @@ The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{C
 - [x] Accessibility with WAI-ARIA, and spell check
 - [x] `/persona-fix` and `npx ux-validate fix` (apply fixes with the user's model)
 - [x] English and Portuguese
+- [x] Adapters for Cursor, Codex CLI and Gemini CLI
 - [x] `/persona-new` and `npx ux-validate persona new` (create personas)
-- [ ] Adapters for Cursor, Codex CLI and Gemini CLI
 - [ ] Persona browsing from the terminal (no AI tool), with the model chosen in setup
 - [ ] GitHub Action with a PR comment and SARIF output
 - [ ] Repeat the browsing and only confirm issues that show up in more than one run

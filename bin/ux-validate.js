@@ -17,6 +17,7 @@ const { positionals, values } = parseArgs({
     severity: { type: 'string' },
     'dry-run': { type: 'boolean' },
     lang: { type: 'string' },
+    tools: { type: 'string' },
     config: { type: 'string', default: 'ux-validate.config.yml' },
     help: { type: 'boolean', short: 'h' },
   },
@@ -36,7 +37,7 @@ try {
   switch (command) {
     case 'init': {
       const { init } = await import('../src/init.js');
-      await init({ cwd: process.cwd(), yes: values.yes, force: values.force });
+      await init({ cwd: process.cwd(), yes: values.yes || Boolean(values.tools), force: values.force, tools: values.tools });
       break;
     }
     case 'check': {

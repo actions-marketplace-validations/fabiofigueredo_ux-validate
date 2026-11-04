@@ -1,6 +1,7 @@
 ---
 name: persona-test
 description: Tests the web app's content, navigation, interface and accessibility from each persona's point of view and writes a report with the issues and how to fix them.
+shortDescription: Test the app as each persona
 argumentHint: "[persona] [--only content|navigation|ui|accessibility]"
 ---
 

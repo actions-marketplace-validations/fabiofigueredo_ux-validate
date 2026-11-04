@@ -1,6 +1,7 @@
 ---
 name: persona-test
 description: Testa conteúdo, navegação e interface da aplicação web do ponto de vista de cada persona e gera um relatório com os problemas e como corrigi-los.
+shortDescription: Testa a aplicação como cada persona
 argumentHint: "[persona] [--only content|navigation|ui|accessibility]"
 ---
 
