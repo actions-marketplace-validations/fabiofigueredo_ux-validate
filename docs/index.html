@@ -1,1090 +1,620 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ux-validate</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Your AI agent browses your web app as real personas, shows where each one got stuck and which file to fix. Open source, works with Claude Code, Cursor, Codex CLI and Gemini CLI.">
+<meta name="description" content="Valide projetos web com personas reais, combinando usabilidade, acessibilidade e conteúdo. Código aberto, roda com Claude Code, Cursor, Codex CLI e Gemini CLI.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=Pixelify+Sans:wght@500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,500;9..40,700;9..40,800&family=Pixelify+Sans:wght@600;700&display=swap">
 <style>
-/* Layout: a design-review canvas. Sections are artboards on dotted paper, annotated by hand,
-   with the review toolbar floating at the bottom. */
+/* Layout: notebook sheet with dotted paper; hand-lettered labels with lime marker underlines,
+   ink line illustrations on lime/lilac/yellow blocks. Deliberately light-only, like printed paper. */
 :root {
-  --paper: #f5f5f0;
-  --paper-2: #ecece5;
-  --dot: #d2d2c8;
-  --card: #ffffff;
-  --ink: #19191b;
-  --ink-2: #57575b;
-  --line: #dcdcd3;
-  --yellow: #f8de7e;
-  --blue: #a8d1f2;
-  --green: #aee0b4;
-  --lilac: #d4bdf2;
-  --coral: #f6a99d;
-  --note-ink: #19191b;
-  --mark: #c93c3c;
-  --ok: #2b8a4f;
-  --warn: #a8660f;
-  --code-bg: #19191b;
-  --code-fg: #ececE6;
+  color-scheme: light;
+  --paper: #fbfbf7;
+  --dot: #e1e1d8;
+  --white: #ffffff;
+  --ink: #111111;
+  --ink-2: #4a4a46;
+  --line: #d9d9d1;
+  --lime: #c6ef5a;
+  --lime-soft: #eef8cf;
+  --lime-deep: #6fa80f;
+  --lilac: #dcc2fb;
+  --lilac-soft: #f2e8fe;
+  --lilac-deep: #9b5de5;
+  --yellow: #fde68a;
+  --yellow-soft: #fdf3c8;
   --display: "Pixelify Sans", "Courier New", monospace;
   --hand: "Caveat", "Segoe Print", "Bradley Hand", cursive;
-  --sans: "DM Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --head: "DM Sans", "Segoe UI", system-ui, sans-serif;
   --mono: "DM Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --radius: 14px;
-  --shadow: 0 1px 0 rgba(0,0,0,.04), 0 6px 18px -8px rgba(25,25,27,.18);
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #131312; --paper-2: #1a1a18; --dot: #2d2d29; --card: #1e1e1c; --ink: #ededE7; --ink-2: #a5a59c;
-    --line: #34342f; --yellow: #e6cc6c; --blue: #8fbde3; --green: #93cc9b; --lilac: #bca2e3; --coral: #e79a8e;
-    --mark: #f07a72; --ok: #63c98c; --warn: #e2b04a; --code-bg: #0b0b0a; --code-fg: #ececE6;
-    --shadow: 0 1px 0 rgba(0,0,0,.3), 0 8px 22px -10px rgba(0,0,0,.7); color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --paper: #131312; --paper-2: #1a1a18; --dot: #2d2d29; --card: #1e1e1c; --ink: #ededE7; --ink-2: #a5a59c;
-  --line: #34342f; --yellow: #e6cc6c; --blue: #8fbde3; --green: #93cc9b; --lilac: #bca2e3; --coral: #e79a8e;
-  --mark: #f07a72; --ok: #63c98c; --warn: #e2b04a; --code-bg: #0b0b0a; --code-fg: #ececE6;
-  --shadow: 0 1px 0 rgba(0,0,0,.3), 0 8px 22px -10px rgba(0,0,0,.7); color-scheme: dark;
-}
-
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 96px; }
+html { scroll-behavior: smooth; scroll-padding-top: 90px; }
 body {
-  margin: 0;
-  background-color: var(--paper);
-  background-image: radial-gradient(var(--dot) 1.15px, transparent 1.35px);
-  background-size: 22px 22px;
-  color: var(--ink);
-  font: 400 17px/1.6 var(--sans);
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  margin: 0; color: var(--ink); background-color: var(--paper);
+  background-image: radial-gradient(var(--dot) 1.1px, transparent 1.3px); background-size: 20px 20px;
+  font: 400 15px/1.6 var(--mono); -webkit-font-smoothing: antialiased; overflow-x: hidden;
 }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 60; background: var(--paper); }
-img { max-width: 100%; height: auto; display: block; }
 a { color: inherit; }
-:focus-visible { outline: 2.5px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
-code, pre, kbd { font-family: var(--mono); }
-h1, h2, h3 { text-wrap: balance; margin: 0; }
-p { margin: 0; }
+img, svg { max-width: 100%; }
+h1, h2, h3, p { margin: 0; }
+h2, h3 { text-wrap: balance; }
+:focus-visible { outline: 3px solid var(--lilac-deep); outline-offset: 3px; border-radius: 8px; }
+.wrap { max-width: 1000px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 
-.wrap {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-}
-section { padding-block: 84px; }
-.eyebrow { font: 700 28px/1 var(--hand); color: var(--ink-2); display: inline-flex; align-items: center; gap: 8px; }
-.eyebrow svg { width: 34px; height: 14px; }
-h2 { font: 700 clamp(30px, 4.4vw, 46px)/1.12 var(--sans); letter-spacing: -0.02em; margin-top: 10px; max-width: 20ch; }
-.lead { color: var(--ink-2); font-size: 19px; max-width: 62ch; margin-top: 16px; }
-.section-head { display: grid; gap: 4px; margin-bottom: 40px; }
+/* Rótulo manuscrito com sublinhado de marca-texto */
+.hand { font: 700 26px/1 var(--hand); display: inline-block; position: relative; padding-bottom: 6px; isolation: isolate; }
+.hand::after { content: ""; position: absolute; left: -2px; right: -4px; bottom: 0; height: 7px; border-radius: 6px; background: var(--lime); z-index: -1; transform: rotate(-1deg); }
+.hand.sm { font-size: 22px; }
+h2 { font: 800 clamp(25px, 3.3vw, 30px)/1.15 var(--head); letter-spacing: -0.015em; margin-top: 10px; }
+.body { color: var(--ink-2); font-size: 13.5px; line-height: 1.6; margin-top: 12px; max-width: 46ch; }
+.check-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.check-list li { display: grid; grid-template-columns: 20px 1fr; gap: 10px; font-size: 13.5px; align-items: start; }
+.tick { width: 18px; height: 18px; margin-top: 1px; }
+
+/* Botões */
+.btn { display: inline-flex; align-items: center; gap: 10px; border-radius: 10px; padding: 12px 22px; font: 700 15.5px/1 var(--head); text-decoration: none; border: 2px solid var(--ink); cursor: pointer; transition: transform .15s, box-shadow .15s; }
+.btn:hover { transform: translate(-1px, -2px); box-shadow: 3px 4px 0 var(--ink); }
+.btn.dark { background: var(--ink); color: var(--white); }
+.btn.light { background: var(--white); color: var(--ink); }
+.btn svg { width: 18px; height: 18px; flex: none; }
 
 /* ---------- Nav ---------- */
-.nav {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50;
-  padding-top: 14px; padding-bottom: 6px;
-}
-.nav-pill {
-  display: flex; align-items: center; gap: 6px;
-  background: color-mix(in srgb, var(--paper-2) 86%, transparent);
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--line); border-radius: 18px; padding: 6px;
-  box-shadow: var(--shadow); max-width: 100%;
-}
-.brand { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px 6px 8px; text-decoration: none; font: 700 15px/1 var(--sans); flex: none; }
-.brand svg { width: 34px; height: 22px; }
-.nav-links { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 1; }
-.nav-links::-webkit-scrollbar { display: none; }
-.nav-links a, .lang button {
-  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
-  background: var(--card); border: 1px solid var(--line); border-radius: 11px;
-  padding: 8px 12px; text-decoration: none; font: 500 14px/1 var(--sans); color: var(--ink-2);
-  transition: color .15s, border-color .15s, transform .15s;
-}
-.nav-links a:hover { color: var(--ink); border-color: var(--ink-2); transform: translateY(-1px); }
-.nav-links svg { width: 15px; height: 15px; flex: none; }
-.lang { display: inline-flex; border-radius: 11px; flex: none; }
-.lang button { cursor: pointer; padding: 8px 10px; font-family: var(--mono); font-size: 12.5px; }
-.lang button:first-child { border-radius: 11px 0 0 11px; border-right-width: 0; }
-.lang button:last-child { border-radius: 0 11px 11px 0; }
-.lang button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.cta {
-  display: inline-flex; align-items: center; gap: 8px; flex: none;
-  background: var(--ink); color: var(--paper); border-radius: 11px; padding: 10px 16px;
-  font: 700 14.5px/1 var(--sans); text-decoration: none; border: 1px solid var(--ink);
-  transition: transform .15s;
-}
-.cta:hover { transform: translateY(-1px); }
-.cta.ghost { background: var(--card); color: var(--ink); border-color: var(--line); }
-@media (max-width: 860px) { .nav-links { display: none; } .nav-pill { justify-content: space-between; } .nav-pill .spacer { flex: 1; } }
-@media (max-width: 440px) { .brand .name { display: none; } .nav-pill .cta { padding-inline: 12px; } }
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 50; padding-top: 14px; }
+.nav-bar { display: flex; align-items: center; gap: 18px; background: var(--white); border: 2px solid var(--ink); border-radius: 14px; padding: 10px 12px 10px 18px; }
+.logo { display: inline-flex; align-items: center; gap: 12px; font: 700 16px/1 var(--head); text-decoration: none; flex: none; }
+.dots { display: inline-flex; gap: 5px; }
+.dots i { width: 10px; height: 10px; border-radius: 50%; display: block; }
+.nav-links { display: flex; gap: 30px; margin-left: auto; font: 500 13px/1 var(--head); }
+.nav-links a { text-decoration: none; }
+.nav-links a:hover { text-decoration: underline; text-decoration-color: var(--lime-deep); text-decoration-thickness: 3px; text-underline-offset: 5px; }
+.nav-actions { display: flex; align-items: center; gap: 8px; margin-left: 18px; }
+.nav .btn { padding: 9px 16px; font-size: 13.5px; border-width: 1.5px; }
+.nav .btn.light { border-color: var(--ink-2); }
+.lang { font: 500 12px/1 var(--mono); border: 1.5px solid var(--line); background: var(--white); color: var(--ink); border-radius: 8px; padding: 9px; cursor: pointer; }
+@media (max-width: 900px) { .nav-links { display: none; } .nav-actions { margin-left: auto; } }
+@media (max-width: 520px) { .nav .gh-label { display: none; } .nav-bar { gap: 8px; padding-left: 12px; } .nav .btn { padding-inline: 12px; } }
 
 /* ---------- Hero ---------- */
-.hero { padding-block: 56px 72px; position: relative; }
-.hero-stage { position: relative; min-height: 660px; display: grid; place-items: start center; }
-.hero-center { position: relative; z-index: 2; display: grid; justify-items: center; text-align: center; gap: 22px; max-width: 760px; }
-.hi { font: 700 clamp(28px, 4vw, 38px)/1 var(--hand); position: relative; }
-.hi svg { position: absolute; left: 4%; right: 4%; bottom: -10px; width: 92%; height: 10px; }
-.selection { position: relative; border: 1.5px solid var(--ink-2); padding: 6px clamp(10px, 2vw, 22px) 2px; margin-top: 8px; max-width: 100%; }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 20px; align-items: center; padding-block: 34px 26px; }
+.hero-copy { display: grid; gap: 22px; justify-items: start; }
+.hero .hand { font-size: 27px; }
+.spark { position: absolute; width: 34px; height: 30px; }
+.selection { position: relative; border: 1.5px solid var(--ink-2); padding: 4px 18px 0; max-width: 100%; }
 .selection .h { position: absolute; width: 11px; height: 11px; border: 1.5px solid var(--ink); }
-.selection .h.tl { left: -6px; top: -6px; background: var(--yellow); }
-.selection .h.tr { right: -6px; top: -6px; background: var(--lilac); }
-.selection .h.bl { left: -6px; bottom: -6px; background: var(--green); }
-.selection .h.br { right: -6px; bottom: -6px; background: var(--blue); }
-.selection .size { position: absolute; right: -2px; bottom: -28px; font: 500 11px/1 var(--mono); color: var(--ink-2); background: var(--paper); padding: 3px 6px; border-radius: 4px; border: 1px solid var(--line); }
-h1 { font: 700 clamp(44px, 11vw, 118px)/1 var(--display); letter-spacing: 0.01em; white-space: nowrap; }
-.status { display: inline-flex; align-items: center; gap: 9px; background: var(--paper-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; font: 500 13.5px/1 var(--sans); box-shadow: 0 2px 0 var(--line); }
-.status i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
-.tagline { font: 400 clamp(19px, 2.4vw, 25px)/1.45 var(--mono); letter-spacing: -0.01em; max-width: 30ch; }
-.install { display: flex; align-items: center; gap: 4px; background: var(--code-bg); color: var(--code-fg); border-radius: 12px; padding: 6px 6px 6px 16px; font: 500 15px/1 var(--mono); box-shadow: var(--shadow); max-width: 100%; }
-.install code { white-space: nowrap; overflow-x: auto; }
-.install .prompt { color: var(--green); }
-.copy { cursor: pointer; border: 0; border-radius: 8px; background: color-mix(in srgb, var(--code-fg) 12%, transparent); color: var(--code-fg); font: 500 12.5px/1 var(--sans); padding: 9px 12px; flex: none; }
-.copy:hover { background: color-mix(in srgb, var(--code-fg) 22%, transparent); }
-.tools-line { font-size: 14.5px; color: var(--ink-2); }
-.tools-line b { color: var(--ink); font-weight: 500; }
+.selection .tl { left: -6px; top: -6px; background: var(--yellow); }
+.selection .tr { right: -6px; top: -6px; background: var(--lilac); }
+.selection .bl { left: -6px; bottom: -6px; background: var(--lime); }
+.selection .br { right: -6px; bottom: -6px; background: #9ccbf5; }
+h1 { font: 700 clamp(44px, 8vw, 76px)/1.05 var(--display); white-space: nowrap; letter-spacing: .01em; }
+.tagline { font: 400 clamp(15.5px, 1.8vw, 18px)/1.5 var(--mono); max-width: 34ch; }
+.hero-ctas { display: flex; flex-wrap: wrap; gap: 14px; }
+.badges { display: flex; flex-wrap: wrap; gap: 8px 28px; font-size: 12.5px; }
+.badges span { display: inline-flex; align-items: center; gap: 6px; }
+.badges svg { width: 15px; height: 15px; }
+.hero-art svg { width: 100%; height: auto; display: block; }
+@media (max-width: 820px) { .hero { grid-template-columns: 1fr; } }
 
-.fig { position: absolute; z-index: 1; color: var(--ink); }
-.fig svg { width: 100%; height: auto; overflow: visible; }
-.fig.margaret { left: 0; top: 230px; width: 190px; }
-.fig.raj { right: -1%; top: 220px; width: 240px; }
-.fig.lucas { right: 3%; top: 470px; width: 170px; }
-.fig.agent { right: 1%; top: 0; width: 92px; }
-.note-hand { position: absolute; font: 700 22px/1.05 var(--hand); color: var(--ink); white-space: nowrap; }
-.note-hand .hl { background: linear-gradient(transparent 55%, color-mix(in srgb, var(--coral) 70%, transparent) 55%); padding: 0 3px; }
-@media (max-width: 1060px) {
-  .hero-stage { min-height: 0; display: grid; gap: 48px; }
-  .hero-figs { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 44px 30px; }
-  /* Mesma especificidade das regras de desktop, declarada depois: zera o posicionamento absoluto. */
-  .hero-figs > .fig { position: relative; top: auto; right: auto; bottom: auto; left: auto; width: 150px; }
-  .hero-figs > .fig.raj { width: 190px; }
-  .hero-figs > .fig.agent { display: none; }
-  .fig .note-hand { font-size: 19px; }
+/* ---------- Faixa ---------- */
+.strip { display: grid; grid-template-columns: auto auto 1fr auto; gap: 26px; align-items: center; background: var(--white); border: 2px solid var(--ink); border-radius: 18px; padding: 12px 22px 12px 12px; }
+.strip .pill { display: flex; align-items: center; gap: 14px; background: var(--lilac); border-radius: 12px; padding: 12px 34px 12px 22px; font: 700 25px/1 var(--hand); }
+.strip .pill svg { width: 34px; height: 34px; flex: none; }
+.strip .bar { width: 1.5px; height: 34px; background: var(--ink-2); }
+.strip p { font-size: 13.5px; }
+.strip .spark-s { width: 34px; height: 34px; }
+@media (max-width: 760px) { .strip { grid-template-columns: 1fr; gap: 14px; padding: 12px; } .strip .bar, .strip .spark-s { display: none; } .strip p { padding: 0 6px 6px; } }
+
+/* ---------- Por que ---------- */
+.why { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: 30px; align-items: center; padding-block: 54px 26px; }
+.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; position: relative; }
+.note { position: relative; aspect-ratio: 1 / 1; display: grid; place-items: center; text-align: center; align-content: center; gap: 6px; padding: 18px 12px; font: 700 23px/1.12 var(--hand); box-shadow: 4px 6px 0 rgba(17,17,17,.08), 0 10px 18px -12px rgba(17,17,17,.35); transform: rotate(var(--r)); max-width: 100%; }
+.note::before { content: ""; position: absolute; top: -9px; left: 50%; width: 46px; height: 16px; translate: -50% 0; background: var(--white); border: 1.5px solid var(--ink); border-radius: 2px; }
+.note svg { width: 48px; height: 48px; }
+.note .aa { font: 700 42px/1 var(--head); }
+.note.l { background: var(--lime-soft); --r: -5deg; }
+.note.p { background: var(--lilac-soft); --r: 3deg; }
+.note.y { background: var(--yellow-soft); --r: -2deg; }
+.why .burst { position: absolute; right: -10px; top: -30px; width: 40px; height: 40px; }
+@media (max-width: 820px) { .why { grid-template-columns: 1fr; } }
+@media (max-width: 460px) { .notes { gap: 12px; } .note { font-size: 18px; padding: 12px 6px; } .note svg { width: 34px; height: 34px; } .note .aa { font-size: 30px; } .why .burst { right: 0; } }
+
+/* ---------- Passos ---------- */
+.how { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 2fr); gap: 26px; align-items: center; padding-block: 36px 34px; border-bottom: 1.5px solid var(--line); }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 6px; }
+.steps li { display: grid; justify-items: center; text-align: center; gap: 10px; font: 500 14px/1.25 var(--head); min-width: 0; flex: 1; }
+.steps .ic { width: 50px; height: 50px; border-radius: 12px; display: grid; place-items: center; background: var(--c); border: 1.5px solid rgba(17,17,17,.25); }
+.steps .ic svg { width: 28px; height: 28px; }
+.steps li.arrow { flex: none; width: 28px; height: 50px; display: grid; place-items: center; }
+.steps li.arrow svg { width: 24px; height: 16px; }
+@media (max-width: 820px) {
+  .how { grid-template-columns: 1fr; }
+  .steps { flex-wrap: wrap; justify-content: flex-start; gap: 18px 10px; }
+  .steps li { flex: 0 0 calc(33.33% - 8px); }
+  .steps li.arrow { display: none; }
 }
-@media (min-width: 1061px) { .hero-figs { display: contents; } }
-
-/* ---------- Sticky notes ---------- */
-.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 22px; margin-top: 8px; }
-.sticky {
-  position: relative; background: var(--yellow); color: var(--note-ink); padding: 26px 18px 18px; border-radius: 3px;
-  box-shadow: 0 10px 18px -12px rgba(0,0,0,.45), 0 1px 0 rgba(0,0,0,.06);
-  font: 700 25px/1.12 var(--hand); min-height: 128px; display: grid; align-content: space-between; gap: 12px;
-  transform: rotate(var(--r, -1.5deg)); transition: transform .2s;
-}
-.sticky:hover { transform: rotate(0deg) translateY(-3px); }
-.sticky::before { content: ""; position: absolute; top: -9px; left: 50%; width: 64px; height: 18px; translate: -50% 0; background: color-mix(in srgb, var(--card) 55%, transparent); border: 1px solid color-mix(in srgb, var(--note-ink) 10%, transparent); rotate: -3deg; }
-.sticky small { font: 500 12px/1.35 var(--mono); opacity: .75; }
-.sticky.b { background: var(--blue); --r: 1.4deg; }
-.sticky.g { background: var(--green); --r: -0.8deg; }
-.sticky.l { background: var(--lilac); --r: 2deg; }
-.sticky.c { background: var(--coral); --r: -2.2deg; }
-
-/* ---------- Generic cards ---------- */
-.board { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-.gain { padding: 22px; display: grid; gap: 10px; align-content: start; }
-.gain h3 { font: 700 18.5px/1.3 var(--sans); }
-.gain p { color: var(--ink-2); font-size: 15.5px; }
-.gain .ico { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; border: 1.5px solid var(--ink); }
-.gain .ico svg { width: 26px; height: 26px; }
-
-/* ---------- Steps ---------- */
-.steps { display: grid; gap: 18px; counter-reset: step; }
-.step { display: grid; grid-template-columns: 64px 1fr minmax(0, 360px); gap: 22px; align-items: center; padding: 20px 22px; }
-.step .n { font: 700 34px/1 var(--display); width: 56px; height: 56px; border-radius: 14px; display: grid; place-items: center; border: 1.5px solid var(--ink); }
-.step h3 { font: 700 20px/1.3 var(--sans); }
-.step p { color: var(--ink-2); font-size: 15.5px; margin-top: 6px; }
-.term { background: var(--code-bg); color: var(--code-fg); border-radius: 10px; padding: 14px 16px; font: 400 13.5px/1.6 var(--mono); overflow-x: auto; min-width: 0; }
-.term .c { color: #8b8b84; }
-.term .p { color: var(--green); }
-.term .ok { color: var(--green); }
-.term .y { color: var(--yellow); }
-.term .r { color: var(--coral); }
-@media (max-width: 820px) { .step { grid-template-columns: 52px 1fr; } .step .term { grid-column: 1 / -1; } .step .n { width: 46px; height: 46px; font-size: 28px; } }
 
 /* ---------- Personas ---------- */
-.personas { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 26px; }
-.persona { padding: 0 0 18px; display: grid; gap: 14px; transform: rotate(var(--r, 0deg)); align-content: start; }
-.persona.y { --tone: var(--yellow); --r: -0.8deg; }
-.persona.b { --tone: var(--blue); --r: 0.7deg; }
-.persona.g { --tone: var(--green); --r: -0.5deg; }
-.persona .top { background: var(--tone); color: var(--note-ink); border-radius: var(--radius) var(--radius) 0 0; display: grid; grid-template-columns: 92px 1fr; gap: 12px; align-items: end; padding: 16px 18px 0; }
-.persona .top svg { width: 92px; height: 100px; }
-.persona .top h3 { font: 700 34px/1 var(--hand); }
-.persona .top p { font: 500 12.5px/1.4 var(--mono); padding-bottom: 14px; }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 18px; }
-.chip { font: 500 12px/1 var(--mono); border: 1px solid var(--line); border-radius: 999px; padding: 6px 9px; color: var(--ink-2); background: var(--paper); }
-.goals { list-style: none; margin: 0; padding: 0 18px; display: grid; gap: 9px; }
-.goals li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 15px; align-items: start; }
-.goals .o { font: 700 15px/1.4 var(--mono); }
-.goals .o.fail { color: var(--mark); } .goals .o.part { color: var(--warn); } .goals .o.pass { color: var(--ok); }
-.goals small { display: block; color: var(--ink-2); font-size: 13px; }
-.yaml-note { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 26px; margin-top: 34px; align-items: center; }
-.yaml-note p { color: var(--ink-2); }
-.yaml-note .cmds { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-.kbd { font: 500 13px/1 var(--mono); background: var(--card); border: 1px solid var(--line); border-bottom-width: 2.5px; border-radius: 8px; padding: 8px 10px; }
-@media (max-width: 760px) { .yaml-note { grid-template-columns: 1fr; } }
-.small-note { font: 400 13px/1.5 var(--mono); color: var(--ink-2); margin-top: 18px; }
+.personas { display: grid; grid-template-columns: minmax(0, .8fr) 1.5px minmax(0, 1.25fr) 1.5px minmax(0, .9fr); gap: 34px; align-items: center; padding-block: 30px 36px; }
+.personas .rule { align-self: stretch; background: var(--line); margin-block: 30px; }
+.art svg { width: 100%; height: auto; display: block; }
+@media (max-width: 860px) { .personas { grid-template-columns: 1fr; gap: 20px; } .personas .rule { display: none; } .personas .art { max-width: 300px; } }
 
-/* ---------- Checks ---------- */
-.lenses { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
-.lens { padding: 22px; display: grid; gap: 14px; align-content: start; position: relative; overflow: hidden; }
-.lens .band { position: absolute; inset: 0 0 auto; height: 6px; background: var(--tone); }
-.lens h3 { font: 700 21px/1.2 var(--sans); display: flex; align-items: center; gap: 10px; }
-.lens h3 svg { width: 30px; height: 30px; flex: none; }
-.lens ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
-.lens li { font-size: 15px; padding-left: 18px; position: relative; color: var(--ink-2); }
-.lens li::before { content: ""; position: absolute; left: 0; top: .62em; width: 9px; height: 2px; background: var(--ink); border-radius: 2px; }
-.lens .unit { font: 500 12px/1 var(--mono); color: var(--ink); background: var(--paper); border: 1px dashed var(--ink-2); border-radius: 6px; padding: 6px 8px; justify-self: start; }
+/* ---------- Relatórios ---------- */
+.band { background: var(--lilac-soft); border-radius: 22px; padding: 28px 30px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 1.5px minmax(0, .95fr); gap: 30px; align-items: center; }
+.band .rule { align-self: stretch; background: rgba(17,17,17,.18); }
+.win { background: var(--white); border: 2px solid var(--ink); border-radius: 14px; overflow: hidden; box-shadow: 4px 5px 0 rgba(17,17,17,.08); }
+.win .top { display: flex; gap: 6px; padding: 9px 12px; border-bottom: 2px solid var(--ink); }
+.win .top i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--ink); background: var(--lilac); }
+.win .content { display: grid; grid-template-columns: 112px 1fr; gap: 18px; align-items: center; padding: 16px 18px 26px; }
+.ring { position: relative; width: 112px; height: 112px; }
+.ring svg { width: 112px; height: 112px; transform: rotate(-90deg); }
+.ring b { position: absolute; inset: 0; display: grid; place-items: center; font: 700 30px/1 var(--head); }
+.ring small { position: absolute; left: -10px; right: -10px; bottom: -18px; text-align: center; font: 400 10.5px/1 var(--mono); color: var(--ink-2); }
+.cats { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font: 500 14px/1.2 var(--head); }
+.cats li { display: flex; align-items: center; gap: 9px; }
+.cats svg { width: 18px; height: 18px; flex: none; }
+@media (max-width: 900px) { .band { grid-template-columns: 1fr; padding: 24px 18px; } .band .rule { display: none; } .win { max-width: 380px; } }
 
-/* ---------- Report ---------- */
-.shot { position: relative; margin-top: 10px; }
-.browser { overflow: hidden; }
-.browser .bar { display: flex; align-items: center; gap: 7px; padding: 11px 14px; border-bottom: 1px solid var(--line); background: var(--paper-2); }
-.browser .bar i { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--ink-2); }
-.browser .bar span { margin-left: 10px; font: 500 12.5px/1 var(--mono); color: var(--ink-2); background: var(--card); border: 1px solid var(--line); border-radius: 7px; padding: 6px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.browser img { width: 100%; aspect-ratio: 2000 / 1720; object-fit: cover; object-position: top; max-height: 640px; }
-.anno { position: absolute; font: 700 25px/1.05 var(--hand); display: flex; align-items: center; gap: 6px; pointer-events: none; }
-.anno svg { width: 70px; height: 40px; flex: none; }
-.anno .hl { background: linear-gradient(transparent 55%, color-mix(in srgb, var(--yellow) 85%, transparent) 55%); padding: 0 4px; }
-.anno.a1 { left: -10px; top: 32%; flex-direction: row-reverse; translate: -100% 0; }
-.anno.a2 { right: -10px; top: 18%; translate: 100% 0; }
-.anno.a3 { right: -10px; top: 70%; translate: 100% 0; }
-@media (max-width: 1679px) { .anno { position: static; translate: none !important; margin-top: 10px; } .anno svg { display: none; } .annos { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 14px; } }
-@media (min-width: 1680px) { .annos { display: contents; } }
-.caption { font: 400 13px/1.5 var(--mono); color: var(--ink-2); margin-top: 14px; }
+/* ---------- Integrações + acessibilidade ---------- */
+.bottom { display: grid; grid-template-columns: minmax(0, 1fr) 1.5px minmax(0, .95fr) minmax(0, 1fr); gap: 28px; align-items: center; padding-block: 40px 34px; }
+.bottom .rule { align-self: stretch; background: var(--line); }
+.tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 22px; }
+.tool { background: var(--white); border: 1.5px solid var(--ink); border-radius: 12px; box-shadow: 0 3px 0 var(--ink); padding: 12px 6px 10px; display: grid; justify-items: center; gap: 8px; font: 700 12.5px/1.1 var(--head); text-align: center; }
+.tool svg { width: 26px; height: 26px; }
+@media (max-width: 900px) { .bottom { grid-template-columns: 1fr; } .bottom .rule { display: none; } .bottom .art { max-width: 320px; } }
+@media (max-width: 420px) { .tools { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
-/* ---------- Fix ---------- */
-.fix-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
-.fix-card { padding: 24px; display: grid; gap: 14px; align-content: start; }
-.fix-card .k { font: 500 13px/1 var(--mono); color: var(--ink-2); }
-.fix-card h3 { font: 700 22px/1.25 var(--sans); }
-.fix-card h3 code { font-size: .86em; background: var(--paper-2); border: 1px solid var(--line); border-radius: 7px; padding: 2px 7px; }
-.fix-card ul { margin: 0; padding-left: 18px; color: var(--ink-2); display: grid; gap: 6px; font-size: 15.5px; }
-.diff { background: var(--code-bg); color: var(--code-fg); border-radius: 12px; padding: 16px 18px; font: 400 13.5px/1.75 var(--mono); overflow-x: auto; margin-top: 22px; }
-.diff .m { color: var(--coral); } .diff .a { color: var(--green); } .diff .h { color: #8b8b84; }
-.promise { margin-top: 22px; display: flex; gap: 12px; align-items: center; font: 700 26px/1.15 var(--hand); }
-.promise svg { width: 40px; height: 40px; flex: none; }
+/* ---------- Barra final ---------- */
+.cta-bar { display: grid; grid-template-columns: auto auto 1.5px 1fr auto; gap: 22px; align-items: center; background: var(--ink); color: var(--white); border-radius: 18px; padding: 18px 18px 18px 26px; margin-block: 8px 30px; }
+.cta-bar .star { width: 34px; height: 34px; }
+.cta-bar strong { font: 700 20px/1.2 var(--head); }
+.cta-bar .rule { height: 30px; background: rgba(255,255,255,.35); align-self: center; }
+.cta-bar p { font-size: 13.5px; color: rgba(255,255,255,.85); }
+.cta-bar .btn { background: var(--white); color: var(--ink); border-color: var(--white); padding: 11px 18px; font-size: 14.5px; }
+.cta-bar .btn:hover { box-shadow: 3px 4px 0 var(--lime); }
+@media (max-width: 860px) { .cta-bar { grid-template-columns: auto 1fr; } .cta-bar .rule { display: none; } .cta-bar p { grid-column: 1 / -1; } .cta-bar .btn { grid-column: 1 / -1; justify-self: start; } }
 
-/* ---------- Tools ---------- */
-.tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
-.tool { padding: 18px; display: grid; gap: 12px; }
-.tool b { font: 700 17px/1.2 var(--sans); }
-.tool code { font: 500 14px/1 var(--mono); background: var(--paper-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; justify-self: start; }
-.tool small { color: var(--ink-2); font: 400 12.5px/1.45 var(--mono); }
+footer { padding-block: 0 34px; font-size: 12px; color: var(--ink-2); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; }
+footer a { text-decoration-color: var(--lime-deep); }
 
-/* ---------- CI ---------- */
-.ci { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; align-items: start; }
-@media (max-width: 900px) { .ci { grid-template-columns: 1fr; } }
-.pr { overflow: hidden; }
-.pr-head { display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--paper-2); font-size: 14px; }
-.pr-head .av { width: 30px; height: 30px; border-radius: 50%; background: var(--lilac); color: var(--note-ink); display: grid; place-items: center; font: 700 12px/1 var(--display); border: 1.5px solid var(--ink); flex: none; }
-.pr-head .bot { font: 500 11px/1 var(--mono); border: 1px solid var(--line); border-radius: 999px; padding: 3px 7px; color: var(--ink-2); }
-.pr-body { padding: 16px 18px; display: grid; gap: 12px; font-size: 14.5px; }
-.pr-body h4 { margin: 0; font: 700 18px/1.2 var(--sans); }
-.pr-body .fail { color: var(--mark); font-weight: 700; }
-.sev { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 500 13px/1.4 var(--mono); }
-.sev span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; background: var(--c); vertical-align: 0; }
-.mini-table { width: 100%; border-collapse: collapse; font: 400 13px/1.3 var(--mono); }
-.mini-table th, .mini-table td { text-align: right; padding: 7px 6px; border-bottom: 1px solid var(--line); }
-.mini-table th:first-child, .mini-table td:first-child { text-align: left; }
-.table-wrap { overflow-x: auto; }
-.annot { margin-top: 18px; overflow: hidden; }
-.annot .line { display: grid; grid-template-columns: 42px 1fr; font: 400 13px/1.9 var(--mono); }
-.annot .line span:first-child { color: var(--ink-2); text-align: right; padding-right: 12px; border-right: 1px solid var(--line); user-select: none; }
-.annot .line code { padding-left: 12px; white-space: pre; overflow-x: auto; }
-.annot .flag { margin: 6px 12px 10px 54px; border: 1.5px solid var(--warn); border-left-width: 5px; border-radius: 8px; padding: 10px 12px; font-size: 13.5px; background: color-mix(in srgb, var(--warn) 10%, var(--card)); }
-.annot .flag b { font-family: var(--mono); font-size: 12.5px; }
+/* ---------- Janela "Começar" ---------- */
+dialog { border: 2px solid var(--ink); border-radius: 18px; padding: 0; max-width: min(560px, calc(100vw - 32px)); width: 100%; background: var(--white); color: var(--ink); box-shadow: 6px 8px 0 var(--ink); }
+dialog::backdrop { background: rgba(17,17,17,.45); }
+.dlg { padding: 24px; display: grid; gap: 16px; }
+.dlg header { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.dlg h2 { font-size: 24px; }
+.dlg .x { border: 1.5px solid var(--line); background: var(--white); color: var(--ink); border-radius: 9px; width: 36px; height: 36px; cursor: pointer; font: 700 18px/1 var(--head); flex: none; }
+.term { background: var(--ink); color: #f0f0ea; border-radius: 12px; padding: 16px 18px; font: 400 14px/1.75 var(--mono); overflow-x: auto; margin: 0; }
+.term .p { color: var(--lime); }
+.dlg .row { display: flex; flex-wrap: wrap; gap: 10px; }
+.dlg .btn { padding: 10px 16px; font-size: 14px; }
+.dlg small { color: var(--ink-2); font-size: 12.5px; }
 
-/* ---------- FAQ ---------- */
-.faq { display: grid; gap: 10px; max-width: 820px; }
-.faq details { padding: 4px 20px; }
-.faq summary { cursor: pointer; list-style: none; font: 700 18px/1.4 var(--sans); padding: 14px 0; display: flex; justify-content: space-between; gap: 16px; }
-.faq summary::-webkit-details-marker { display: none; }
-.faq summary::after { content: "+"; font: 700 24px/1 var(--display); transition: transform .2s; }
-.faq details[open] summary::after { transform: rotate(45deg); }
-.faq details p { color: var(--ink-2); padding-bottom: 16px; font-size: 16px; }
-
-/* ---------- Final CTA ---------- */
-.final { text-align: center; display: grid; justify-items: center; gap: 22px; }
-.final h2 { font: 700 clamp(38px, 7vw, 76px)/1 var(--display); max-width: none; }
-.final .term { text-align: left; font-size: 14.5px; max-width: 520px; width: 100%; }
-.final .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
-footer { padding-block: 34px 130px; border-top: 1px dashed var(--line); font: 400 13px/1.6 var(--mono); color: var(--ink-2); }
-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
-
-/* ---------- Review toolbar + drawing layer ---------- */
-#ink { position: fixed; inset: 0; z-index: 40; pointer-events: none; touch-action: auto; }
-body.drawing #ink { pointer-events: auto; touch-action: none; cursor: crosshair; }
-.toolbar {
-  position: fixed; z-index: 55; left: 50%; translate: -50% 0;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  display: flex; align-items: center; gap: 4px; padding: 6px 8px;
-  background: var(--paper-2); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow);
-}
-.toolbar button { cursor: pointer; border: 1.5px solid transparent; background: transparent; color: var(--ink); width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; }
-.toolbar button:hover { background: var(--card); }
-.toolbar button[aria-pressed="true"] { background: var(--card); border-color: var(--ink); }
-.toolbar svg { width: 19px; height: 19px; }
-.toolbar .sep { width: 1px; height: 24px; background: var(--line); margin: 0 4px; }
-.toolbar .sw { width: 30px; height: 30px; border-radius: 50%; }
-.toolbar .sw i { width: 18px; height: 18px; border-radius: 50%; background: var(--c); display: block; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12); }
-.toolbar .sw[aria-pressed="true"] { border-color: var(--ink); }
-.toolbar .hint { position: absolute; bottom: calc(100% + 10px); left: 50%; translate: -50% 0; font: 700 21px/1 var(--hand); white-space: nowrap; color: var(--ink-2); pointer-events: none; transition: opacity .3s; }
-body.drew .toolbar .hint { opacity: 0; }
-@media (max-width: 420px) { .toolbar .sw:nth-of-type(n+5) { display: none; } }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  *, *::before, *::after { transition: none !important; animation: none !important; }
-}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
 </style>
 </head>
 <body>
 
-<!-- Defs: sketchy wobble applied to every illustration -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
-    <filter id="rough" x="-5%" y="-5%" width="110%" height="110%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2"/>
+    <filter id="rough" x="-3%" y="-3%" width="106%" height="106%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.6"/>
     </filter>
+    <symbol id="tick" viewBox="0 0 20 20"><rect x="1.5" y="1.5" width="17" height="17" rx="4" fill="#c6ef5a" stroke="#111" stroke-width="1.6"/><path d="M5.5 10.5 8.5 13.5 14.5 6.5" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="check" viewBox="0 0 16 16"><path d="M2.5 8.5 6 12 13.5 4" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="arrow" viewBox="0 0 24 16"><path d="M2 8h18M14 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="burst" viewBox="0 0 40 40"><path d="M8 14 3 9M18 8l-1-6M28 13l6-6M30 23h7" fill="none" stroke="#c6ef5a" stroke-width="3.6" stroke-linecap="round"/></symbol>
+    <symbol id="branch" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="6" cy="5.5" r="2.5"/><circle cx="6" cy="18.5" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8v8M18 10.5c0 4-4 4.5-9.5 6.5"/></g></symbol>
   </defs>
 </svg>
 
 <header class="nav">
   <div class="wrap">
-    <nav class="nav-pill" aria-label="Main">
-      <a class="brand" href="#top" aria-label="ux-validate home">
-        <svg viewBox="0 0 54 34" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true">
-          <circle cx="15" cy="17" r="10" fill="var(--yellow)"/><circle cx="39" cy="17" r="10" fill="var(--blue)"/>
-          <path d="M25 16c1.5-2 2.5-2 4 0"/><path d="M5 14 1 11M49 14l4-3"/>
-          <path d="M11 17h0M35 17h0" stroke-width="4"/>
-        </svg>
-        <span class="name">ux-validate</span>
-      </a>
+    <nav class="nav-bar" aria-label="Principal">
+      <a class="logo" href="#topo"><span class="dots" aria-hidden="true"><i style="background:#f7d046"></i><i style="background:#8cc4f4"></i><i style="background:#c79bf5"></i></span><span>ux-validate</span></a>
       <div class="nav-links">
-        <a href="#how"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M4 12h16M4 17h7"/><circle cx="18" cy="7" r="2"/><circle cx="15" cy="17" r="2"/></svg><span data-i18n="nav.how">How it works</span></a>
-        <a href="#personas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-7 8-7s7 2.5 8 7"/></svg><span data-i18n="nav.personas">Personas</span></a>
-        <a href="#checks"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/><path d="m8 10.5 2 2 3.5-4"/></svg><span data-i18n="nav.checks">Checks</span></a>
-        <a href="#fix"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14.5 5.5 18.5 9.5 9 19H5v-4z"/><path d="m12.5 7.5 4 4"/></svg><span data-i18n="nav.fix">Fixes</span></a>
-        <a href="#ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M6 8.5v7M8.5 6H12a4 4 0 0 1 4 4"/></svg><span>CI</span></a>
-        <a href="#faq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17h0"/></svg><span>FAQ</span></a>
+        <a href="#recursos" data-i18n="nav.features">Recursos</a>
+        <a href="#como-funciona" data-i18n="nav.how">Como funciona</a>
+        <a href="#relatorios" data-i18n="nav.reports">Relatórios</a>
+        <a href="#integracoes" data-i18n="nav.integrations">Integrações</a>
       </div>
-      <span class="spacer"></span>
-      <div class="lang" role="group" aria-label="Language">
-        <button type="button" id="lang-en" data-lang="en" aria-pressed="true">EN</button>
-        <button type="button" id="lang-pt" data-lang="pt" aria-pressed="false">PT</button>
+      <div class="nav-actions">
+        <button class="lang" type="button" id="lang" aria-label="Switch to English">EN</button>
+        <a class="btn light" href="https://github.com/fabiofigueredo/ux-validate" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#branch"/></svg><span class="gh-label">GitHub</span></a>
+        <a class="btn dark" href="#comecar" data-start><span data-i18n="nav.start">Começar</span><svg aria-hidden="true"><use href="#arrow"/></svg></a>
       </div>
-      <a class="cta" href="#start"><span data-i18n="nav.start">Get started</span> <span aria-hidden="true">→</span></a>
     </nav>
   </div>
 </header>
 
-<main id="top">
-  <!-- ================= HERO ================= -->
-  <section class="hero" aria-labelledby="hero-title">
-    <div class="wrap">
-      <div class="hero-stage">
-        <div class="hero-center">
-          <p class="hi"><span data-i18n="hero.hi">meet your users before launch</span>
-            <svg viewBox="0 0 200 10" preserveAspectRatio="none" aria-hidden="true"><path d="M2 6 C40 1, 80 9, 120 4 S180 3, 198 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          </p>
-          <div class="selection">
-            <span class="h tl"></span><span class="h tr"></span><span class="h bl"></span><span class="h br"></span>
-            <h1 id="hero-title">ux-validate</h1>
-            <span class="size" aria-hidden="true">persona · 390 × 844</span>
-          </div>
-          <span class="status"><i aria-hidden="true"></i><span data-i18n="hero.status">Open source · MIT · on npm</span></span>
-          <p class="tagline" data-i18n="hero.tagline">Your AI agent browses your web app as real personas, then shows where each one got stuck and which file to fix.</p>
-          <div class="install">
-            <code><span class="prompt">$</span> npx ux-validate init</code>
-            <button class="copy" type="button" data-copy="npx ux-validate init" data-i18n="ui.copy">Copy</button>
-          </div>
-          <p class="tools-line"><span data-i18n="hero.works">Works with</span> <b>Claude Code</b>, <b>Cursor</b>, <b>Codex CLI</b> <span data-i18n="ui.and">and</span> <b>Gemini CLI</b></p>
-        </div>
+<main id="topo">
+  <!-- ===== Abertura ===== -->
+  <section class="wrap hero" aria-labelledby="titulo">
+    <div class="hero-copy">
+      <div style="position:relative">
+        <span class="hand" data-i18n="hero.hand">valide a experiência de verdade</span>
+        <svg class="spark" style="right:-50px;top:-10px" aria-hidden="true"><use href="#burst"/></svg>
+      </div>
+      <div class="selection">
+        <span class="h tl"></span><span class="h tr"></span><span class="h bl"></span><span class="h br"></span>
+        <h1 id="titulo">ux-validate</h1>
+      </div>
+      <p class="tagline" data-i18n="hero.tagline">Valide projetos web com personas reais, combinando usabilidade, acessibilidade e conteúdo.</p>
+      <div class="hero-ctas">
+        <a class="btn dark" href="#comecar" data-start><span data-i18n="cta.start">Começar agora</span><svg aria-hidden="true"><use href="#arrow"/></svg></a>
+        <a class="btn light" href="https://github.com/fabiofigueredo/ux-validate" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#branch"/></svg><span data-i18n="cta.github">Ver no GitHub</span></a>
+      </div>
+      <div class="badges">
+        <span><svg aria-hidden="true"><use href="#check"/></svg><span data-i18n="hero.b1">Código aberto (MIT)</span></span>
+        <span><svg aria-hidden="true"><use href="#check"/></svg>CLI (npx)</span>
+        <span><svg aria-hidden="true"><use href="#check"/></svg><span data-i18n="hero.b3">IA + Personas</span></span>
+      </div>
+    </div>
 
-        <div class="hero-figs" aria-hidden="true">
-          <!-- Margaret: older user squinting at her phone -->
-          <div class="fig margaret">
-            <svg viewBox="0 0 200 240" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-              <g filter="url(#rough)">
-                <circle cx="108" cy="30" r="12" fill="var(--lilac)"/>
-                <ellipse cx="100" cy="64" rx="26" ry="29" fill="var(--card)"/>
-                <path d="M74 60c-2-22 50-28 53-2-8-9-32-14-53 2z" fill="var(--lilac)"/>
-                <circle cx="90" cy="66" r="9" fill="var(--card)"/><circle cx="112" cy="66" r="9" fill="var(--card)"/>
-                <path d="M99 66h4M86 66h8M108 66h8M96 83c3 2 6 2 9 0M95 93v9M105 93v9"/>
-                <path d="M62 236c-3-60 6-112 38-128 32 16 41 68 38 128z" fill="var(--yellow)"/>
-                <path d="M100 112v120" stroke-dasharray="1 0"/>
-                <circle cx="94" cy="134" r="2" fill="currentColor"/><circle cx="94" cy="158" r="2" fill="currentColor"/><circle cx="94" cy="182" r="2" fill="currentColor"/>
-                <path d="M132 128c16 2 22-20 12-34"/>
-                <rect x="132" y="52" width="24" height="40" rx="5" fill="var(--card)" transform="rotate(-12 144 72)"/>
-                <path d="M137 62l14-3M138 68l11-2" stroke-width="1.8"/>
-                <circle cx="144" cy="94" r="6" fill="var(--card)"/>
-              </g>
-              <text x="160" y="30" font-family="Caveat, cursive" font-size="30" font-weight="700" fill="var(--blue)" stroke="none">?</text>
-              <text x="176" y="54" font-family="Caveat, cursive" font-size="24" font-weight="700" fill="var(--green)" stroke="none">?</text>
-            </svg>
-            <span class="note-hand" style="left:0; top:-30px;"><span class="hl" data-i18n="hero.n1">can't find the price</span></span>
-          </div>
+    <!-- Desenvolvedor de fone e óculos, notebook e janela de código -->
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 560 420" fill="none" stroke="#111" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="190" y="38" width="190" height="190" rx="8" fill="#c6ef5a" stroke="none" transform="rotate(-7 285 133)"/>
+        <g transform="rotate(-8 420 140)" filter="url(#rough)">
+          <rect x="318" y="48" width="214" height="168" rx="16" fill="#161616"/>
+          <circle cx="342" cy="72" r="5" fill="#fff" stroke="none"/><circle cx="358" cy="72" r="5" fill="#fff" stroke="none"/><circle cx="374" cy="72" r="5" fill="#fff" stroke="none"/>
+          <g stroke-width="7">
+            <path d="M342 100h22" stroke="#c79bf5"/><path d="M374 100h96" stroke="#c6ef5a"/>
+            <path d="M342 122h40" stroke="#c79bf5"/><path d="M392 122h60" stroke="#c6ef5a"/>
+            <path d="M342 144h14" stroke="#c79bf5"/><path d="M366 144h120" stroke="#c6ef5a"/>
+            <path d="M342 166h30" stroke="#c79bf5"/><path d="M382 166h70" stroke="#c6ef5a"/>
+            <path d="M342 188h50" stroke="#c79bf5"/><path d="M402 188h90" stroke="#c6ef5a"/>
+          </g>
+        </g>
+        <g filter="url(#rough)">
+          <path d="M214 372c0-74 30-118 76-128h72c46 10 76 54 76 128z" fill="#fff"/>
+          <path d="M310 244l17 22 17-22"/>
+          <path d="M242 296c-14 30-4 58 30 70M412 296c14 30 4 58-30 70"/>
+          <path d="M310 222v24M346 222v24"/>
+          <ellipse cx="328" cy="170" rx="50" ry="58" fill="#fff"/>
+          <path d="M276 166c-2-74 106-74 104 0" stroke-width="8"/>
+          <rect x="262" y="146" width="26" height="50" rx="13" fill="#111"/>
+          <rect x="370" y="146" width="24" height="48" rx="12" fill="#111"/>
+          <g fill="#111" stroke="none">
+            <circle cx="290" cy="112" r="20"/><circle cx="314" cy="98" r="22"/><circle cx="342" cy="96" r="21"/><circle cx="366" cy="108" r="19"/>
+            <circle cx="300" cy="132" r="14"/><circle cx="356" cy="128" r="13"/><circle cx="328" cy="118" r="16"/><circle cx="378" cy="128" r="12"/><circle cx="280" cy="134" r="11"/>
+          </g>
+          <circle cx="310" cy="172" r="17" fill="#fff"/><circle cx="348" cy="172" r="17" fill="#fff"/>
+          <path d="M327 172h4"/>
+          <circle cx="312" cy="174" r="4.5" fill="#111" stroke="none"/><circle cx="346" cy="174" r="4.5" fill="#111" stroke="none"/>
+          <path d="M330 184c-2 6-1 10 4 10"/>
+          <path d="M316 204c8 8 22 8 28 0"/>
+          <path d="M282 372l26-122h160l-22 122z" fill="#fff"/>
+          <circle cx="378" cy="310" r="10" fill="#ddd"/>
+          <ellipse cx="282" cy="368" rx="20" ry="11" fill="#fff"/>
+          <ellipse cx="440" cy="366" rx="20" ry="11" fill="#fff"/>
+          <rect x="474" y="316" width="42" height="54" rx="6" fill="#fff"/>
+          <path d="M516 330c16 0 16 26 0 26"/>
+          <rect x="28" y="370" width="510" height="16" rx="8" fill="#fff"/>
+          <path d="M56 386v24M510 386v24"/>
+        </g>
+        <g stroke="#111" stroke-width="12"><path d="M160 214l-22 20 22 20M206 194l-16 80M238 214l22 20-22 20"/></g>
+        <g stroke="#c6ef5a" stroke-width="7"><path d="M160 214l-22 20 22 20M206 194l-16 80M238 214l22 20-22 20"/></g>
+        <g stroke="#c6ef5a" stroke-width="6"><path d="M166 160l14 18M200 140v22M236 156l-12 18M478 254l20-14M486 278h24M484 228l14-20"/></g>
+        <path d="M454 20l6 14 14 6-14 6-6 14-6-14-14-6 14-6z" fill="#c6ef5a" stroke="#111" stroke-width="2.5"/>
+      </svg>
+    </div>
+  </section>
 
-          <!-- Raj: developer at his desk -->
-          <div class="fig raj">
-            <svg viewBox="0 0 230 210" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-              <g filter="url(#rough)">
-                <path d="M16 150h204M36 150v52M200 150v52"/>
-                <path d="M120 148l9-48h64l-8 48z" fill="var(--card)"/>
-                <path d="M110 150h82"/>
-                <rect x="138" y="110" width="22" height="8" rx="2" fill="var(--yellow)" stroke-width="1.6"/>
-                <rect x="138" y="122" width="40" height="5" rx="2" fill="var(--lilac)" stroke-width="1.6"/>
-                <rect x="136" y="131" width="30" height="5" rx="2" fill="var(--green)" stroke-width="1.6"/>
-                <path d="M203 136h12v14h-12zM215 139c6 0 6 8 0 8"/>
-                <path d="M200 128c2-5 6-5 4-10M209 126c2-5 6-5 4-10" stroke-width="1.6"/>
-                <rect x="22" y="88" width="10" height="56" rx="4" fill="var(--card)"/>
-                <path d="M24 142h70M58 142v52M42 196h34"/>
-                <circle cx="72" cy="58" r="17" fill="var(--card)"/>
-                <path d="M56 54c0-18 30-24 34-6-6-4-14-6-20-2-6-4-10 0-14 8z" fill="currentColor"/>
-                <path d="M78 62h0M85 66c-1 2-3 3-5 3" stroke-width="2.6"/>
-                <path d="M50 140c-3-30 6-52 24-56 20 4 26 26 24 56z" fill="var(--blue)"/>
-                <path d="M92 104c12 10 24 22 34 32"/><circle cx="128" cy="138" r="5" fill="var(--card)"/>
-                <path d="M62 140l6 44h18M88 140l18 22v32h14"/>
-              </g>
-            </svg>
-            <span class="note-hand" style="right:0; top:-30px;"><span class="hl" data-i18n="hero.n2">trial link → 404</span></span>
-          </div>
+  <!-- ===== Faixa ===== -->
+  <div class="wrap">
+    <div class="strip">
+      <div class="pill"><svg viewBox="0 0 36 36" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="13" cy="12" r="5.5"/><path d="M3 30c1-6 5-9.5 10-9.5s9 3.5 10 9.5"/><circle cx="25" cy="13" r="4"/><path d="M24 20.5c4.5 0 8 3 9 8"/></svg><span data-i18n="strip.pill">Teste com<br>personas reais</span></div>
+      <span class="bar" aria-hidden="true"></span>
+      <p data-i18n="strip.text">Simule o uso da sua aplicação por diferentes perfis, como uma pessoa idosa, alguém com deficiência visual e outros contextos de uso.</p>
+      <svg class="spark-s" aria-hidden="true"><use href="#burst"/></svg>
+    </div>
+  </div>
 
-          <!-- Lucas: screen reader user with headphones -->
-          <div class="fig lucas">
-            <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-              <g filter="url(#rough)">
-                <path d="M58 182c-2-54 10-84 37-90 27 6 39 36 37 90z" fill="var(--green)"/>
-                <circle cx="95" cy="60" r="22" fill="var(--card)"/>
-                <path d="M74 52c2-16 40-18 42 0-10-6-30-8-42 0z" fill="currentColor"/>
-                <path d="M86 62h6M100 62h6M90 74c3 3 7 3 10 0"/>
-                <path d="M70 58c0-34 50-34 50 0" stroke-width="4"/>
-                <rect x="64" y="52" width="10" height="19" rx="4" fill="var(--lilac)"/>
-                <rect x="116" y="52" width="10" height="19" rx="4" fill="var(--lilac)"/>
-                <path d="M70 124c-6 18-2 34 8 40M120 124c6 18 2 34-8 40"/>
-                <rect x="46" y="164" width="100" height="22" rx="5" fill="var(--card)"/>
-                <path d="M56 172h6M68 172h6M80 172h6M92 172h6M104 172h6M116 172h6M128 172h6M64 179h60" stroke-width="1.8"/>
-              </g>
-              <path d="M136 48c8 8 8 20 0 28M146 40c13 13 13 31 0 44" stroke="var(--blue)" stroke-width="3"/>
-            </svg>
-            <span class="note-hand" style="right:-4px; bottom:-30px;"><span class="hl" data-i18n="hero.n3">form needs a mouse</span></span>
-          </div>
-
-          <!-- The agent: a cursor with a magnifying glass -->
-          <div class="fig agent">
-            <svg viewBox="0 0 130 150" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-              <g filter="url(#rough)">
-                <path d="M28 12v82l20-18 14 32 12-6-14-31 27-2z" fill="var(--card)"/>
-                <circle cx="40" cy="48" r="2.6" fill="currentColor"/><circle cx="52" cy="54" r="2.6" fill="currentColor"/>
-                <path d="M40 64c4 3 8 3 11 1"/>
-                <path d="M58 116l-4 24h-8M70 112l6 26h8"/>
-                <path d="M84 60l14-10"/>
-                <circle cx="106" cy="40" r="15" fill="var(--yellow)"/>
-                <path d="M100 34c3-3 7-3 10 0" stroke-width="1.8"/>
-              </g>
-            </svg>
-          </div>
-        </div>
+  <!-- ===== Por que validar ===== -->
+  <section class="wrap why" id="recursos" aria-labelledby="why-t">
+    <div>
+      <span class="hand sm" data-i18n="why.hand">por que validar?</span>
+      <h2 id="why-t" data-i18n="why.title">Porque nem todo mundo usa sua aplicação do mesmo jeito.</h2>
+      <p class="body" data-i18n="why.text">A IA pode criar interfaces rapidamente, mas só a validação com o olhar de pessoas reais revela as barreiras que atrapalham de verdade.</p>
+    </div>
+    <div class="notes">
+      <svg class="burst" aria-hidden="true"><use href="#burst"/></svg>
+      <div class="note l">
+        <svg viewBox="0 0 48 48" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M4 24c5-9 12-14 20-14s15 5 20 14c-5 9-12 14-20 14S9 33 4 24z"/><circle cx="24" cy="24" r="7" fill="#111"/></svg>
+        <span data-i18n="why.n1">Dificuldade de navegação</span>
+      </div>
+      <div class="note p">
+        <svg viewBox="0 0 48 48" fill="none" stroke="#111" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M21 15l4-4a8 8 0 0 1 12 11l-4 4M27 33l-4 4a8 8 0 0 1-12-11l4-4"/><path d="M30 6l2-4M38 12l4-2M10 36l-4 2M18 42l-2 4"/><path d="M20 28l8-8"/></svg>
+        <span data-i18n="why.n2">Links quebrados</span>
+      </div>
+      <div class="note y">
+        <span class="aa" aria-hidden="true">Aa</span>
+        <span data-i18n="why.n3">Baixo contraste</span>
       </div>
     </div>
   </section>
 
-  <!-- ================= PROBLEM ================= -->
-  <section id="why" aria-labelledby="why-title">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow" data-i18n="why.eyebrow">the problem</span>
-        <h2 id="why-title" data-i18n="why.title">Looks finished. Fails real people.</h2>
-        <p class="lead" data-i18n="why.lead">AI writes interfaces fast, and they usually pass a quick look. Then a 68-year-old on her phone can't find the price, a screen reader user can't send the form, and the trial button leads to a 404. Contrast checkers don't catch that. Someone trying to get a task done does.</p>
-      </div>
-      <div class="notes">
-        <div class="sticky"><span data-i18n="why.n1">Buttons that do nothing</span><small>onclick → startTrial is not defined</small></div>
-        <div class="sticky b"><span data-i18n="why.n2">Lorem ipsum in production</span><small>check:content · leftover-lorem</small></div>
-        <div class="sticky g"><span data-i18n="why.n3">Focus you can't see</span><small>WCAG 2.4.7</small></div>
-        <div class="sticky l"><span data-i18n="why.n4">Prices that disagree between pages</span><small>R$ NaN/mês</small></div>
-        <div class="sticky c"><span data-i18n="why.n5">A menu in the wrong language</span><small>"Pricing" ≠ "Preços"</small></div>
-      </div>
+  <!-- ===== Como funciona ===== -->
+  <section class="wrap how" id="como-funciona" aria-labelledby="how-t">
+    <div>
+      <span class="hand sm" data-i18n="how.hand">como funciona</span>
+      <h2 id="how-t" data-i18n="how.title">Cinco passos, da persona ao ajuste.</h2>
     </div>
+    <ol class="steps">
+      <li><span class="ic" style="--c:#c6ef5a"><svg viewBox="0 0 28 28" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="14" cy="9" r="5"/><path d="M5 25c1-6 4.5-9 9-9s8 3 9 9"/></svg></span><span data-i18n="how.s1">1. Defina as personas</span></li>
+      <li class="arrow" aria-hidden="true"><svg><use href="#arrow"/></svg></li>
+      <li><span class="ic" style="--c:#dcc2fb"><svg viewBox="0 0 28 28" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="13" cy="15" r="10"/><circle cx="13" cy="15" r="5"/><path d="M13 15 24 4M20 4h4v4"/></svg></span><span data-i18n="how.s2">2. Simule objetivos</span></li>
+      <li class="arrow" aria-hidden="true"><svg><use href="#arrow"/></svg></li>
+      <li><span class="ic" style="--c:#fde68a"><svg viewBox="0 0 28 28" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="m18 18 7 7"/></svg></span><span data-i18n="how.s3">3. Execute as validações</span></li>
+      <li class="arrow" aria-hidden="true"><svg><use href="#arrow"/></svg></li>
+      <li><span class="ic" style="--c:#c6ef5a"><svg viewBox="0 0 28 28" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><rect x="5" y="3" width="18" height="22" rx="3"/><path d="M9 9h10M9 14h10M9 19h6"/></svg></span><span data-i18n="how.s4">4. Analise o relatório</span></li>
+      <li class="arrow" aria-hidden="true"><svg><use href="#arrow"/></svg></li>
+      <li><span class="ic" style="--c:#dcc2fb"><svg viewBox="0 0 28 28" fill="none" stroke="#111" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 8l-6 6 6 6M19 8l6 6-6 6M16 5l-4 18"/></svg></span><span data-i18n="how.s5">5. Ajuste e melhore</span></li>
+    </ol>
   </section>
 
-  <!-- ================= GAINS ================= -->
-  <section id="gains" aria-labelledby="gains-title">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow" data-i18n="gains.eyebrow">what you get</span>
-        <h2 id="gains-title" data-i18n="gains.title">Feedback you'd normally get after launch</h2>
-      </div>
-      <div class="grid-3">
-        <article class="board gain">
-          <span class="ico" style="background:var(--yellow)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--note-ink)" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c.8-4 3.2-6 6-6s5.2 2 6 6M15 14.5c2.6-.6 5 1.2 6 4.5"/></svg></span>
-          <h3 data-i18n="gains.g1t">Problems seen through real eyes</h3>
-          <p data-i18n="gains.g1p">Each issue says who it hurts and why: the persona, the goal they were trying to reach and the step where they gave up.</p>
-        </article>
-        <article class="board gain">
-          <span class="ico" style="background:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--note-ink)" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 15 5-4 4 3 3-2 6 4"/><circle cx="16" cy="9" r="1.5"/></svg></span>
-          <h3 data-i18n="gains.g2t">Evidence for every finding</h3>
-          <p data-i18n="gains.g2p">A screenshot, the DOM snippet or the exact text on the page. No evidence, no finding.</p>
-        </article>
-        <article class="board gain">
-          <span class="ico" style="background:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--note-ink)" stroke-width="2" stroke-linecap="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h4"/></svg></span>
-          <h3 data-i18n="gains.g3t">The file to fix</h3>
-          <p data-i18n="gains.g3p">Findings point to the likely file and line in your code, and the fix command can apply the change for you.</p>
-        </article>
-        <article class="board gain">
-          <span class="ico" style="background:var(--lilac)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--note-ink)" stroke-width="2" stroke-linecap="round"><path d="M4 12h16M4 6h16M4 18h16"/><circle cx="9" cy="6" r="1.8" fill="var(--lilac)"/><circle cx="15" cy="12" r="1.8" fill="var(--lilac)"/><circle cx="7" cy="18" r="1.8" fill="var(--lilac)"/></svg></span>
-          <h3 data-i18n="gains.g4t">Same baseline with any model</h3>
-          <p data-i18n="gains.g4p">Contrast, broken links, keyboard traps and spelling come from deterministic checks. The model interprets; it doesn't guess.</p>
-        </article>
-        <article class="board gain">
-          <span class="ico" style="background:var(--coral)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--note-ink)" stroke-width="2" stroke-linecap="round"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
-          <h3 data-i18n="gains.g5t">Private by default</h3>
-          <p data-i18n="gains.g5p">Checks and spelling run on your machine. Code goes to a model provider only if you choose a hosted model for terminal fixes.</p>
-        </article>
-        <article class="board gain">
-          <span class="ico" style="background:var(--paper-2)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h8M8 3v2M5.5 5c.5 3 3 6 6 7M10.5 5c-.8 3.5-3.5 6.5-6.5 7.5M13 21l4-10 4 10M14.5 17.5h5"/></svg></span>
-          <h3 data-i18n="gains.g6t">English and Portuguese</h3>
-          <p data-i18n="gains.g6p">Messages, reports and agent instructions in both languages. The tool's language and your content's language are set separately.</p>
-        </article>
-      </div>
+  <!-- ===== Personas ===== -->
+  <section class="wrap personas" aria-labelledby="per-t">
+    <!-- Senhora de cabelo grisalho, óculos e casaco amarelo, segurando o celular -->
+    <div class="art" aria-hidden="true">
+      <svg viewBox="0 0 300 290" fill="none" stroke="#111" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="96" width="132" height="176" rx="6" fill="#c6ef5a" stroke="none"/>
+        <g filter="url(#rough)">
+          <circle cx="148" cy="40" r="26" fill="#e7e7e3"/>
+          <path d="M136 30c6-6 16-6 22 0M134 44c8-4 18-4 26 0" stroke-width="2.4"/>
+          <path d="M62 290c-2-62 24-104 86-110 62 6 90 48 88 110z" fill="#fde68a"/>
+          <path d="M126 182l22 50 22-50" fill="#fff"/>
+          <path d="M148 232v58"/>
+          <circle cx="138" cy="250" r="3" fill="#111" stroke="none"/><circle cx="138" cy="272" r="3" fill="#111" stroke="none"/>
+          <path d="M132 158v24M164 158v24"/>
+          <ellipse cx="148" cy="108" rx="52" ry="58" fill="#fff"/>
+          <path d="M96 116c-8-60 112-74 106-6-6-24-40-38-60-30-22-8-40 6-46 36z" fill="#e7e7e3"/>
+          <path d="M92 120c-6 8-4 18 2 22M204 116c6 8 4 18-2 22" stroke-width="3"/>
+          <path d="M100 82c26-28 74-30 100-2" stroke-width="11"/>
+          <path d="M100 82c26-28 74-30 100-2" stroke="#c79bf5" stroke-width="6"/>
+          <circle cx="128" cy="116" r="16" fill="#fff"/><circle cx="168" cy="116" r="16" fill="#fff"/>
+          <path d="M144 116h8"/>
+          <path d="M120 118c5-5 11-5 16 0M160 118c5-5 11-5 16 0"/>
+          <path d="M132 144c9 9 23 9 32 0"/>
+          <circle cx="98" cy="138" r="6" fill="#fde68a"/>
+          <path d="M92 214c-8 40 30 58 70 52"/>
+          <g transform="rotate(14 214 210)">
+            <rect x="186" y="154" width="58" height="96" rx="12" fill="#dcc2fb"/>
+            <rect x="194" y="166" width="42" height="68" rx="6" fill="#f2e8fe" stroke-width="2.6"/>
+            <path d="M202 202l9 9 17-20" stroke="#6fa80f" stroke-width="5"/>
+          </g>
+          <path d="M204 270c-16-4-24-18-18-34 10 2 18 4 26 2"/>
+          <ellipse cx="236" cy="248" rx="14" ry="10" fill="#fff" transform="rotate(-30 236 248)"/>
+        </g>
+        <g stroke="#c6ef5a" stroke-width="6"><path d="M244 112l16-16M254 132h22M246 92l6-20"/></g>
+      </svg>
     </div>
+    <span class="rule" aria-hidden="true"></span>
+    <div>
+      <span class="hand sm" data-i18n="per.hand">personas que importam</span>
+      <h2 id="per-t" data-i18n="per.title">Do estudante à pessoa idosa, cada experiência conta.</h2>
+      <p class="body" data-i18n="per.text">Valide sua aplicação com diferentes perfis de uso, como pessoas idosas, pessoas com deficiência visual, baixa familiaridade com tecnologia e muito mais. Cada persona tem aparelho, limites e objetivos próprios.</p>
+    </div>
+    <span class="rule" aria-hidden="true"></span>
+    <ul class="check-list">
+      <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="per.l1">Pessoas idosas</span></li>
+      <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="per.l2">Deficiência visual e leitor de tela</span></li>
+      <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="per.l3">Baixa familiaridade com tecnologia</span></li>
+      <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="per.l4">Celular, tablet ou computador</span></li>
+      <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="per.l5">Outros contextos reais, criados por você</span></li>
+    </ul>
   </section>
 
-  <!-- ================= HOW ================= -->
-  <section id="how" aria-labelledby="how-title">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow" data-i18n="how.eyebrow">how it works</span>
-        <h2 id="how-title" data-i18n="how.title">Five steps, from persona to pull request</h2>
+  <!-- ===== Relatórios ===== -->
+  <div class="wrap" id="relatorios">
+    <section class="band" aria-labelledby="rep-t">
+      <div>
+        <span class="hand sm" data-i18n="rep.hand">o que você recebe</span>
+        <h2 id="rep-t" data-i18n="rep.title">Relatórios claros e acionáveis.</h2>
+        <p class="body" data-i18n="rep.text">Veja o que funciona, o que precisa ser corrigido e onde ajustar, com evidências, pontuações e sugestões objetivas.</p>
       </div>
-      <ol class="steps" style="list-style:none;margin:0;padding:0">
-        <li class="board step">
-          <span class="n" style="background:var(--yellow);color:var(--note-ink)">1</span>
-          <div><h3 data-i18n="how.s1t">Describe who uses your app</h3><p data-i18n="how.s1p">Device, eyesight, tech skills, patience and the goals they come to achieve. The agent can interview you, or answer a short wizard.</p></div>
-          <pre class="term"><span class="c"># in your AI tool</span>
-<span class="p">/</span>persona-new older customer on a phone
-<span class="c"># or in the terminal</span>
-<span class="p">$</span> npx ux-validate persona new</pre>
-        </li>
-        <li class="board step">
-          <span class="n" style="background:var(--blue);color:var(--note-ink)">2</span>
-          <div><h3 data-i18n="how.s2t">Run the automated checks</h3><p data-i18n="how.s2p">axe-core, keyboard and WAI-ARIA behavior, broken links, console errors, layout on each screen size and an offline spell check. Same result with any model.</p></div>
-          <pre class="term"><span class="p">$</span> npx ux-validate check
-Crawling http://localhost:3000 …
-<span class="ok">✔</span> 36 issues: <span class="r">3 critical</span>, <span class="y">20 high</span>, 8 medium, 5 low</pre>
-        </li>
-        <li class="board step">
-          <span class="n" style="background:var(--green);color:var(--note-ink)">3</span>
-          <div><h3 data-i18n="how.s3t">Let the agent browse as each persona</h3><p data-i18n="how.s3p">It opens a real browser, tries every goal with that persona's limits and records the exact moment they hesitated or gave up.</p></div>
-          <pre class="term"><span class="p">/</span>persona-test margaret
-<span class="r">✗</span> Find a phone number · 4 steps · gave up
-<span class="y">~</span> Find out how much it costs · 5 steps</pre>
-        </li>
-        <li class="board step">
-          <span class="n" style="background:var(--lilac);color:var(--note-ink)">4</span>
-          <div><h3 data-i18n="how.s4t">Read the report</h3><p data-i18n="how.s4p">Scores by persona and category, goals achieved, and every issue with evidence, the WCAG criterion or heuristic, and where to fix it.</p></div>
-          <pre class="term"><span class="p">$</span> npx ux-validate report
-<span class="ok">✔</span> Report generated:
-  .ux-validate/runs/…/report.html</pre>
-        </li>
-        <li class="board step">
-          <span class="n" style="background:var(--coral);color:var(--note-ink)">5</span>
-          <div><h3 data-i18n="how.s5t">Apply the fixes</h3><p data-i18n="how.s5p">One issue at a time, showing each change before saving, then the checks run again to confirm.</p></div>
-          <pre class="term"><span class="p">/</span>persona-fix A001,C003
-<span class="c"># or with your own API key</span>
-<span class="p">$</span> npx ux-validate fix --dry-run</pre>
-        </li>
-      </ol>
-    </div>
-  </section>
-
-  <!-- ================= PERSONAS ================= -->
-  <section id="personas" aria-labelledby="personas-title">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow" data-i18n="per.eyebrow">personas</span>
-        <h2 id="personas-title" data-i18n="per.title">Personas with real limits</h2>
-        <p class="lead" data-i18n="per.lead">Traits change how the agent browses and how severe each issue is. Reduced vision makes contrast critical; low patience means giving up after a few steps without progress.</p>
-      </div>
-      <div class="personas">
-        <article class="board persona y">
-          <div class="top">
-            <svg viewBox="0 0 92 100" fill="none" stroke="var(--note-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g filter="url(#rough)"><circle cx="50" cy="16" r="8" fill="var(--lilac)"/><ellipse cx="46" cy="42" rx="18" ry="20" fill="#fff"/><path d="M28 40c-1-16 36-20 37 0-6-7-24-10-37 0z" fill="var(--lilac)"/><circle cx="39" cy="44" r="6.5" fill="#fff"/><circle cx="54" cy="44" r="6.5" fill="#fff"/><path d="M45 44h3M42 55c2 1.5 4 1.5 6 0M18 100c0-22 10-34 28-36 18 2 28 14 28 36" fill="var(--card)"/></g></svg>
-            <div><h3>Margaret</h3><p data-i18n="per.m.d">68 · retired · reads slowly, prefers large text</p></div>
+      <div class="win" role="img" aria-label="Exemplo de relatório: nota geral 78, com conteúdo, navegação e interface aprovados e um alerta em acessibilidade">
+        <div class="top"><i></i><i></i><i></i></div>
+        <div class="content">
+          <div class="ring">
+            <svg viewBox="0 0 112 112" aria-hidden="true"><circle cx="56" cy="56" r="46" fill="none" stroke="#eeeee8" stroke-width="12"/><circle cx="56" cy="56" r="46" fill="none" stroke="#c6ef5a" stroke-width="12" stroke-linecap="round" stroke-dasharray="225.4 289"/></svg>
+            <b>78</b>
+            <small data-i18n="rep.ring">nota · exemplo</small>
           </div>
-          <div class="chips"><span class="chip">mobile</span><span class="chip">tech: low</span><span class="chip">vision: reduced</span><span class="chip">patience: low</span></div>
-          <ul class="goals">
-            <li><span class="o part">~</span><span data-i18n="per.m.g1">Find out how much it costs<small>"Pricing" in a Portuguese menu; reached the plans by trial and error</small></span></li>
-            <li><span class="o fail">✗</span><span data-i18n="per.m.g2">Find a phone number<small>only a form on the contact page; gave up</small></span></li>
+          <ul class="cats">
+            <li><svg aria-hidden="true"><use href="#tick"/></svg><span data-i18n="cat.content">Conteúdo</span></li>
+            <li><svg aria-hidden="true"><use href="#tick"/></svg><span data-i18n="cat.nav">Navegação</span></li>
+            <li><svg aria-hidden="true"><use href="#tick"/></svg><span data-i18n="cat.ui">Interface</span></li>
+            <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2 19 18H1z" fill="#fde68a" stroke="#111" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 8v4M10 15h0" stroke="#111" stroke-width="2.2" stroke-linecap="round"/></svg><span data-i18n="cat.a11y">Acessibilidade</span></li>
           </ul>
-        </article>
-        <article class="board persona b">
-          <div class="top">
-            <svg viewBox="0 0 92 100" fill="none" stroke="var(--note-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g filter="url(#rough)"><circle cx="46" cy="40" r="18" fill="#fff"/><path d="M28 38c0-20 34-24 36-4-6-5-16-7-22-3-6-4-10 0-14 7z" fill="var(--note-ink)"/><path d="M40 44h0M52 44h0" stroke-width="3.4"/><path d="M42 52c2.5 2 5.5 2 8 0M16 100c0-22 12-34 30-36 18 2 30 14 30 36" fill="var(--card)"/><rect x="30" y="76" width="34" height="22" rx="3" fill="var(--yellow)"/></g></svg>
-            <div><h3>Raj</h3><p data-i18n="per.r.d">29 · developer · skims, compares in other tabs</p></div>
-          </div>
-          <div class="chips"><span class="chip">desktop</span><span class="chip">tech: high</span><span class="chip">patience: medium</span></div>
-          <ul class="goals">
-            <li><span class="o part">~</span><span data-i18n="per.r.g1">Compare the plans<small>the Starter limit shows "{{plan.limit}} users"</small></span></li>
-            <li><span class="o fail">✗</span><span data-i18n="per.r.g2">Create a trial account<small>"Start free trial" leads to a 404</small></span></li>
-          </ul>
-        </article>
-        <article class="board persona g">
-          <div class="top">
-            <svg viewBox="0 0 92 100" fill="none" stroke="var(--note-ink)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g filter="url(#rough)"><circle cx="46" cy="40" r="18" fill="#fff"/><path d="M30 34c2-12 30-13 32 0-8-4-22-5-32 0z" fill="var(--note-ink)"/><path d="M27 40c0-28 38-28 38 0" stroke-width="3.4"/><rect x="22" y="35" width="8" height="15" rx="3" fill="var(--lilac)"/><rect x="62" y="35" width="8" height="15" rx="3" fill="var(--lilac)"/><path d="M39 44h5M49 44h5M42 52c2.5 2 5.5 2 8 0M16 100c0-22 12-34 30-36 18 2 30 14 30 36" fill="var(--card)"/></g></svg>
-            <div><h3>Lucas</h3><p data-i18n="per.l.d">35 · analyst · blind, keyboard and screen reader</p></div>
-          </div>
-          <div class="chips"><span class="chip">desktop</span><span class="chip">vision: screen-reader</span><span class="chip">tech: high</span></div>
-          <ul class="goals">
-            <li><span class="o fail">✗</span><span data-i18n="per.l.g1">Navigate by headings<small>the main headline is a styled div, not a heading</small></span></li>
-            <li><span class="o fail">✗</span><span data-i18n="per.l.g2">Fill in the contact form<small>no labels; "Send" is a div that never gets focus</small></span></li>
-          </ul>
-        </article>
-      </div>
-      <p class="small-note" data-i18n="per.note">Example results from the demo site that ships with ux-validate, which has these problems on purpose.</p>
-
-      <div class="yaml-note">
-        <pre class="term"><span class="c"># .ux-validate/personas/margaret.yml</span>
-id: margaret
-name: Margaret
-viewport: mobile
-traits:
-  tech_literacy: low
-  vision: reduced
-  patience: low
-  reading_level: basic
-goals:
-  - Find out how much it costs
-  - Find a phone number to talk to a person</pre>
-        <div>
-          <h3 style="font:700 24px/1.25 var(--sans)" data-i18n="per.y.t">A persona is a small YAML file</h3>
-          <p style="margin-top:10px" data-i18n="per.y.p">Write it by hand, answer the wizard in the terminal, or let the agent interview you about who actually uses the app. Setup creates three examples to start from.</p>
-          <div class="cmds"><span class="kbd">/persona-new</span><span class="kbd">npx ux-validate persona new</span><span class="kbd">npx ux-validate persona validate</span></div>
         </div>
       </div>
-    </div>
-  </section>
+      <span class="rule" aria-hidden="true"></span>
+      <ul class="check-list">
+        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="rep.l1">Pontuação por persona e categoria</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="rep.l2">Evidências (prints e trechos)</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="rep.l3">Objetivos não concluídos e onde a pessoa travou</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="rep.l4">Arquivos e linhas para correção</span></li>
+      </ul>
+    </section>
+  </div>
 
-  <!-- ================= CHECKS ================= -->
-  <section id="checks" aria-labelledby="checks-title">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow" data-i18n="chk.eyebrow">what it checks</span>
-        <h2 id="checks-title" data-i18n="chk.title">Four lenses on every page</h2>
-        <p class="lead" data-i18n="chk.lead">Each lens gets its own score per persona. Automated checks run on every page and screen size; the agent adds what needs judgment.</p>
-      </div>
-      <div class="lenses">
-        <article class="board lens" style="--tone:var(--yellow)">
-          <span class="band"></span>
-          <h3><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 8h14M5 13h18M5 18h10"/><path d="m20 25 6-6-2.5-2.5-6 6-.8 3.3z" fill="var(--yellow)"/></svg><span data-i18n="chk.c.t">Content</span></h3>
-          <ul>
-            <li data-i18n="chk.c.1">Spelling with suggestions, offline (Hunspell)</li>
-            <li data-i18n="chk.c.2">Lorem ipsum, TODO, NaN, undefined, {{templates}}</li>
-            <li data-i18n="chk.c.3">Foreign words in the middle of the text</li>
-            <li data-i18n="chk.c.4">Clarity, tone and grammar, reviewed by the agent</li>
-          </ul>
-          <span class="unit">"excessão" → "exceção"</span>
-        </article>
-        <article class="board lens" style="--tone:var(--blue)">
-          <span class="band"></span>
-          <h3><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 27V4"/><path d="M14 6h10l3 3-3 3H14z" fill="var(--blue)"/><path d="M14 14H5l-3 3 3 3h9"/></svg><span data-i18n="chk.n.t">Navigation</span></h3>
-          <ul>
-            <li data-i18n="chk.n.1">Broken internal links and 404s, with the pages that link to them</li>
-            <li data-i18n="chk.n.2">Links that go nowhere</li>
-            <li data-i18n="chk.n.3">Dead ends, extra steps and missing feedback</li>
-            <li data-i18n="chk.n.4">Goal paths per persona, step by step</li>
-          </ul>
-          <span class="unit">Nielsen #3 · control and freedom</span>
-        </article>
-        <article class="board lens" style="--tone:var(--green)">
-          <span class="band"></span>
-          <h3><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="24" height="20" rx="3"/><path d="M3 10h24"/><rect x="7" y="14" width="8" height="7" rx="1.5" fill="var(--green)"/><path d="M18 15h5M18 19h3"/></svg><span data-i18n="chk.i.t">Interface</span></h3>
-          <ul>
-            <li data-i18n="chk.i.1">JavaScript errors and requests that fail</li>
-            <li data-i18n="chk.i.2">Horizontal scrolling on the phone</li>
-            <li data-i18n="chk.i.3">Text too small to read</li>
-            <li data-i18n="chk.i.4">Full-page screenshots for every screen size</li>
-          </ul>
-          <span class="unit">390 × 844 · 768 × 1024 · 1440 × 900</span>
-        </article>
-        <article class="board lens" style="--tone:var(--lilac)">
-          <span class="band"></span>
-          <h3><svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="15" cy="15" r="12" fill="var(--lilac)"/><circle cx="15" cy="8.5" r="2" fill="currentColor"/><path d="M8 12.5h14M15 12.5v6M15 18.5l-3.5 6M15 18.5l3.5 6"/></svg><span data-i18n="chk.a.t">Accessibility</span></h3>
-          <ul>
-            <li data-i18n="chk.a.1">WCAG 2.2 AA rules through axe-core</li>
-            <li data-i18n="chk.a.2">Keyboard traps, invisible focus, widgets that never get focus</li>
-            <li data-i18n="chk.a.3">aria-expanded that never changes, fields with only a placeholder</li>
-            <li data-i18n="chk.a.4">The accessibility tree of every page, and APG patterns tested by the agent</li>
-          </ul>
-          <span class="unit">WCAG 1.4.3 · contrast ≥ 4.5:1</span>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= REPORT ================= -->
-  <section id="report" aria-labelledby="report-title">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow" data-i18n="rep.eyebrow">the report</span>
-        <h2 id="report-title" data-i18n="rep.title">A report you can act on</h2>
-      </div>
-      <div class="shot">
-        <div class="board browser">
-          <div class="bar"><i></i><i></i><i></i><span>.ux-validate/runs/2026-11-04T17-10-08/report.html</span></div>
-          <img src="report-example.png" width="2000" height="1720" loading="lazy" alt="ux-validate report: scores by persona for Dona Maria, Rafael and Lucas across content, navigation, interface and accessibility, followed by each persona's goals and what happened.">
-        </div>
-        <div class="annos">
-          <div class="anno a1"><svg viewBox="0 0 70 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 30C24 30 40 22 62 10M54 8l9 1-4 8"/></svg><span class="hl" data-i18n="rep.a1">a score per persona</span></div>
-          <div class="anno a2"><svg viewBox="0 0 70 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M66 30C46 30 30 22 8 10M16 8 7 9l4 8"/></svg><span class="hl" data-i18n="rep.a2">four lenses</span></div>
-          <div class="anno a3"><svg viewBox="0 0 70 40" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M66 12C46 14 30 22 8 30M14 24l-6 6 8 3"/></svg><span class="hl" data-i18n="rep.a3">where they got stuck</span></div>
-        </div>
-      </div>
-      <p class="caption" data-i18n="rep.cap">report.html with screenshots, the accessibility tree of each page and a filter by category. Also as report.md.</p>
-    </div>
-  </section>
-
-  <!-- ================= FIX ================= -->
-  <section id="fix" aria-labelledby="fix-title">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow" data-i18n="fix.eyebrow">applying fixes</span>
-        <h2 id="fix-title" data-i18n="fix.title">From report to working code</h2>
-        <p class="lead" data-i18n="fix.lead">Two ways to apply what the report found. Both fix only what's in the report and prefer semantic HTML over ARIA.</p>
-      </div>
-      <div class="fix-grid">
-        <article class="board fix-card">
-          <span class="k" data-i18n="fix.a.k">in your AI tool</span>
-          <h3><code>/persona-fix</code></h3>
-          <ul>
-            <li data-i18n="fix.a.1">Uses the model and account of the tool you already pay for</li>
-            <li data-i18n="fix.a.2">Fixes one issue at a time and explains each change</li>
-            <li data-i18n="fix.a.3">Runs the checks again and compares with the previous run</li>
-          </ul>
-        </article>
-        <article class="board fix-card">
-          <span class="k" data-i18n="fix.b.k">in the terminal</span>
-          <h3><code>npx ux-validate fix</code></h3>
-          <ul>
-            <li data-i18n="fix.b.1">Anthropic, OpenAI, Google or a local model with Ollama</li>
-            <li data-i18n="fix.b.2">Your API key and your tokens, with an estimate before any call</li>
-            <li data-i18n="fix.b.3">Shows the diff, asks before saving and keeps a backup</li>
-          </ul>
-        </article>
-      </div>
-      <pre class="diff"><span class="h">site/contato.html · C027 Clickable element not reachable by keyboard</span>
-<span class="m">-   &lt;div onclick="this.closest('form').requestSubmit()"&gt;Enviar&lt;/div&gt;</span>
-<span class="a">+   &lt;button type="submit"&gt;Enviar&lt;/button&gt;</span></pre>
-      <p class="promise"><svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="20" cy="20" r="16" fill="var(--yellow)"/><path d="M12 20l6 6 11-12"/></svg><span data-i18n="fix.promise">It never makes up a phone number, a price or a testimonial. It asks.</span></p>
-    </div>
-  </section>
-
-  <!-- ================= TOOLS ================= -->
-  <section id="tools" aria-labelledby="tools-title">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow" data-i18n="tools.eyebrow">your tools</span>
-        <h2 id="tools-title" data-i18n="tools.title">Works where you already work</h2>
-        <p class="lead" data-i18n="tools.lead">Setup installs the same four commands in each tool's own format, plus the browser the agent uses. Pick one or several.</p>
-      </div>
+  <!-- ===== Integrações + acessibilidade ===== -->
+  <section class="wrap bottom" id="integracoes" aria-labelledby="int-t">
+    <div>
+      <span class="hand sm" data-i18n="int.hand">integrações</span>
+      <h2 id="int-t" data-i18n="int.title">Funciona com seu fluxo de desenvolvimento.</h2>
+      <p class="body" data-i18n="int.text">Execute o ux-validate com as ferramentas que você já usa, no terminal e no CI do GitHub.</p>
       <div class="tools">
-        <div class="board tool"><b>Claude Code</b><code>/persona-test</code><small>.claude/skills · .mcp.json</small></div>
-        <div class="board tool"><b>Cursor</b><code>/persona-test</code><small>.cursor/commands · .cursor/mcp.json</small></div>
-        <div class="board tool"><b>Codex CLI</b><code>$persona-test</code><small>.agents/skills · .codex/config.toml</small></div>
-        <div class="board tool"><b>Gemini CLI</b><code>/persona-test</code><small>.gemini/commands · .gemini/settings.json</small></div>
+        <div class="tool"><svg viewBox="0 0 26 26" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="22" height="18" rx="4" fill="#fde68a"/><path d="M7 10l4 3-4 3M13 17h6"/></svg>Claude Code</div>
+        <div class="tool"><svg viewBox="0 0 26 26" fill="none" stroke="#111" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v18l5-4.5 3.5 7.5 3.5-1.6-3.5-7.4H21z" fill="#dcc2fb"/></svg>Cursor</div>
+        <div class="tool"><svg viewBox="0 0 26 26" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="22" height="20" rx="5" fill="#c6ef5a"/><path d="M10 8c-2 0-2 1-2 2.5S6.5 13 6.5 13s1.5.5 1.5 2.5S8 18 10 18M16 8c2 0 2 1 2 2.5s1.5 2.5 1.5 2.5-1.5.5-1.5 2.5S18 18 16 18"/></svg>Codex CLI</div>
+        <div class="tool"><svg viewBox="0 0 26 26" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="22" height="16" rx="5" fill="#9ccbf5"/><path d="M8 20l-1 4 5-4M8 10h10M8 14h6"/></svg>Gemini CLI</div>
       </div>
+    </div>
+    <span class="rule" aria-hidden="true"></span>
+    <!-- Pessoa cega de óculos escuros, notebook, bengala e balão com som -->
+    <div class="art" aria-hidden="true">
+      <svg viewBox="0 0 320 300" fill="none" stroke="#111" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="48" y="44" width="118" height="132" rx="6" fill="#c6ef5a" stroke="none"/>
+        <g filter="url(#rough)">
+          <path d="M34 248c0-64 28-98 76-104 48 6 70 40 70 104z" fill="#fff"/>
+          <path d="M96 144l14 18 14-18"/>
+          <path d="M100 124v22M122 124v22"/>
+          <ellipse cx="112" cy="88" rx="40" ry="46" fill="#fff"/>
+          <g fill="#111" stroke="none"><circle cx="86" cy="54" r="15"/><circle cx="106" cy="44" r="16"/><circle cx="128" cy="46" r="15"/><circle cx="146" cy="58" r="12"/><circle cx="78" cy="72" r="10"/><circle cx="118" cy="58" r="12"/><circle cx="96" cy="62" r="11"/></g>
+          <path d="M80 84h28v8c0 8-6 12-14 12s-14-4-14-12zM116 84h30v8c0 8-6 12-15 12s-15-4-15-12z" fill="#111"/>
+          <path d="M108 86h8M74 84h6M146 84h6"/>
+          <path d="M100 116c7 6 17 6 24 0"/>
+          <path d="M150 182c18 10 30 30 36 50"/>
+          <ellipse cx="190" cy="238" rx="16" ry="9" fill="#fff"/>
+          <path d="M168 244l20-86h96l-16 86z" fill="#fff"/>
+          <circle cx="226" cy="200" r="8" fill="#ddd"/>
+          <rect x="14" y="242" width="292" height="14" rx="7" fill="#fff"/>
+          <path d="M40 256v40M282 256v40"/>
+          <rect x="190" y="12" width="104" height="70" rx="18" fill="#fff"/>
+          <path d="M214 82l-6 18 22-18"/>
+          <path d="M218 38h10l14-11v40l-14-11h-10z" fill="#111"/>
+          <path d="M252 36c6 6 6 18 0 24M262 28c11 11 11 29 0 40"/>
+        </g>
+        <path d="M300 120l-34 176" stroke="#111" stroke-width="10"/>
+        <path d="M300 120l-34 176" stroke="#fff" stroke-width="5"/>
+        <path d="M300 120c4-14-10-20-16-10" stroke="#111" stroke-width="5"/>
+        <path d="M270 276l-4 20" stroke="#e5484d" stroke-width="5"/>
+        <g stroke="#c6ef5a" stroke-width="6"><path d="M268 104l18-10M276 126h20"/></g>
+      </svg>
+    </div>
+    <div>
+      <span class="hand sm" data-i18n="a11y.hand">conformidade e inclusão</span>
+      <h2 data-i18n="a11y.title">Acessibilidade no padrão certo.</h2>
+      <p class="body" data-i18n="a11y.text">Verificações automáticas e testes práticos, alinhados às principais referências.</p>
+      <ul class="check-list" style="margin-top:16px">
+        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="a11y.l1">WCAG 2.2 (nível AA)</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span>axe-core</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="a11y.l3">Testes de teclado e WAI-ARIA</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="a11y.l4">Árvore de acessibilidade (o que o leitor de tela anuncia)</span></li>
+      </ul>
     </div>
   </section>
 
-  <!-- ================= CI ================= -->
-  <section id="ci" aria-labelledby="ci-title">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow" data-i18n="ci.eyebrow">continuous integration</span>
-        <h2 id="ci-title" data-i18n="ci.title">On every pull request</h2>
-        <p class="lead" data-i18n="ci.lead">The GitHub Action runs the automated checks, comments a summary on the PR, marks issues on the changed lines and keeps the full report as an artifact.</p>
-      </div>
-      <div class="ci">
-        <div>
-          <pre class="term"><span class="c"># .github/workflows/ux-validate.yml</span>
-- uses: fabiofigueredo/ux-validate@main
-  with:
-    start: npm run dev
-    url: http://localhost:3000
-    fail-on: critical</pre>
-          <div class="board annot" aria-label="Code scanning annotation example">
-            <div class="line"><span>19</span><code>    &lt;button class="cta"&gt;Get started&lt;/button&gt;</code></div>
-            <div class="line"><span>20</span><code>    &lt;img src="hero.png"&gt;</code></div>
-            <div class="flag"><b>ux-validate · axe/image-alt</b><br><span data-i18n="ci.flag">Images must have alternative text. WCAG 1.1.1</span></div>
-            <div class="line"><span>21</span><code>  &lt;/div&gt;</code></div>
-          </div>
-        </div>
-        <div class="board pr">
-          <div class="pr-head"><span class="av">uv</span><b>github-actions</b><span class="bot">bot</span></div>
-          <div class="pr-body">
-            <h4>ux-validate</h4>
-            <p class="fail" data-i18n="ci.fail">❌ 3 issues with severity critical or higher: this check fails.</p>
-            <div class="sev"><span style="--c:var(--mark)">Critical: 3</span><span style="--c:#e38b2c">High: 20</span><span style="--c:var(--yellow)">Medium: 8</span><span style="--c:var(--line)">Low: 5</span></div>
-            <div class="table-wrap">
-              <table class="mini-table">
-                <thead><tr><th>Persona</th><th data-i18n="ci.overall">Overall</th><th>A11y</th><th>Nav</th></tr></thead>
-                <tbody><tr><td data-i18n="ci.general">Overall (no persona)</td><td><b>48</b></td><td>5</td><td>70</td></tr></tbody>
-              </table>
-            </div>
-            <p style="font-size:13.5px;color:var(--ink-2)" data-i18n="ci.links">Full report with screenshots · annotations in Security → Code scanning</p>
-          </div>
-        </div>
-      </div>
+  <!-- ===== Barra final ===== -->
+  <div class="wrap">
+    <div class="cta-bar">
+      <svg class="star" viewBox="0 0 34 34" fill="none" stroke-linejoin="round" aria-hidden="true"><path d="M15 3l3 9 9 3-9 3-3 9-3-9-9-3 9-3z" stroke="#c6ef5a" stroke-width="2.4"/><path d="M27 2l1.2 3.3L31.5 6.5l-3.3 1.2L27 11l-1.2-3.3L22.5 6.5l3.3-1.2z" fill="#c6ef5a"/></svg>
+      <strong data-i18n="bar.title">Valide agora sua aplicação</strong>
+      <span class="rule" aria-hidden="true"></span>
+      <p data-i18n="bar.text">Garanta uma experiência mais inclusiva, eficiente e confiável.</p>
+      <a class="btn" href="#comecar" data-start><span data-i18n="cta.start">Começar agora</span><svg aria-hidden="true"><use href="#arrow"/></svg></a>
     </div>
-  </section>
-
-  <!-- ================= FAQ ================= -->
-  <section id="faq" aria-labelledby="faq-title">
-    <div class="wrap">
-      <div class="section-head">
-        <span class="eyebrow">FAQ</span>
-        <h2 id="faq-title" data-i18n="faq.title">Questions people ask</h2>
-      </div>
-      <div class="faq">
-        <details class="board"><summary data-i18n="faq.q1">Which AI model does it use?</summary><p data-i18n="faq.a1">The one your AI tool is running. For fixes from the terminal, the provider and model you choose during setup: Anthropic, OpenAI, Google or Ollama.</p></details>
-        <details class="board"><summary data-i18n="faq.q2">Does my code leave my machine?</summary><p data-i18n="faq.a2">The checks and the spell check run locally. Persona browsing happens in your AI tool, under its own terms. npx ux-validate fix sends only the files being fixed to the provider you picked; with Ollama, nothing leaves your machine.</p></details>
-        <details class="board"><summary data-i18n="faq.q3">Is it free?</summary><p data-i18n="faq.a3">Yes. It's open source under the MIT license. You only pay for model usage in your own tool or provider account.</p></details>
-        <details class="board"><summary data-i18n="faq.q4">Do I need an AI tool?</summary><p data-i18n="faq.a4">For persona browsing and the agent's review, yes. The automated checks, the report, the SARIF export and the GitHub Action work without one.</p></details>
-        <details class="board"><summary data-i18n="faq.q5">Does it work with my framework?</summary><p data-i18n="faq.a5">It tests the running app in a real browser, so any web stack works: React, Vue, Svelte, server-rendered pages or plain HTML, served locally, deployed or opened as a file.</p></details>
-        <details class="board"><summary data-i18n="faq.q6">Which languages does it support?</summary><p data-i18n="faq.a6">The tool speaks English and Portuguese. The spell check covers English, Brazilian Portuguese and Spanish content.</p></details>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= START ================= -->
-  <section id="start" aria-labelledby="start-title">
-    <div class="wrap final">
-      <span class="eyebrow" data-i18n="start.eyebrow">ready when you are</span>
-      <h2 id="start-title" data-i18n="start.title">Try it on your app</h2>
-      <pre class="term"><span class="p">$</span> npm install -D ux-validate
-<span class="p">$</span> npx playwright install chromium
-<span class="p">$</span> npx ux-validate init</pre>
-      <div class="row">
-        <a class="cta" href="https://github.com/fabiofigueredo/ux-validate" target="_blank" rel="noopener">GitHub <span aria-hidden="true">↗</span></a>
-        <a class="cta ghost" href="https://www.npmjs.com/package/ux-validate" target="_blank" rel="noopener">npm <span aria-hidden="true">↗</span></a>
-        <button class="cta ghost copy-all" type="button" data-copy="npm install -D ux-validate&#10;npx playwright install chromium&#10;npx ux-validate init" data-i18n="ui.copyAll">Copy the commands</button>
-      </div>
-    </div>
-  </section>
+  </div>
 </main>
 
 <footer>
   <div class="wrap">
     <span>ux-validate · MIT © Fabio Figueredo</span>
-    <span data-i18n="foot.made">Illustrations drawn for this page.</span>
+    <span><a href="https://www.npmjs.com/package/ux-validate" target="_blank" rel="noopener">npm</a> · <a href="https://github.com/fabiofigueredo/ux-validate" target="_blank" rel="noopener">GitHub</a></span>
   </div>
 </footer>
 
-<!-- Review toolbar: visitors can mark up the page, the way a persona review marks up an app -->
-<canvas id="ink" aria-hidden="true"></canvas>
-<div class="toolbar" role="toolbar" aria-label="Markup tools">
-  <span class="hint" data-i18n="tb.hint">mark up this page ↓</span>
-  <button type="button" id="tool-select" aria-pressed="true" title="Select"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M5 3v15l4-4 3 7 3-1.5-3-6.5h6z"/></svg><span class="sr-only" data-i18n="tb.select">Select and scroll</span></button>
-  <button type="button" id="tool-pen" aria-pressed="false" title="Draw"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4l5 5L9 20H4v-5z"/><path d="M13 6l5 5"/></svg><span class="sr-only" data-i18n="tb.pen">Draw on the page</span></button>
-  <span class="sep" aria-hidden="true"></span>
-  <button type="button" class="sw" data-color="ink" aria-pressed="true" title="Ink"><i style="--c:var(--ink)"></i><span class="sr-only">Ink</span></button>
-  <button type="button" class="sw" data-color="blue" aria-pressed="false" title="Blue"><i style="--c:var(--blue)"></i><span class="sr-only">Blue</span></button>
-  <button type="button" class="sw" data-color="green" aria-pressed="false" title="Green"><i style="--c:var(--green)"></i><span class="sr-only">Green</span></button>
-  <button type="button" class="sw" data-color="yellow" aria-pressed="false" title="Yellow"><i style="--c:var(--yellow)"></i><span class="sr-only">Yellow</span></button>
-  <button type="button" class="sw" data-color="lilac" aria-pressed="false" title="Lilac"><i style="--c:var(--lilac)"></i><span class="sr-only">Lilac</span></button>
-  <span class="sep" aria-hidden="true"></span>
-  <button type="button" id="tool-clear" title="Clear"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg><span class="sr-only" data-i18n="tb.clear">Clear drawings</span></button>
-</div>
+<dialog id="comecar" aria-labelledby="dlg-t">
+  <div class="dlg">
+    <header>
+      <div><span class="hand sm" data-i18n="dlg.hand">em 3 comandos</span><h2 id="dlg-t" data-i18n="dlg.title">Comece no seu projeto</h2></div>
+      <button class="x" type="button" data-close aria-label="Fechar">×</button>
+    </header>
+    <pre class="term" id="cmds"><span class="p">$</span> npm install -D ux-validate
+<span class="p">$</span> npx playwright install chromium
+<span class="p">$</span> npx ux-validate init</pre>
+    <small data-i18n="dlg.note">Depois, no Claude Code, Cursor ou Gemini CLI, rode /persona-test. No Codex, $persona-test.</small>
+    <div class="row">
+      <button class="btn dark" type="button" id="copy" data-i18n="dlg.copy">Copiar comandos</button>
+      <a class="btn light" href="https://github.com/fabiofigueredo/ux-validate#readme" target="_blank" rel="noopener" data-i18n="dlg.docs">Ler a documentação</a>
+    </div>
+  </div>
+</dialog>
 
 <script>
 (() => {
-  /* ---------- Language ---------- */
-  const PT = {
-    'nav.how': 'Como funciona', 'nav.personas': 'Personas', 'nav.checks': 'Checagens', 'nav.fix': 'Correções', 'nav.start': 'Começar',
-    'hero.hi': 'conheça seus usuários antes do lançamento',
-    'hero.status': 'Código aberto · MIT · no npm',
-    'hero.tagline': 'Seu agente de IA navega pela sua aplicação web como personas reais e mostra onde cada uma travou e qual arquivo corrigir.',
-    'hero.works': 'Funciona com', 'ui.and': 'e', 'ui.copy': 'Copiar', 'ui.copied': 'Copiado', 'ui.copyAll': 'Copiar os comandos',
-    'hero.n1': 'não acha o preço', 'hero.n2': 'link de teste → 404', 'hero.n3': 'formulário só com mouse',
-    'why.eyebrow': 'o problema',
-    'why.title': 'Parece pronto. Falha com gente de verdade.',
-    'why.lead': 'A IA escreve interfaces rápido, e elas costumam passar numa olhada rápida. Aí uma senhora de 68 anos no celular não acha o preço, quem usa leitor de tela não consegue enviar o formulário e o botão de teste grátis leva a um 404. Verificador de contraste não pega isso. Alguém tentando fazer uma tarefa pega.',
-    'why.n1': 'Botões que não fazem nada', 'why.n2': 'Lorem ipsum em produção', 'why.n3': 'Foco que não aparece', 'why.n4': 'Preços diferentes em cada página', 'why.n5': 'Menu no idioma errado',
-    'gains.eyebrow': 'o que você ganha',
-    'gains.title': 'O retorno que normalmente só chega depois do lançamento',
-    'gains.g1t': 'Problemas vistos por olhos reais', 'gains.g1p': 'Cada problema diz quem ele atrapalha e por quê: a persona, o objetivo que ela tentava cumprir e o passo em que desistiu.',
-    'gains.g2t': 'Evidência para cada achado', 'gains.g2p': 'Screenshot, trecho do DOM ou o texto exato da página. Sem evidência, não há achado.',
-    'gains.g3t': 'O arquivo a corrigir', 'gains.g3p': 'Os achados apontam o arquivo e a linha prováveis no seu código, e o comando de correção pode aplicar a mudança por você.',
-    'gains.g4t': 'A mesma base com qualquer modelo', 'gains.g4p': 'Contraste, links quebrados, armadilhas de teclado e ortografia vêm de checagens determinísticas. O modelo interpreta; ele não adivinha.',
-    'gains.g5t': 'Privado por padrão', 'gains.g5p': 'As checagens e a ortografia rodam na sua máquina. O código só vai para um provedor se você escolher um modelo hospedado para corrigir pelo terminal.',
-    'gains.g6t': 'Inglês e português', 'gains.g6p': 'Mensagens, relatórios e instruções do agente nos dois idiomas. O idioma da ferramenta e o do seu conteúdo são configurados separadamente.',
-    'how.eyebrow': 'como funciona',
-    'how.title': 'Cinco passos, da persona ao pull request',
-    'how.s1t': 'Descreva quem usa a sua aplicação', 'how.s1p': 'Aparelho, visão, familiaridade com tecnologia, paciência e os objetivos que a pessoa vem cumprir. O agente pode entrevistar você, ou você responde um assistente curto.',
-    'how.s2t': 'Rode as checagens fixas', 'how.s2p': 'axe-core, comportamento de teclado e WAI-ARIA, links quebrados, erros de console, layout em cada tamanho de tela e ortografia offline. Mesmo resultado com qualquer modelo.',
-    'how.s3t': 'Deixe o agente navegar como cada persona', 'how.s3p': 'Ele abre um navegador de verdade, tenta cada objetivo com os limites da persona e registra o momento exato em que ela hesitou ou desistiu.',
-    'how.s4t': 'Leia o relatório', 'how.s4p': 'Notas por persona e categoria, objetivos cumpridos e cada problema com evidência, o critério WCAG ou heurística e onde corrigir.',
-    'how.s5t': 'Aplique as correções', 'how.s5p': 'Um problema de cada vez, mostrando cada mudança antes de gravar. Depois, as checagens rodam de novo para confirmar.',
-    'per.eyebrow': 'personas',
-    'per.title': 'Personas com limites reais',
-    'per.lead': 'As características mudam como o agente navega e a gravidade de cada problema. Visão reduzida torna o contraste crítico; pouca paciência significa desistir depois de poucos passos sem progresso.',
-    'per.m.d': '68 · aposentada · lê devagar, prefere letras grandes',
-    'per.m.g1': 'Descobrir quanto custa<small>"Pricing" num menu em português; chegou aos planos por tentativa</small>',
-    'per.m.g2': 'Achar um telefone<small>só um formulário na página de contato; desistiu</small>',
-    'per.r.d': '29 · desenvolvedor · lê na diagonal, compara em outras abas',
-    'per.r.g1': 'Comparar os planos<small>o limite do Starter aparece como "{{plan.limit}} usuários"</small>',
-    'per.r.g2': 'Criar uma conta de teste<small>"Começar teste grátis" leva a um 404</small>',
-    'per.l.d': '35 · analista · cego, usa teclado e leitor de tela',
-    'per.l.g1': 'Navegar pelos títulos<small>o título principal é uma div estilizada, não um título</small>',
-    'per.l.g2': 'Preencher o formulário de contato<small>sem rótulos; "Enviar" é uma div que nunca recebe foco</small>',
-    'per.note': 'Resultados de exemplo do site de demonstração que vem com o ux-validate, que tem esses problemas de propósito.',
-    'per.y.t': 'Uma persona é um pequeno arquivo YAML',
-    'per.y.p': 'Escreva à mão, responda o assistente no terminal ou deixe o agente entrevistar você sobre quem realmente usa a aplicação. O setup cria três exemplos para começar.',
-    'chk.eyebrow': 'o que ele verifica',
-    'chk.title': 'Quatro lentes em cada página',
-    'chk.lead': 'Cada lente tem nota própria por persona. As checagens fixas rodam em todas as páginas e tamanhos de tela; o agente acrescenta o que exige julgamento.',
-    'chk.c.t': 'Conteúdo', 'chk.c.1': 'Ortografia com sugestões, offline (Hunspell)', 'chk.c.2': 'Lorem ipsum, TODO, NaN, undefined, {{templates}}', 'chk.c.3': 'Palavras estrangeiras no meio do texto', 'chk.c.4': 'Clareza, tom e gramática, revisados pelo agente',
-    'chk.n.t': 'Navegação', 'chk.n.1': 'Links internos quebrados e 404, com as páginas que apontam para eles', 'chk.n.2': 'Links que não levam a lugar nenhum', 'chk.n.3': 'Becos sem saída, passos a mais e falta de retorno', 'chk.n.4': 'Caminho de cada objetivo por persona, passo a passo',
-    'chk.i.t': 'Interface', 'chk.i.1': 'Erros de JavaScript e requisições que falham', 'chk.i.2': 'Rolagem horizontal no celular', 'chk.i.3': 'Texto pequeno demais para ler', 'chk.i.4': 'Screenshots de página inteira em cada tamanho de tela',
-    'chk.a.t': 'Acessibilidade', 'chk.a.1': 'Regras WCAG 2.2 AA pelo axe-core', 'chk.a.2': 'Armadilhas de teclado, foco invisível, widgets que nunca recebem foco', 'chk.a.3': 'aria-expanded que nunca muda, campos só com placeholder', 'chk.a.4': 'A árvore de acessibilidade de cada página, e padrões do APG testados pelo agente',
-    'rep.eyebrow': 'o relatório', 'rep.title': 'Um relatório para agir',
-    'rep.a1': 'uma nota por persona', 'rep.a2': 'quatro lentes', 'rep.a3': 'onde a pessoa travou',
-    'rep.cap': 'report.html com screenshots, a árvore de acessibilidade de cada página e filtro por categoria. Também em report.md.',
-    'fix.eyebrow': 'aplicando as correções', 'fix.title': 'Do relatório ao código funcionando',
-    'fix.lead': 'Dois jeitos de aplicar o que o relatório encontrou. Os dois corrigem só o que está no relatório e preferem HTML semântico a ARIA.',
-    'fix.a.k': 'na sua ferramenta de IA', 'fix.a.1': 'Usa o modelo e a conta da ferramenta que você já paga', 'fix.a.2': 'Corrige um problema de cada vez e explica cada mudança', 'fix.a.3': 'Roda as checagens de novo e compara com a execução anterior',
-    'fix.b.k': 'no terminal', 'fix.b.1': 'Anthropic, OpenAI, Google ou um modelo local com o Ollama', 'fix.b.2': 'Sua API key e seus tokens, com estimativa antes de qualquer chamada', 'fix.b.3': 'Mostra o diff, pergunta antes de gravar e guarda backup',
-    'fix.promise': 'Nunca inventa telefone, preço ou depoimento. Ele pergunta.',
-    'tools.eyebrow': 'suas ferramentas', 'tools.title': 'Funciona onde você já trabalha',
-    'tools.lead': 'O setup instala os mesmos quatro comandos no formato de cada ferramenta, além do navegador que o agente usa. Escolha uma ou várias.',
-    'ci.eyebrow': 'integração contínua', 'ci.title': 'Em cada pull request',
-    'ci.lead': 'A GitHub Action roda as checagens fixas, comenta um resumo no PR, marca os problemas nas linhas alteradas e guarda o relatório completo como artefato.',
-    'ci.flag': 'Imagens devem ter texto alternativo. WCAG 1.1.1',
-    'ci.fail': '❌ 3 problema(s) de nível crítico ou mais grave: esta verificação falha.',
-    'ci.overall': 'Geral', 'ci.general': 'Geral (sem persona)',
-    'ci.links': 'Relatório completo com screenshots · anotações em Security → Code scanning',
-    'faq.title': 'Perguntas frequentes',
-    'faq.q1': 'Qual modelo de IA ele usa?', 'faq.a1': 'O que a sua ferramenta de IA estiver usando. Para correções pelo terminal, o provedor e o modelo que você escolher no setup: Anthropic, OpenAI, Google ou Ollama.',
-    'faq.q2': 'Meu código sai da minha máquina?', 'faq.a2': 'As checagens e a ortografia rodam localmente. A navegação por persona acontece na sua ferramenta de IA, nos termos dela. O npx ux-validate fix envia só os arquivos sendo corrigidos ao provedor escolhido; com o Ollama, nada sai da sua máquina.',
-    'faq.q3': 'É gratuito?', 'faq.a3': 'Sim. É código aberto, com licença MIT. Você paga só o uso do modelo na sua própria ferramenta ou conta do provedor.',
-    'faq.q4': 'Preciso de uma ferramenta de IA?', 'faq.a4': 'Para navegar como as personas e para a revisão do agente, sim. As checagens fixas, o relatório, a exportação SARIF e a GitHub Action funcionam sem ela.',
-    'faq.q5': 'Funciona com o meu framework?', 'faq.a5': 'Ele testa a aplicação rodando num navegador de verdade, então qualquer stack web funciona: React, Vue, Svelte, páginas renderizadas no servidor ou HTML puro, servido localmente, publicado ou aberto como arquivo.',
-    'faq.q6': 'Quais idiomas ele suporta?', 'faq.a6': 'A ferramenta fala inglês e português. A ortografia cobre conteúdo em inglês, português do Brasil e espanhol.',
-    'start.eyebrow': 'quando você quiser', 'start.title': 'Teste na sua aplicação',
-    'foot.made': 'Ilustrações desenhadas para esta página.',
-    'tb.hint': 'rabisque esta página ↓', 'tb.select': 'Selecionar e rolar', 'tb.pen': 'Desenhar na página', 'tb.clear': 'Apagar os desenhos'
+  /* ---------- Idioma: português por padrão, inglês opcional ---------- */
+  const EN = {
+    'nav.features': 'Features', 'nav.how': 'How it works', 'nav.reports': 'Reports', 'nav.integrations': 'Integrations', 'nav.start': 'Get started',
+    'hero.hand': 'validate the real experience',
+    'hero.tagline': 'Validate web projects with real personas, combining usability, accessibility and content.',
+    'cta.start': 'Get started', 'cta.github': 'View on GitHub', 'hero.b1': 'Open source (MIT)', 'hero.b3': 'AI + Personas',
+    'strip.pill': 'Test with<br>real personas',
+    'strip.text': 'Simulate how different people use your app, like an older adult, someone with a visual impairment and other contexts of use.',
+    'why.hand': 'why validate?', 'why.title': 'Because not everyone uses your app the same way.',
+    'why.text': 'AI can build interfaces fast, but only validating through the eyes of real people reveals the barriers that actually get in the way.',
+    'why.n1': 'Hard to navigate', 'why.n2': 'Broken links', 'why.n3': 'Low contrast',
+    'how.hand': 'how it works', 'how.title': 'Five steps, from persona to fix.',
+    'how.s1': '1. Define the personas', 'how.s2': '2. Simulate their goals', 'how.s3': '3. Run the checks', 'how.s4': '4. Read the report', 'how.s5': '5. Fix and improve',
+    'per.hand': 'personas that matter', 'per.title': 'From students to older adults, every experience counts.',
+    'per.text': 'Validate your app with different profiles, such as older adults, people with visual impairments, low familiarity with technology and more. Each persona has its own device, limits and goals.',
+    'per.l1': 'Older adults', 'per.l2': 'Visual impairment and screen readers', 'per.l3': 'Low familiarity with technology', 'per.l4': 'Phone, tablet or computer', 'per.l5': 'Other real contexts, written by you',
+    'rep.hand': 'what you get', 'rep.title': 'Clear, actionable reports.',
+    'rep.text': 'See what works, what needs fixing and where to change it, with evidence, scores and objective suggestions.',
+    'rep.ring': 'score · example', 'cat.content': 'Content', 'cat.nav': 'Navigation', 'cat.ui': 'Interface', 'cat.a11y': 'Accessibility',
+    'rep.l1': 'Scores by persona and category', 'rep.l2': 'Evidence (screenshots and snippets)', 'rep.l3': 'Goals not achieved and where people got stuck', 'rep.l4': 'Files and lines to fix',
+    'int.hand': 'integrations', 'int.title': 'Works with your development workflow.',
+    'int.text': 'Run ux-validate with the tools you already use, in the terminal and in GitHub CI.',
+    'a11y.hand': 'compliance and inclusion', 'a11y.title': 'Accessibility to the right standard.',
+    'a11y.text': 'Automated checks and hands-on tests, aligned with the main references.',
+    'a11y.l1': 'WCAG 2.2 (level AA)', 'a11y.l3': 'Keyboard and WAI-ARIA tests', 'a11y.l4': 'Accessibility tree (what the screen reader announces)',
+    'bar.title': 'Validate your app now', 'bar.text': 'Deliver a more inclusive, efficient and reliable experience.',
+    'dlg.hand': 'in 3 commands', 'dlg.title': 'Start in your project',
+    'dlg.note': 'Then, in Claude Code, Cursor or Gemini CLI, run /persona-test. In Codex, $persona-test.',
+    'dlg.copy': 'Copy commands', 'dlg.copied': 'Copied', 'dlg.docs': 'Read the docs'
   };
   const nodes = [...document.querySelectorAll('[data-i18n]')];
-  const EN = new Map(nodes.map((n) => [n, n.innerHTML]));
-  let lang = 'en';
-  const tr = (key) => (lang === 'pt' && PT[key]) || null;
-
+  const PT = new Map(nodes.map((n) => [n, n.innerHTML]));
+  const langBtn = document.getElementById('lang');
+  let lang = 'pt';
   function setLang(next) {
     lang = next;
-    document.documentElement.lang = next === 'pt' ? 'pt-BR' : 'en';
-    for (const n of nodes) n.innerHTML = (next === 'pt' && PT[n.dataset.i18n]) || EN.get(n);
-    document.querySelectorAll('.lang button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.lang === next)));
-    try { localStorage.setItem('uxv-lang', next); } catch (e) { /* storage unavailable */ }
+    document.documentElement.lang = next === 'en' ? 'en' : 'pt-BR';
+    for (const n of nodes) n.innerHTML = (next === 'en' && EN[n.dataset.i18n]) || PT.get(n);
+    langBtn.textContent = next === 'en' ? 'PT' : 'EN';
+    langBtn.setAttribute('aria-label', next === 'en' ? 'Mudar para português' : 'Switch to English');
+    try { localStorage.setItem('uxv-lang', next); } catch (e) { /* armazenamento indisponível */ }
   }
-  document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+  langBtn.addEventListener('click', () => setLang(lang === 'pt' ? 'en' : 'pt'));
   let saved = null;
-  try { saved = localStorage.getItem('uxv-lang'); } catch (e) { /* storage unavailable */ }
-  const initial = saved || ((navigator.language || '').toLowerCase().startsWith('pt') ? 'pt' : 'en');
-  if (initial !== 'en') setLang(initial);
+  try { saved = localStorage.getItem('uxv-lang'); } catch (e) { /* armazenamento indisponível */ }
+  if (saved === 'en') setLang('en');
 
-  /* ---------- Copy buttons ---------- */
-  document.querySelectorAll('[data-copy]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const text = btn.dataset.copy;
-      const done = () => {
-        const old = btn.innerHTML;
-        btn.textContent = tr('ui.copied') || 'Copied';
-        setTimeout(() => { btn.innerHTML = old; }, 1400);
-      };
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(text).then(done, () => selectNear(btn));
-      } else selectNear(btn);
-    });
-  });
-  function selectNear(btn) {
-    const el = btn.closest('.install')?.querySelector('code') || document.querySelector('#start pre');
-    if (!el) return;
-    const range = document.createRange(); range.selectNodeContents(el);
-    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
-  }
-
-  /* ---------- Markup layer ---------- */
-  const canvas = document.getElementById('ink');
-  const ctx = canvas.getContext('2d');
-  const strokes = [];
-  let current = null;
-  let color = 'ink';
-  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(`--${name}`).trim();
-
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
-    canvas.style.width = innerWidth + 'px'; canvas.style.height = innerHeight + 'px';
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    draw();
-  }
-  function draw() {
-    ctx.clearRect(0, 0, innerWidth, innerHeight);
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    for (const s of strokes) {
-      if (s.points.length < 2) continue;
-      ctx.strokeStyle = cssVar(s.color); ctx.lineWidth = s.color === 'ink' ? 3 : 7; ctx.globalAlpha = s.color === 'ink' ? 1 : 0.75;
-      ctx.beginPath();
-      s.points.forEach((p, i) => (i ? ctx.lineTo(p.x - scrollX, p.y - scrollY) : ctx.moveTo(p.x - scrollX, p.y - scrollY)));
-      ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-  }
-  canvas.addEventListener('pointerdown', (e) => {
-    canvas.setPointerCapture(e.pointerId);
-    current = { color, points: [{ x: e.clientX + scrollX, y: e.clientY + scrollY }] };
-    strokes.push(current);
-    document.body.classList.add('drew');
-  });
-  canvas.addEventListener('pointermove', (e) => {
-    if (!current) return;
-    current.points.push({ x: e.clientX + scrollX, y: e.clientY + scrollY });
-    requestAnimationFrame(draw);
-  });
-  const end = () => { current = null; };
-  canvas.addEventListener('pointerup', end);
-  canvas.addEventListener('pointercancel', end);
-  addEventListener('scroll', () => requestAnimationFrame(draw), { passive: true });
-  addEventListener('resize', resize);
-  matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', draw);
-  resize();
-
-  const select = document.getElementById('tool-select');
-  const pen = document.getElementById('tool-pen');
-  function mode(drawing) {
-    document.body.classList.toggle('drawing', drawing);
-    pen.setAttribute('aria-pressed', String(drawing));
-    select.setAttribute('aria-pressed', String(!drawing));
-  }
-  select.addEventListener('click', () => mode(false));
-  pen.addEventListener('click', () => mode(true));
-  document.querySelectorAll('.toolbar .sw').forEach((b) => b.addEventListener('click', () => {
-    color = b.dataset.color;
-    document.querySelectorAll('.toolbar .sw').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-    mode(true);
+  /* ---------- Janela "Começar" ---------- */
+  const dlg = document.getElementById('comecar');
+  document.querySelectorAll('[data-start]').forEach((a) => a.addEventListener('click', (e) => {
+    if (typeof dlg.showModal !== 'function') return;
+    e.preventDefault();
+    dlg.showModal();
   }));
-  document.getElementById('tool-clear').addEventListener('click', () => { strokes.length = 0; draw(); });
-  addEventListener('keydown', (e) => { if (e.key === 'Escape') mode(false); });
+  dlg.querySelector('[data-close]').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+
+  const copy = document.getElementById('copy');
+  copy.addEventListener('click', () => {
+    const text = 'npm install -D ux-validate\nnpx playwright install chromium\nnpx ux-validate init';
+    const done = () => {
+      const old = copy.textContent;
+      copy.textContent = lang === 'en' ? EN['dlg.copied'] : 'Copiado';
+      setTimeout(() => { copy.textContent = old; }, 1400);
+    };
+    const select = () => {
+      const r = document.createRange(); r.selectNodeContents(document.getElementById('cmds'));
+      const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, select); else select();
+  });
 })();
 </script>
 </body>
