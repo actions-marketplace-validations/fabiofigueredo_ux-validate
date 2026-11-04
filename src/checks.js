@@ -7,6 +7,7 @@ import { AxeBuilder } from '@axe-core/playwright';
 import { VIEWPORTS, SEVERITY_ORDER, loadConfig, newRunDir } from './config.js';
 import { runAriaChecks } from './aria.js';
 import { checkSpelling, createSpeller } from './spelling.js';
+import { annotateFindings, checkClientNavigation, classifyConsole, cleanReactMessage, detectReact, isReactMessage } from './react.js';
 import { t, getLocale } from './i18n.js';
 
 /**
@@ -63,8 +64,10 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
 
   try {
     console.log(t('checks.crawling', { url: startUrl, max: config.crawl.maxPages }));
-    const pages = await crawl(browser, startUrl, config, add);
+    const { pages, react } = await crawl(browser, startUrl, config, add);
     if (!pages.length) throw new Error(t('checks.cannotOpen', { url: startUrl }));
+    if (react) console.log(t(react.dev ? 'react.detectedDev' : 'react.detectedProd', { version: react.version ? ` ${react.version}` : '' }));
+    const sourceMaps = new Map();
 
     let speller = null;
     if (config.spelling.enabled) {
@@ -85,7 +88,10 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
         await inspectPage(context, p, vpName, runDir, add, {
           checkContent: vpName === config.viewports[0],
           checkAria: vpName === keyboardViewport,
+          // A troca de rota no navegador é testada uma vez, a partir da página inicial.
+          checkNavigation: vpName === keyboardViewport && p === pages[0],
           speller,
+          react: react?.dev ? { cwd, sourceMaps } : null,
         });
       }
       await context.close();
@@ -100,7 +106,8 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
       url: startUrl,
       createdAt: new Date().toISOString(),
       viewports: config.viewports,
-      pages: pages.map(({ url, status, title, ok, screenshots, ariaTree, linksTo }) => ({ url, status, title, ok, screenshots, ariaTree, linksTo })),
+      ...(react ? { app: { framework: react.next ? 'next' : 'react', react } } : {}),
+      pages: pages.map(({ url, status, title, ok, soft404, screenshots, ariaTree, linksTo }) => ({ url, status, title, ok, ...(soft404 ? { soft404 } : {}), screenshots, ariaTree, linksTo })),
       findings: dedupe(findings),
     };
     fs.writeFileSync(path.join(runDir, 'checks.json'), JSON.stringify(result, null, 2));
@@ -157,18 +164,32 @@ const pick = ({ isMobile, hasTouch }) => ({ isMobile, hasTouch });
 async function crawl(browser, startUrl, config, add) {
   const origin = new URL(startUrl).origin;
   const context = await browser.newContext({ viewport: VIEWPORTS.desktop });
-  const queue = [normalize(startUrl)];
+  // Rotas que não aparecem como link (ex.: navegação por botão no React) entram pela configuração.
+  const extra = (config.crawl.routes ?? []).map((r) => {
+    try {
+      return normalize(new URL(r, startUrl).href);
+    } catch {
+      return null;
+    }
+  });
+  const queue = [...new Set([normalize(startUrl), ...extra.filter(Boolean)])];
   const seen = new Set(queue);
   const pages = [];
   const checkedExternal = new Map();
+  let react = null;
+  // SPA: o servidor devolve 200 para qualquer caminho e a aplicação desenha a tela de "não encontrada".
+  const notFound = await probeNotFound(context, startUrl);
 
   while (queue.length && pages.length < config.crawl.maxPages) {
     const pageUrl = queue.shift();
     const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (err) => errors.push(err.message));
     let status = 0;
     try {
       const res = await page.goto(pageUrl, { waitUntil: 'networkidle', timeout: 20000 });
       status = res?.status() ?? 0;
+      await waitForRender(page);
     } catch {
       // O Chromium lança erro em respostas de erro sem corpo (ex.: 404 vazio); pegamos o status direto.
       const res = await context.request.get(pageUrl, { timeout: 10000 }).catch(() => null);
@@ -176,9 +197,32 @@ async function crawl(browser, startUrl, config, add) {
     }
     // Arquivos locais (file://) não têm status HTTP: consideramos 200 se o arquivo existe e 404 se não.
     if (new URL(pageUrl).protocol === 'file:') status = fs.existsSync(fileURLToPath(pageUrl)) ? 200 : 404;
-    const ok = status > 0 && status < 400;
+    let ok = status > 0 && status < 400;
     const entry = { url: pageUrl, status, ok, title: ok ? await page.title() : '', screenshots: {}, linksTo: [] };
     pages.push(entry);
+
+    if (ok) {
+      react ??= await detectReact(page);
+      const text = await renderedText(page);
+      if (notFound && pageUrl !== normalize(startUrl) && text === notFound) {
+        // Mesma tela da rota inexistente: para o usuário, é um link quebrado (soft 404).
+        Object.assign(entry, { status: 404, ok: false, soft404: true });
+        ok = false;
+      } else if (!text) {
+        entry.blank = true;
+        add({
+          source: 'check:spa',
+          category: 'ui',
+          severity: 'critical',
+          rule: 'blank-page',
+          title: t('react.blankPage.title'),
+          description: t(errors.length ? 'react.blankPage.descriptionError' : 'react.blankPage.description', { url: pageUrl }),
+          page: pageUrl,
+          evidence: { snippet: errors.slice(0, 3).join('\n') || t('checks.noText') },
+          suggestion: t(react ? 'react.blankPage.suggestionReact' : 'react.blankPage.suggestion'),
+        });
+      }
+    }
 
     if (ok) {
       const links = await page.$$eval('a', (as) =>
@@ -249,15 +293,57 @@ async function crawl(browser, startUrl, config, add) {
     p.linkedFrom = pages.filter((o) => o.linksTo.includes(p.url)).map((o) => o.url);
   }
   await context.close();
-  return pages;
+  return { pages, react };
 }
 
-async function inspectPage(context, entry, vpName, runDir, add, { checkContent, checkAria, speller }) {
+/** Espera a aplicação desenhar a tela (SPAs montam o conteúdo depois do carregamento). */
+async function waitForRender(page) {
+  await page
+    .waitForFunction(() => (document.body?.innerText ?? '').trim().length > 0, null, { timeout: 4000 })
+    .catch(() => {});
+}
+
+async function renderedText(page) {
+  return page.evaluate(() => (document.body?.innerText ?? '').replace(/\s+/g, ' ').trim()).catch(() => '');
+}
+
+/**
+ * Abre um caminho que não existe. Se o servidor responder 200 (fallback de SPA), guarda o texto da tela:
+ * páginas com o mesmo texto são a tela de "não encontrada" da aplicação.
+ */
+async function probeNotFound(context, startUrl) {
+  const start = new URL(startUrl);
+  if (!/^https?:$/.test(start.protocol)) return null;
   const page = await context.newPage();
+  try {
+    const probe = new URL(`/__ux-validate-404-${Date.now().toString(36)}`, start).href;
+    const res = await page.goto(probe, { waitUntil: 'networkidle', timeout: 15000 });
+    if (!res || res.status() >= 400) return null;
+    await waitForRender(page);
+    const text = await renderedText(page);
+    if (!text) return null;
+    // Se a rota inexistente mostra a mesma tela da inicial, a aplicação ignora o caminho: não dá para comparar.
+    await page.goto(startUrl, { waitUntil: 'networkidle', timeout: 15000 });
+    await waitForRender(page);
+    return text === (await renderedText(page)) ? null : text;
+  } catch {
+    return null;
+  } finally {
+    await page.close();
+  }
+}
+
+async function inspectPage(context, entry, vpName, runDir, addToRun, { checkContent, checkAria, checkNavigation, speller, react }) {
+  const page = await context.newPage();
+  // Os problemas da página ficam aqui até o fim, para ligá-los aos componentes React antes de registrar.
+  const found = [];
+  const add = (f) => found.push(f);
   const consoleErrors = [];
   const failedRequests = [];
   page.on('console', (msg) => {
     const text = msg.text();
+    // Alguns avisos do React (ex.: erro de renderização sem Error Boundary) chegam como "warning".
+    if (msg.type() === 'warning' && isReactMessage(text)) return consoleErrors.push(text);
     if (msg.type() !== 'error' || text.startsWith('Failed to load resource')) return;
     // Com file://, o navegador bloqueia leituras de arquivos locais feitas pelo axe; não é erro da aplicação.
     if (/Access to .* at 'file:\/\/.*CORS policy/.test(text)) return;
@@ -275,6 +361,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
   });
 
   await page.goto(entry.url, { waitUntil: 'networkidle', timeout: 20000 }).catch(() => {});
+  await waitForRender(page);
 
   // Sempre com "/": o caminho é usado em links do relatório, inclusive no Windows.
   const shot = `screenshots/${slug(entry.url)}-${vpName}.png`;
@@ -282,8 +369,11 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
   entry.screenshots[vpName] = shot;
   const base = { page: entry.url, viewport: vpName };
 
+  // Página em branco já é um problema crítico; axe, layout e teclado só gerariam ruído sobre uma tela vazia.
+  const blank = Boolean(entry.blank);
+
   // Acessibilidade (axe-core)
-  const axe = await axeFor(page).analyze().catch(() => null);
+  const axe = blank ? null : await axeFor(page).analyze().catch(() => null);
   for (const v of axe?.violations ?? []) {
     const text = axeText(v);
     add({
@@ -305,8 +395,24 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
     });
   }
 
-  // Erros de JavaScript e recursos que não carregaram
-  if (consoleErrors.length) {
+  // Erros de JavaScript e recursos que não carregaram; avisos do React viram problemas próprios.
+  const { react: reactMessages, other: otherErrors } = classifyConsole(consoleErrors);
+  for (const kind of reactMessages) {
+    const components = [...kind.components];
+    add({
+      ...base,
+      source: 'check:react',
+      category: kind.category,
+      severity: kind.severity,
+      rule: `react-${kind.key}`,
+      title: t(`react.console.${kind.key}.title`),
+      description: t(`react.console.${kind.key}.description`, { n: kind.messages.length, components: components.join(', ') || '?' }),
+      evidence: { snippet: [...new Set(kind.messages.map(cleanReactMessage))].slice(0, 3).join('\n'), ...(components.length ? { terms: components.map((c) => `function ${c}`) } : {}) },
+      ...(components.length ? { react: { components } } : {}),
+      suggestion: t(`react.console.${kind.key}.suggestion`),
+    });
+  }
+  if (otherErrors.length) {
     add({
       ...base,
       source: 'check:console',
@@ -314,8 +420,8 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
       severity: 'high',
       rule: 'console-errors',
       title: t('checks.console.title'),
-      description: t('checks.console.description', { n: consoleErrors.length }),
-      evidence: { snippet: [...new Set(consoleErrors)].slice(0, 5).join('\n') },
+      description: t('checks.console.description', { n: otherErrors.length }),
+      evidence: { snippet: [...new Set(otherErrors)].slice(0, 5).join('\n') },
       suggestion: t('checks.console.suggestion'),
     });
   }
@@ -347,7 +453,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
     }
     return { overflow, tiny: tiny.slice(0, 5), tinyCount: tiny.length };
   }, VIEWPORTS[vpName].width);
-  if (layout.overflow > 5) {
+  if (layout.overflow > 5 && !blank) {
     add({
       ...base,
       source: 'check:layout',
@@ -361,7 +467,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
       suggestion: t('checks.overflow.suggestion'),
     });
   }
-  if (layout.tinyCount) {
+  if (layout.tinyCount && !blank) {
     add({
       ...base,
       source: 'check:layout',
@@ -376,7 +482,7 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
   }
 
   // Conteúdo: sobras de desenvolvimento ou de geração por IA (uma vez por página)
-  if (checkContent) {
+  if (checkContent && !blank) {
     const text = await page.evaluate(() => document.body?.innerText ?? '');
     for (const pat of LEFTOVER_PATTERNS) {
       const m = text.match(pat.re);
@@ -400,11 +506,14 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
     });
   }
   // Por último, porque interage com a página (Tab, cliques em botões de abrir/fechar).
-  if (checkAria) {
+  if (checkAria && !blank) {
     await runAriaChecks(page, { base, add, shot, runDir, entry, name: slug(entry.url) }).catch((err) => {
       if (process.env.DEBUG) console.error('ARIA checks failed:', err);
     });
   }
+  if (react) await annotateFindings(page, found, { cwd: react.cwd, request: context.request, cache: react.sourceMaps });
+  if (checkNavigation && !blank) await checkClientNavigation(page, { base, add });
+  for (const f of found) addToRun(f);
   await page.close();
 }
 
@@ -427,7 +536,7 @@ function checkSiteWide(pages, add) {
     }
   }
   for (const p of pages.filter((p) => !p.ok)) {
-    const status = p.status ? `HTTP ${p.status}` : t('checks.noResponse');
+    const status = p.soft404 ? t('react.soft404Status') : p.status ? `HTTP ${p.status}` : t('checks.noResponse');
     if (!p.linkedFrom?.length) {
       add({
         source: 'check:links',
@@ -484,15 +593,17 @@ function groupBy(list, fn) {
   return m;
 }
 
-function normalize(u) {
+/** Tira âncoras (#secao), mas mantém rotas de hash (#/planos, #!/planos), comuns em SPAs com HashRouter. */
+export function normalize(u) {
   const url = new URL(u);
-  url.hash = '';
+  if (!/^#!?\//.test(url.hash)) url.hash = '';
   return url.href;
 }
 
-function slug(u) {
-  const { pathname } = new URL(u);
+export function slug(u) {
+  const { pathname, hash } = new URL(u);
+  const route = /^#!?\//.test(hash) ? hash.replace(/^#!?/, '') : '';
   // Pega o fim do caminho: em URLs longas (ex.: file:///C:/Users/...) o começo é igual para todas as páginas.
-  const clean = decodeURIComponent(pathname).replace(/\/+$/, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
+  const clean = decodeURIComponent(pathname + route).replace(/\/+$/, '').replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '');
   return (clean.slice(-60).replace(/^-/, '') || 'home');
 }

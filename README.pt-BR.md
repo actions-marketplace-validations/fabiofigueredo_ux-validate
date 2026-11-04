@@ -8,7 +8,7 @@ Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate responde:
 
 ![Relatório do ux-validate com notas por persona e objetivos cumpridos](docs/relatorio-exemplo.png)
 
-> **Status:** versão inicial (0.1). Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**.
+> **Status:** versão inicial (0.3). Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**.
 
 ## Como funciona
 
@@ -76,6 +76,41 @@ A categoria **Acessibilidade** combina três camadas:
 | **Agente** | Testa cada widget pelo teclado seguindo o [ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/) (diálogos, abas, acordeões, menus, combobox…), verifica se mensagens dinâmicas são anunciadas (`role="status"`/`alert`) e navega como uma pessoa que usa leitor de tela |
 
 Cada execução salva também a **árvore de acessibilidade** de cada página em `.ux-validate/runs/<data-hora>/aria/`: papéis, nomes e estados, ou seja, o que um leitor de tela anuncia. O relatório liga cada problema de acessibilidade à árvore da página.
+
+## Aplicações React
+
+O ux-validate testa a aplicação no navegador, então funciona com qualquer React: Vite, Next.js, Create React App, React Router, Remix ou Gatsby. Para aplicações React e outras SPAs (que trocam de tela sem recarregar), ele faz mais:
+
+- **Setup:** detecta o framework no `package.json` e sugere a URL e o comando do servidor de desenvolvimento (ex.: Vite → `http://localhost:5173` e `npm run dev`).
+- **Onde corrigir:** no servidor de desenvolvimento, cada problema vem com o **componente** que desenhou o elemento (`Home › App`) e o **arquivo e a linha do JSX** (ex.: `src/App.jsx:9`), lidos das informações de debug do React e do source map do servidor. Isso vale para o relatório, o SARIF (anotação na linha certa do PR) e o `fix`.
+- **Rotas:** espera o React desenhar a tela antes de analisar, segue rotas com History API e de hash (`#/planos`) e reconhece a tela de "página não encontrada" da aplicação, mesmo quando o servidor responde 200 (link quebrado em SPA).
+- **Checagens próprias:**
+
+| Checagem | O que encontra |
+|---|---|
+| Página em branco | Erro de renderização sem Error Boundary, que desmonta a árvore inteira |
+| Avisos do React | Lista sem `key`, erro de hidratação, HTML aninhado de forma inválida, renderização em laço, campo controlado/não controlado |
+| Troca de rota | Foco que não muda e nada anunciado ao leitor de tela; título da aba que não muda |
+| Elementos clicáveis | `<div onClick>` do React, que não aparece como `onclick` no HTML |
+
+Telas que não têm link (abertas por botão, por exemplo) entram pela configuração:
+
+```yaml
+crawl:
+  routes: [/checkout, /conta/pedidos]
+```
+
+> Use o servidor de desenvolvimento para ter componentes, arquivos e linhas. Com o build de produção as checagens funcionam, mas os nomes vêm minificados e não há arquivo de origem.
+
+Para ver funcionando, há um app de exemplo com problemas de propósito em `examples/react-demo`:
+
+```bash
+npm run demo:react
+```
+
+```bash
+npx ux-validate check --url http://localhost:5173
+```
 
 ## Verificação ortográfica
 
@@ -391,6 +426,7 @@ Os comandos em `source/<idioma>/commands/` usam placeholders (`{{WORK_DIR}}`, `{
 - [x] Adapters para Cursor, Codex CLI e Gemini CLI
 - [x] GitHub Action com comentário no PR e saída SARIF
 - [x] `/ux-persona` e `npx ux-validate persona new` (criar personas)
+- [x] Aplicações React: componente, arquivo e linha de cada problema, rotas de SPA e avisos do React
 - [ ] Navegação com personas pelo terminal (sem ferramenta de IA), com o modelo escolhido no setup
 - [ ] Repetir a navegação e só confirmar problemas que aparecem em mais de uma execução
 

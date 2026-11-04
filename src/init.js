@@ -9,11 +9,14 @@ import { writeFile } from './files.js';
 import { projectDictionary } from './spelling.js';
 import { t, getLocale, setLocale } from './i18n.js';
 import { loadPresets, describePersona, addPresets, newPersona, countPersonas } from './persona.js';
+import { detectFramework } from './react.js';
 
 const CONTENT_LANGUAGES = ['pt-BR', 'en', 'es', 'other'];
 
 export async function init({ cwd, yes = false, force = false, tools, personas }) {
-  const answers = yes ? defaultAnswers(tools, personas) : await ask();
+  // Projeto React (Vite, Next.js, CRA…): a URL e o comando do servidor de desenvolvimento viram o padrão.
+  const framework = detectFramework(cwd);
+  const answers = yes ? defaultAnswers(tools, personas, framework) : await ask(framework);
   setLocale(answers.locale);
   // Carrega os comandos antes de gravar qualquer arquivo, para não deixar uma instalação pela metade.
   const commands = loadCommands(answers.locale);
@@ -101,7 +104,7 @@ function presetIdsFromOption(value = 'all') {
   return ids;
 }
 
-function defaultAnswers(tools, personas) {
+function defaultAnswers(tools, personas, framework) {
   const locale = getLocale();
   const targets = tools ? tools.split(',').map((s) => s.trim()).filter(Boolean) : ['claude-code'];
   const unknown = targets.filter((id) => !ADAPTERS.some((a) => a.id === id));
@@ -109,8 +112,8 @@ function defaultAnswers(tools, personas) {
   return {
     locale,
     targets,
-    url: 'http://localhost:3000',
-    start: '',
+    url: framework?.url ?? 'http://localhost:3000',
+    start: framework?.start ?? '',
     viewports: ['mobile', 'desktop'],
     language: locale,
     standalone: null,
@@ -119,7 +122,7 @@ function defaultAnswers(tools, personas) {
   };
 }
 
-async function ask() {
+async function ask(framework) {
   // A primeira pergunta aparece nos dois idiomas; daí em diante tudo segue o idioma escolhido.
   const locale = await select({
     message: 'Language / Idioma:',
@@ -144,8 +147,9 @@ async function ask() {
     // Várias ferramentas podem ser escolhidas: cada uma recebe os comandos no seu formato.
   });
 
-  const url = await input({ message: t('init.urlQ'), default: 'http://localhost:3000', validate: validateUrl });
-  const start = await input({ message: t('init.startQ'), default: '' });
+  if (framework) console.log(t('init.frameworkDetected', { name: framework.label }));
+  const url = await input({ message: t('init.urlQ'), default: framework?.url ?? 'http://localhost:3000', validate: validateUrl });
+  const start = await input({ message: t('init.startQ'), default: framework?.start ?? '' });
 
   const viewports = await checkbox({
     message: t('init.viewportsQ'),
@@ -225,7 +229,7 @@ function renderConfig(a) {
     viewports: a.viewports,
     language: a.language,
     spelling: { enabled: a.language !== 'other', ignore: [] },
-    crawl: { maxPages: 20, checkExternalLinks: false },
+    crawl: { maxPages: 20, checkExternalLinks: false, routes: [] },
     agent: { maxStepsPerGoal: 15 },
     ...(a.standalone ? { standalone: a.standalone } : {}),
   };

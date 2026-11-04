@@ -164,6 +164,7 @@ function renderMarkdown(d) {
       if (f.page) lines.push(`**${t('report.page')}:** ${f.page}  `);
       if (f.heuristic) lines.push(`**${t('report.criterion')}:** ${f.heuristic}  `);
       if (f.sourceHint?.file) lines.push(`**${t('report.whereToFix')}:** \`${f.sourceHint.file}${f.sourceHint.line ? `:${f.sourceHint.line}` : ''}\`  `);
+      if (f.react?.components?.length) lines.push(`**${t('report.component')}:** \`${f.react.components.join(' › ')}\`  `);
       lines.push('', f.description ?? '', '');
       if (f.evidence?.snippet) lines.push('```', f.evidence.snippet, '```', '');
       if (f.evidence?.selector) lines.push(`${t('report.elements')}: \`${f.evidence.selector}\``, '');
@@ -222,6 +223,7 @@ function renderHtml(d) {
         ${f.viewports?.length ? `<dt>${t('report.screens')}</dt><dd>${esc(f.viewports.join(', '))}</dd>` : ''}
         ${f.heuristic ? `<dt>${t('report.criterion')}</dt><dd>${esc(f.heuristic)}</dd>` : ''}
         ${f.sourceHint?.file ? `<dt>${t('report.whereToFix')}</dt><dd><code>${esc(f.sourceHint.file)}${f.sourceHint.line ? `:${f.sourceHint.line}` : ''}</code></dd>` : ''}
+        ${f.react?.components?.length ? `<dt>${t('report.component')}</dt><dd><code>${esc(f.react.components.join(' › '))}</code></dd>` : ''}
         ${f.evidence?.selector ? `<dt>${t('report.element')}</dt><dd><code>${esc(f.evidence.selector)}</code></dd>` : ''}
         ${f.ariaTree ? `<dt>${t('report.screenReader')}</dt><dd><a href="${esc(f.ariaTree)}">${t('report.ariaTree')}</a></dd>` : ''}
       </dl>

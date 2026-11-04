@@ -24,7 +24,7 @@ const DEFAULTS = {
   app: { url: 'http://localhost:3000' },
   personas: `${WORK_DIR}/personas`,
   viewports: ['mobile', 'desktop'],
-  crawl: { maxPages: 20, checkExternalLinks: false },
+  crawl: { maxPages: 20, checkExternalLinks: false, routes: [] },
   agent: { maxStepsPerGoal: 15 },
   spelling: { enabled: true, ignore: [] },
 };

@@ -64,6 +64,7 @@ Opções gerais:
     targetsQ: 'Em qual ferramenta de IA você vai usar os comandos?',
     soon: '(em breve)',
     unknownTool: 'Ferramenta de IA desconhecida: {list}. Use: {valid}.',
+    frameworkDetected: '\n  Projeto {name} detectado: sugerimos o servidor de desenvolvimento, onde o ux-validate consegue apontar o componente e o arquivo de cada problema.\n',
     urlQ: 'URL da aplicação a ser testada (ex.: http://localhost:3000):',
     startQ: 'Comando para subir a aplicação (opcional, ex.: npm run dev):',
     viewportsQ: 'Tamanhos de tela:',
@@ -127,6 +128,68 @@ Opções gerais:
       setKey: '  Antes, defina a variável {env} com a sua API key:',
       keyPowerShell: '    PowerShell:  $env:{env}="sua-chave"',
       keyBash: '    macOS/Linux: export {env}=sua-chave',
+    },
+  },
+
+  react: {
+    detectedDev: 'React{version} detectado (desenvolvimento): os problemas vão apontar o componente e o arquivo de origem.',
+    detectedProd:
+      'React{version} detectado (build de produção): sem nomes de componentes nem arquivos de origem. ' +
+      'Para isso, rode contra o servidor de desenvolvimento (ex.: npm run dev).',
+    soft404Status: 'tela de "página não encontrada" (o servidor respondeu 200)',
+    blankPage: {
+      title: 'Página em branco',
+      description: '{url} carregou, mas não mostrou nenhum texto.',
+      descriptionError: '{url} carregou, mas não mostrou nenhum texto: um erro de JavaScript interrompeu a renderização.',
+      suggestion: 'Confira o erro no console do navegador e garanta que a página mostre conteúdo ou uma mensagem de erro útil.',
+      suggestionReact:
+        'Um erro durante a renderização desmonta toda a árvore do React. Corrija o erro e envolva as rotas num Error Boundary ' +
+        'que mostre uma mensagem útil e um caminho de volta, em vez de uma tela vazia.',
+    },
+    console: {
+      hydration: {
+        title: 'Erro de hidratação do React',
+        description: 'O HTML do servidor é diferente do que o React desenhou no navegador ({n} aviso(s)). A tela pode piscar, perder eventos ou mostrar conteúdo errado.',
+        suggestion: 'Evite valores diferentes entre servidor e navegador na renderização (Date.now(), Math.random(), window, localStorage). Use useEffect para o que só existe no navegador.',
+      },
+      key: {
+        title: 'Lista sem a prop "key"',
+        description: 'O React avisou {n} vez(es) que itens de lista não têm "key" (componentes: {components}). Itens podem trocar de estado ou de foco ao atualizar a lista.',
+        suggestion: 'Dê a cada item renderizado em .map() uma key estável e única, como o id do registro (não o índice).',
+      },
+      nesting: {
+        title: 'HTML aninhado de forma inválida',
+        description: 'O React encontrou elementos dentro de outros onde o HTML não permite ({n} aviso(s)), ex.: <div> dentro de <p> ou <a> dentro de <a>. Leitores de tela e o navegador podem interpretar a estrutura errado.',
+        suggestion: 'Troque os elementos para uma estrutura válida (ex.: <div> no lugar de <p> quando houver blocos dentro).',
+      },
+      updateDepth: {
+        title: 'Renderização em laço',
+        description: 'O React interrompeu atualizações em sequência ({n} aviso(s)). A página pode travar ou ficar lenta.',
+        suggestion: 'Procure setState chamado durante a renderização ou um useEffect sem a lista de dependências correta.',
+      },
+      renderError: {
+        title: 'Erro ao renderizar componente',
+        description: 'Um erro aconteceu ao renderizar {components} ({n} ocorrência(s)) e não havia Error Boundary para tratá-lo.',
+        suggestion: 'Corrija o erro e adicione um Error Boundary em volta das rotas, com uma mensagem útil e um caminho de volta.',
+      },
+      controlled: {
+        title: 'Campo de formulário muda de controlado para não controlado',
+        description: 'O React avisou que um campo alterna entre controlado e não controlado ({n} aviso(s)). O valor digitado pode sumir.',
+        suggestion: 'Inicie o estado do campo com um valor definido (ex.: "" em vez de undefined).',
+      },
+    },
+    routeFocus: {
+      title: 'Troca de página não é anunciada',
+      description:
+        'Ao clicar em "{link}", a aplicação trocou para {to} sem recarregar, mas o foco não mudou e nada foi anunciado. ' +
+        'Quem usa leitor de tela não percebe que a página mudou.',
+      suggestion:
+        'Depois de cada troca de rota, mova o foco para o título principal (h1 com tabIndex={-1}) ou anuncie o novo título numa região aria-live.',
+    },
+    routeTitle: {
+      title: 'Título da aba não muda com a rota',
+      description: 'Depois de navegar para {to}, o título continua "{title}". Fica difícil saber em que página se está, nas abas e no histórico.',
+      suggestion: 'Atualize document.title em cada rota (ex.: <title> do React 19 dentro do componente da página, ou um useEffect).',
     },
   },
 
@@ -324,6 +387,7 @@ Opções gerais:
     screens: 'Telas',
     page: 'Página',
     criterion: 'Critério',
+    component: 'Componente React',
     whereToFix: 'Onde corrigir',
     elements: 'Elemento(s)',
     element: 'Elemento',

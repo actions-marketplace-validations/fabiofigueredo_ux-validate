@@ -310,7 +310,11 @@ export function searchTerms(f) {
       const name = decodeURIComponent(new URL(dest[1]).pathname.split('/').pop() ?? '');
       if (name.length >= 4) terms.add(name);
     }
-    for (const m of line.matchAll(/\b(?:href|src|id|class|onclick|placeholder|aria-[a-z]+)="([^"]{4,})"/g)) terms.add(m[0]);
+    for (const m of line.matchAll(/\b(?:href|src|id|class|onclick|placeholder|aria-[a-z]+)="([^"]{4,})"/g)) {
+      terms.add(m[0]);
+      // Em JSX (React), class vira className.
+      if (m[0].startsWith('class=')) terms.add(`className="${m[1]}"`);
+    }
   }
   for (const sel of (f.evidence?.selector ?? '').split('|')) {
     const id = sel.match(/#([\w-]{3,})/);

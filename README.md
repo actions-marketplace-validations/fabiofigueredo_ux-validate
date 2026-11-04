@@ -8,7 +8,7 @@ Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Marg
 
 ![ux-validate report with scores by persona and goals achieved](docs/report-example.png)
 
-> **Status:** early version (0.1). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
+> **Status:** early version (0.3). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
 
 ## How it works
 
@@ -76,6 +76,41 @@ The **Accessibility** category combines three layers:
 | **Agent** | Tests each widget with the keyboard following the [ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/) (dialogs, tabs, accordions, menus, combobox…), checks whether dynamic messages are announced (`role="status"`/`alert`) and browses as a screen reader user would |
 
 Each run also saves every page's **accessibility tree** in `.ux-validate/runs/<date-time>/aria/`: roles, names and states, i.e. what a screen reader announces. The report links each accessibility issue to its page's tree.
+
+## React apps
+
+ux-validate tests the app in the browser, so it works with any React setup: Vite, Next.js, Create React App, React Router, Remix or Gatsby. For React apps and other SPAs (which switch screens without reloading), it does more:
+
+- **Setup:** detects the framework in `package.json` and suggests the development server URL and command (e.g. Vite → `http://localhost:5173` and `npm run dev`).
+- **Where to fix:** on the development server, each issue comes with the **component** that rendered the element (`Home › App`) and the **JSX file and line** (e.g. `src/App.jsx:9`), read from React's debug info and the server's source map. This feeds the report, SARIF (annotation on the right PR line) and `fix`.
+- **Routes:** waits for React to render before analyzing, follows History API and hash routes (`#/plans`) and recognizes the app's "page not found" screen even when the server answers 200 (a broken link in an SPA).
+- **Dedicated checks:**
+
+| Check | What it finds |
+|---|---|
+| Blank page | Render error without an Error Boundary, which unmounts the whole tree |
+| React warnings | List without `key`, hydration error, invalid HTML nesting, render loop, controlled/uncontrolled field |
+| Route change | Focus that doesn't move and nothing announced to screen readers; tab title that doesn't change |
+| Clickable elements | React `<div onClick>`, which doesn't show up as `onclick` in the HTML |
+
+Screens without a link (opened by a button, for example) go in the config:
+
+```yaml
+crawl:
+  routes: [/checkout, /account/orders]
+```
+
+> Use the development server to get components, files and lines. With a production build the checks still work, but names are minified and there are no source files.
+
+To see it working, there's a sample app with issues on purpose in `examples/react-demo`:
+
+```bash
+npm run demo:react
+```
+
+```bash
+npx ux-validate check --url http://localhost:5173
+```
 
 ## Spell check
 
@@ -396,6 +431,7 @@ The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{C
 - [x] Adapters for Cursor, Codex CLI and Gemini CLI
 - [x] GitHub Action with a PR comment and SARIF output
 - [x] `/ux-persona` and `npx ux-validate persona new` (create personas)
+- [x] React apps: component, file and line for each issue, SPA routes and React warnings
 - [ ] Persona browsing from the terminal (no AI tool), with the model chosen in setup
 - [ ] Repeat the browsing and only confirm issues that show up in more than one run
 

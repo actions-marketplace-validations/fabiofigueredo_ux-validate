@@ -85,6 +85,16 @@ The dictionary (check `check:spelling`) flags unknown words and foreign words in
 2. **Judge foreign words from the persona's point of view:** a borrowed term may be fine for a tech-savvy persona but not for others. If it gets in someone's way, create your own finding explaining the impact and cite the check's id in `relatedChecks`.
 3. **Review the grammar** of the pages you visited, which the dictionary doesn't catch: agreement, punctuation, words that exist but are wrong in context (e.g. "their" × "there", "its" × "it's", "lose" × "loose"), inconsistent tone, truncated sentences. Record them with `category: "content"`, the exact text in `evidence.snippet` and the fix in `suggestion`. Use `heuristic: "Grammar"`.
 
+## Step 3d: React apps and other SPAs
+
+If `checks.json` has `app.framework` (`react` or `next`), or if the app switches screens without reloading the page:
+
+1. **Routes that aren't links.** Screens opened by a button (`navigate()`), tabs or modals aren't part of the automatic crawl. If you find important screens like that, suggest the user add them to `crawl.routes` in `ux-validate.config.yml`.
+2. **Route changes.** While navigating as the persona, check what the browser would do on a regular page: does the tab title change? Does focus go to the new content or get lost? Screen reader personas need to hear that the page changed. The `check:spa` check tests one change; evaluate the others along the persona's path.
+3. **Async states.** Loading, empty and error: do they show up, are they announced (`aria-busy`, `role="status"`) and do they avoid a blank screen? Are buttons disabled while submitting and re-enabled afterwards?
+4. **Where to fix.** The checks already include `react.components` (the component that rendered the element and the ones above it) and, on the development server, `sourceHint` with file and line. Use them in your findings: look in the component's file first. Remember that in JSX the `class` attribute is `className` and text may be split across expressions (`{name}`).
+5. **Production build.** If `checks.json` says `react.dev: false`, there are no component names or files: tell the user that running against the development server (e.g. `npm run dev`) improves where-to-fix hints.
+
 ## Step 4: point to where to fix
 
 For each of your findings, look in the project's code for the likely file. Search for the exact text visible on the page, the component name or the route. Fill in `sourceHint` with `file` (relative path) and `line` when you are sure. If you can't find it, leave `sourceHint` out; don't guess.

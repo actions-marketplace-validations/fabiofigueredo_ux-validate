@@ -64,6 +64,7 @@ General options:
     targetsQ: 'Which AI tool will you use the commands in?',
     soon: '(coming soon)',
     unknownTool: 'Unknown AI tool: {list}. Use: {valid}.',
+    frameworkDetected: '\n  {name} project detected: we suggest the development server, where ux-validate can point to the component and file of each issue.\n',
     urlQ: 'URL of the app to test (e.g. http://localhost:3000):',
     startQ: 'Command to start the app (optional, e.g. npm run dev):',
     viewportsQ: 'Screen sizes:',
@@ -127,6 +128,68 @@ General options:
       setKey: '  First, set {env} to your API key:',
       keyPowerShell: '    PowerShell:  $env:{env}="your-key"',
       keyBash: '    macOS/Linux: export {env}=your-key',
+    },
+  },
+
+  react: {
+    detectedDev: 'React{version} detected (development): issues will point to the component and the source file.',
+    detectedProd:
+      'React{version} detected (production build): no component names or source files. ' +
+      'For that, run against the development server (e.g. npm run dev).',
+    soft404Status: '"page not found" screen (the server answered 200)',
+    blankPage: {
+      title: 'Blank page',
+      description: '{url} loaded but showed no text.',
+      descriptionError: '{url} loaded but showed no text: a JavaScript error stopped the rendering.',
+      suggestion: 'Check the error in the browser console and make sure the page shows content or a useful error message.',
+      suggestionReact:
+        'An error during rendering unmounts the whole React tree. Fix the error and wrap the routes in an Error Boundary ' +
+        'that shows a useful message and a way back, instead of an empty screen.',
+    },
+    console: {
+      hydration: {
+        title: 'React hydration error',
+        description: "The server HTML doesn't match what React rendered in the browser ({n} warning(s)). The screen may flicker, lose events or show the wrong content.",
+        suggestion: 'Avoid values that differ between server and browser during render (Date.now(), Math.random(), window, localStorage). Use useEffect for browser-only values.',
+      },
+      key: {
+        title: 'List without the "key" prop',
+        description: 'React warned {n} time(s) that list items have no "key" (components: {components}). Items may swap state or focus when the list updates.',
+        suggestion: 'Give each item rendered with .map() a stable, unique key such as the record id (not the index).',
+      },
+      nesting: {
+        title: 'Invalid HTML nesting',
+        description: "React found elements inside others where HTML doesn't allow it ({n} warning(s)), e.g. <div> inside <p> or <a> inside <a>. Screen readers and the browser may read the structure wrong.",
+        suggestion: 'Change the elements to a valid structure (e.g. <div> instead of <p> when it holds blocks).',
+      },
+      updateDepth: {
+        title: 'Render loop',
+        description: 'React stopped a chain of updates ({n} warning(s)). The page may freeze or slow down.',
+        suggestion: 'Look for setState called during render or a useEffect without the right dependency list.',
+      },
+      renderError: {
+        title: 'Error while rendering a component',
+        description: 'An error happened while rendering {components} ({n} occurrence(s)) and there was no Error Boundary to handle it.',
+        suggestion: 'Fix the error and add an Error Boundary around the routes, with a useful message and a way back.',
+      },
+      controlled: {
+        title: 'Form field switches between controlled and uncontrolled',
+        description: 'React warned that a field switches between controlled and uncontrolled ({n} warning(s)). Typed values may disappear.',
+        suggestion: 'Start the field state with a defined value (e.g. "" instead of undefined).',
+      },
+    },
+    routeFocus: {
+      title: 'Page change is not announced',
+      description:
+        'After clicking "{link}", the app switched to {to} without reloading, but focus did not move and nothing was announced. ' +
+        "Screen reader users don't notice the page changed.",
+      suggestion:
+        'After each route change, move focus to the main heading (h1 with tabIndex={-1}) or announce the new title in an aria-live region.',
+    },
+    routeTitle: {
+      title: "Tab title doesn't change with the route",
+      description: 'After navigating to {to}, the title is still "{title}". It is hard to tell which page you are on, in tabs and in history.',
+      suggestion: 'Update document.title on each route (e.g. React 19 <title> inside the page component, or a useEffect).',
     },
   },
 
@@ -326,6 +389,7 @@ General options:
     screens: 'Screens',
     page: 'Page',
     criterion: 'Criterion',
+    component: 'React component',
     whereToFix: 'Where to fix',
     elements: 'Element(s)',
     element: 'Element',

@@ -106,6 +106,9 @@ async function checkStaticAria(page, { base, add, shot }) {
       if (el.parentElement?.closest(interactiveAncestor)) return false;
       if (el.querySelector('a[href],button,input,select,textarea,[tabindex]')) return false;
       if (el.hasAttribute('onclick')) return true;
+      // React não grava onclick no HTML: o manipulador fica nas props do elemento (__reactProps$…).
+      const reactProps = Object.keys(el).find((k) => k.startsWith('__reactProps$'));
+      if (reactProps && (typeof el[reactProps]?.onClick === 'function' || typeof el[reactProps]?.onMouseDown === 'function')) return true;
       const pointer = getComputedStyle(el).cursor === 'pointer';
       const parentPointer = el.parentElement && getComputedStyle(el.parentElement).cursor === 'pointer';
       return pointer && !parentPointer && el.innerText.trim().length > 0;
