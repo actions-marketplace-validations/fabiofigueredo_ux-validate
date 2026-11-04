@@ -6,6 +6,7 @@ import { chromium } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
 import { VIEWPORTS, loadConfig, newRunDir } from './config.js';
 import { runAriaChecks } from './aria.js';
+import { checkSpelling, createSpeller } from './spelling.js';
 
 /**
  * Checagens determinísticas: dão o mesmo resultado com qualquer modelo de linguagem.
@@ -51,6 +52,16 @@ export async function runChecks({ cwd, configPath, out, url }) {
     const pages = await crawl(browser, startUrl, config, add);
     if (!pages.length) throw new Error(`Não consegui abrir ${startUrl}. A aplicação está rodando?`);
 
+    let speller = null;
+    if (config.spelling.enabled) {
+      try {
+        speller = await createSpeller({ cwd, language: config.language, ignore: config.spelling.ignore });
+        if (!speller) console.warn(`⚠ Sem dicionário para o idioma "${config.language}"; ortografia não será verificada.`);
+      } catch (err) {
+        console.warn(`⚠ Verificação ortográfica desativada: ${err.message}`);
+      }
+    }
+
     // Teclado e ARIA são testados uma vez por página, de preferência no desktop (onde se usa teclado).
     const keyboardViewport = config.viewports.includes('desktop') ? 'desktop' : config.viewports[0];
     for (const vpName of config.viewports) {
@@ -60,6 +71,7 @@ export async function runChecks({ cwd, configPath, out, url }) {
         await inspectPage(context, p, vpName, runDir, add, {
           checkContent: vpName === config.viewports[0],
           checkAria: vpName === keyboardViewport,
+          speller,
         });
       }
       await context.close();
@@ -213,7 +225,7 @@ async function crawl(browser, startUrl, config, add) {
   return pages;
 }
 
-async function inspectPage(context, entry, vpName, runDir, add, { checkContent, checkAria }) {
+async function inspectPage(context, entry, vpName, runDir, add, { checkContent, checkAria, speller }) {
   const page = await context.newPage();
   const consoleErrors = [];
   const failedRequests = [];
@@ -347,10 +359,13 @@ async function inspectPage(context, entry, vpName, runDir, add, { checkContent, 
         severity: pat.severity,
         title: pat.title,
         description: `Encontrado na página: "${m[0]}".`,
-        evidence: { screenshot: shot, snippet: text.slice(Math.max(0, i - 60), i + 80).replace(/\s+/g, ' ').trim() },
+        evidence: { screenshot: shot, snippet: text.slice(Math.max(0, i - 60), i + 80).replace(/\s+/g, ' ').trim(), terms: [m[0]] },
         suggestion: 'Substitua pelo conteúdo real ou remova o trecho.',
       });
     }
+    if (speller) await checkSpelling(page, { base, add, shot, speller }).catch((err) => {
+      if (process.env.DEBUG) console.error('Falha na verificação ortográfica:', err);
+    });
   }
   // Por último, porque interage com a página (Tab, cliques em botões de abrir/fechar).
   if (checkAria) {

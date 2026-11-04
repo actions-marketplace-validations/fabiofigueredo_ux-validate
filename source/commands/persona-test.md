@@ -34,7 +34,7 @@ Rode:
 {{CHECK_CMD}}
 ```
 
-Isso cria uma pasta de execução em `{{WORK_DIR}}/runs/<data-hora>/` com `checks.json` (acessibilidade via axe-core e WAI-ARIA, navegação pelo teclado, links quebrados, erros de console, rolagem horizontal, textos provisórios), screenshots e, em `aria/`, a árvore de acessibilidade de cada página (o que um leitor de tela anuncia). Anote o caminho da pasta: tudo desta execução vai para lá.
+Isso cria uma pasta de execução em `{{WORK_DIR}}/runs/<data-hora>/` com `checks.json` (acessibilidade via axe-core e WAI-ARIA, navegação pelo teclado, links quebrados, erros de console, rolagem horizontal, textos provisórios, ortografia), screenshots e, em `aria/`, a árvore de acessibilidade de cada página (o que um leitor de tela anuncia). Anote o caminho da pasta: tudo desta execução vai para lá.
 
 Leia o `checks.json`. Esses problemas **já estão registrados**: não os repita como achados seus. Quando um deles atrapalhar uma persona de um jeito específico, crie um achado próprio explicando o impacto para ela e cite o id da checagem em `relatedChecks`.
 
@@ -68,6 +68,14 @@ Faça uma vez por execução (não por persona), a menos que `--only` exclua `ac
 4. Em formulários, envie com erro de propósito (dados de teste) e verifique se o erro é anunciado: `aria-invalid`, `aria-describedby`, foco no primeiro erro, mensagens em `role="alert"`/`status`.
 5. Registre os achados com `category: "accessibility"`, citando no `heuristic` o critério WCAG e o padrão do APG. Em `personas`, liste quem é afetado: em geral, as personas com `vision` diferente de `normal`, mas pense em quem mais sofre (ex.: foco invisível atrapalha qualquer um que use teclado).
 
+## Passo 3c: revisão de ortografia e gramática
+
+O dicionário (checagem `check:spelling`) aponta palavras desconhecidas e palavras em inglês no meio do texto. Revise esses achados:
+
+1. **Separe os falsos positivos:** nomes próprios, marcas, nomes de produtos e termos técnicos corretos. Não os registre como problema; liste-os no resumo final sugerindo incluí-los em `{{WORK_DIR}}/dicionario.txt` (uma palavra por linha).
+2. **Avalie as palavras em inglês pela persona:** "Home" pode ser aceitável para o Rafael, mas não para a Dona Maria. Se atrapalhar alguém, crie um achado próprio explicando o impacto e cite o id da checagem em `relatedChecks`.
+3. **Revise a gramática** dos textos das páginas visitadas, o que o dicionário não pega: concordância, crase, regência, pontuação, palavras que existem mas estão erradas no contexto (ex.: "mas" × "mais", "a" × "há", "concerteza"), mistura de "você" e "tu", frases truncadas. Registre com `category: "content"`, o texto exato em `evidence.snippet` e a correção em `suggestion`. Use `heuristic: "Gramática"`.
+
 ## Passo 4: apontar onde corrigir
 
 Para cada achado seu, procure no código do projeto o arquivo provável. Busque o texto exato visível na página, o nome do componente ou a rota. Preencha `sourceHint` com `file` (caminho relativo) e `line` quando tiver segurança. Se não achar, deixe `sourceHint` de fora; não chute.
@@ -86,4 +94,4 @@ Para cada achado seu, procure no código do projeto o arquivo provável. Busque 
    - os objetivos que falharam e o motivo, em uma linha cada;
    - os 5 problemas mais importantes, com o arquivo provável de correção;
    - o caminho do `report.html` para ver tudo com screenshots;
-   - a oferta de corrigir os problemas, começando pelos críticos.
+   - a oferta de corrigir os problemas com `/persona-fix`, começando pelos críticos.

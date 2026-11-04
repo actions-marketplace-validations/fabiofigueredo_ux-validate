@@ -140,6 +140,10 @@ function renderMarkdown(d) {
   top.slice(0, 10).forEach((f, i) => lines.push(`${i + 1}. **[${f.id}] ${f.title}** — ${SEVERITY_LABEL[f.severity]}, ${CATEGORIES[f.category]}`));
   lines.push('');
 
+  if (d.findings.length) {
+    lines.push('> **Para aplicar as correções:** rode `/persona-fix` no Claude Code (usa o modelo e a conta da ferramenta) ou `npx ux-validate fix` no terminal (usa o modelo e a API key configurados no setup). Ambos mostram cada mudança antes de gravar.', '');
+  }
+
   for (const [cat, label] of Object.entries(CATEGORIES)) {
     const list = d.findings.filter((f) => f.category === cat);
     lines.push(`## ${label} (${list.length})`, '');
@@ -257,6 +261,7 @@ a{color:var(--accent)}.filters{display:flex;flex-wrap:wrap;gap:8px}.filters butt
 ${goals ? `<h2>Objetivos</h2>${goals}` : ''}
 <h2>Problemas (${d.findings.length})</h2>
 <div class="filters"><button data-filter="all" aria-pressed="true">Todos</button>${filters}</div>
+${d.findings.length ? `<p class="card"><strong>Para aplicar as correções:</strong> rode <code>/persona-fix</code> no Claude Code (usa o modelo e a conta da ferramenta) ou <code>npx ux-validate fix</code> no terminal (usa o modelo e a API key configurados no setup). Ambos mostram cada mudança antes de gravar.</p>` : ''}
 ${items || '<p>Nenhum problema encontrado. 🎉</p>'}
 </main>
 <script>

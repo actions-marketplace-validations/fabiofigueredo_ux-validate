@@ -12,7 +12,7 @@ export const VIEWPORTS = {
 };
 
 export const PROVIDERS = {
-  anthropic: { label: 'Anthropic (Claude)', apiKeyEnv: 'ANTHROPIC_API_KEY', defaultModel: 'claude-sonnet-5-5' },
+  anthropic: { label: 'Anthropic (Claude)', apiKeyEnv: 'ANTHROPIC_API_KEY', defaultModel: 'claude-opus-5-5' },
   openai: { label: 'OpenAI', apiKeyEnv: 'OPENAI_API_KEY' },
   google: { label: 'Google (Gemini)', apiKeyEnv: 'GOOGLE_GENERATIVE_AI_API_KEY' },
   ollama: { label: 'Ollama (modelo local)', baseUrl: 'http://localhost:11434' },
@@ -24,6 +24,8 @@ const DEFAULTS = {
   viewports: ['mobile', 'desktop'],
   crawl: { maxPages: 20, checkExternalLinks: false },
   agent: { maxStepsPerGoal: 15 },
+  language: 'pt-BR',
+  spelling: { enabled: true, ignore: [] },
 };
 
 export function loadConfig(cwd, configPath = 'ux-validate.config.yml') {
@@ -38,6 +40,7 @@ export function loadConfig(cwd, configPath = 'ux-validate.config.yml') {
     app: { ...DEFAULTS.app, ...raw.app },
     crawl: { ...DEFAULTS.crawl, ...raw.crawl },
     agent: { ...DEFAULTS.agent, ...raw.agent },
+    spelling: { ...DEFAULTS.spelling, ...raw.spelling },
   };
   const unknown = config.viewports.filter((v) => !VIEWPORTS[v]);
   if (unknown.length) {

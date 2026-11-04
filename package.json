@@ -38,8 +38,13 @@
   ],
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.4.0",
     "@axe-core/playwright": "^4.10.0",
     "@inquirer/prompts": "^8.0.0",
+    "dictionary-en": "^4.0.0",
+    "dictionary-es": "^4.0.0",
+    "dictionary-pt": "^4.0.0",
+    "hunspell-asm": "^4.0.2",
     "playwright": "^1.50.0",
     "yaml": "^2.6.0"
   }

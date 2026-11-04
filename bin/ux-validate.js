@@ -1,12 +1,15 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util';
 
-const HELP = `ux-validate — testes de conteúdo, navegação e interface guiados por personas
+const HELP = `ux-validate — testes de conteúdo, navegação, interface e acessibilidade guiados por personas
 
 Uso:
   ux-validate init   [--yes] [--force]          Configura o projeto e instala os comandos no seu agente de IA
-  ux-validate check  [--out <dir>] [--url <url>] Roda as checagens fixas (acessibilidade, links, console, conteúdo)
+  ux-validate check  [--out <dir>] [--url <url>] Roda as checagens fixas (acessibilidade, links, ortografia, conteúdo)
   ux-validate report [--run <dir>]               Gera report.md e report.html a partir de uma execução
+  ux-validate fix    [--run <dir>] [--ids A001,C003] [--severity high] [--dry-run] [--yes]
+                                                 Aplica as correções do relatório com o modelo configurado
+                                                 no setup (usa a sua API key e os seus tokens)
 
 Opções gerais:
   --config <arquivo>   Caminho do arquivo de configuração (padrão: ux-validate.config.yml)
@@ -21,6 +24,9 @@ const { positionals, values } = parseArgs({
     out: { type: 'string' },
     url: { type: 'string' },
     run: { type: 'string' },
+    ids: { type: 'string' },
+    severity: { type: 'string' },
+    'dry-run': { type: 'boolean' },
     config: { type: 'string', default: 'ux-validate.config.yml' },
     help: { type: 'boolean', short: 'h' },
   },
@@ -48,6 +54,19 @@ try {
     case 'report': {
       const { buildReport } = await import('../src/report.js');
       await buildReport({ cwd: process.cwd(), run: values.run });
+      break;
+    }
+    case 'fix': {
+      const { fix } = await import('../src/fix.js');
+      await fix({
+        cwd: process.cwd(),
+        configPath: values.config,
+        run: values.run,
+        ids: values.ids,
+        severity: values.severity,
+        yes: values.yes,
+        dryRun: values['dry-run'],
+      });
       break;
     }
     default:

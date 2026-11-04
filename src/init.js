@@ -6,6 +6,19 @@ import { checkbox, confirm, input, select } from '@inquirer/prompts';
 import { PROVIDERS, VIEWPORTS, WORK_DIR, RUNS_DIR } from './config.js';
 import { ADAPTERS, SOURCE_DIR, loadCommands } from './adapters/index.js';
 import { writeFile } from './files.js';
+import { PROJECT_DICTIONARY } from './spelling.js';
+
+const LANGUAGES = [
+  { name: 'Português (Brasil)', value: 'pt-BR' },
+  { name: 'Inglês', value: 'en' },
+  { name: 'Espanhol', value: 'es' },
+  { name: 'Outro (sem verificação ortográfica)', value: 'outro' },
+];
+
+const DICTIONARY_TEMPLATE = `# Dicionário do projeto para a verificação ortográfica do ux-validate.
+# Uma palavra por linha: nomes próprios, marcas e termos técnicos que estão corretos
+# mas que o dicionário não conhece. Linhas começando com # são ignoradas.
+`;
 
 export async function init({ cwd, yes = false, force = false }) {
   console.log('\nux-validate: configuração');
@@ -21,6 +34,8 @@ export async function init({ cwd, yes = false, force = false }) {
     const content = fs.readFileSync(path.join(SOURCE_DIR, 'references', file), 'utf8');
     results.push(writeFile(cwd, `${WORK_DIR}/references/${file}`, content, { force: true }));
   }
+
+  results.push(writeFile(cwd, PROJECT_DICTIONARY, DICTIONARY_TEMPLATE));
 
   if (answers.examplePersonas) {
     for (const file of fs.readdirSync(path.join(SOURCE_DIR, 'personas'))) {
@@ -47,6 +62,7 @@ function defaultAnswers() {
     url: 'http://localhost:3000',
     start: '',
     viewports: ['mobile', 'desktop'],
+    language: 'pt-BR',
     standalone: null,
     examplePersonas: true,
   };
@@ -84,11 +100,17 @@ async function ask() {
     })),
   });
 
-  // No modo plugin o modelo é o da própria ferramenta. O modo standalone (CLI/CI)
-  // chama o provedor diretamente, então aqui o usuário escolhe provedor e modelo.
+  const language = await select({ message: 'Idioma do conteúdo da aplicação (para a verificação ortográfica):', choices: LANGUAGES });
+
+  // Na ferramenta de IA (ex.: /persona-fix no Claude Code) o modelo é o da própria ferramenta.
+  // Pelo terminal (npx ux-validate fix, CI), o ux-validate chama o provedor direto, com a chave do usuário.
   let standalone = null;
+  console.log(
+    '\n  Para aplicar correções pelo terminal (npx ux-validate fix), o ux-validate chama um modelo de linguagem\n' +
+      '  com a SUA API key; o consumo de tokens é cobrado na sua conta do provedor.',
+  );
   const wantsStandalone = await confirm({
-    message: 'Configurar também o modo standalone (CLI/GitHub Action, sem ferramenta de IA)?',
+    message: 'Configurar um modelo para aplicar correções pelo terminal?',
     default: false,
   });
   if (wantsStandalone) {
@@ -105,7 +127,7 @@ async function ask() {
     standalone = { provider, model };
     if (info.apiKeyEnv) {
       standalone.apiKeyEnv = await input({
-        message: 'Variável de ambiente com a API key:',
+        message: 'Nome da variável de ambiente que guarda a sua API key (a chave não fica no arquivo):',
         default: info.apiKeyEnv,
       });
     }
@@ -116,7 +138,7 @@ async function ask() {
 
   const examplePersonas = await confirm({ message: 'Criar personas de exemplo?', default: true });
 
-  return { targets, url, start, viewports, standalone, examplePersonas };
+  return { targets, url, start, viewports, language, standalone, examplePersonas };
 }
 
 function validateUrl(value) {
@@ -139,6 +161,8 @@ function renderConfig(a) {
     app: { url: a.url, ...(a.start ? { start: a.start } : {}) },
     personas: `${WORK_DIR}/personas`,
     viewports: a.viewports,
+    language: a.language === 'outro' ? 'outro' : a.language,
+    spelling: { enabled: a.language !== 'outro', ignore: [] },
     crawl: { maxPages: 20, checkExternalLinks: false },
     agent: { maxStepsPerGoal: 15 },
     ...(a.standalone ? { standalone: a.standalone } : {}),
@@ -167,9 +191,14 @@ function printNextSteps(a) {
     console.log('  2. Abra o Claude Code neste projeto e aprove o servidor MCP "playwright".');
     console.log('  3. Rode /persona-test  (ou /persona-test <persona> para uma só).');
   }
+  if (a.targets.includes('claude-code')) console.log('  4. Para aplicar as correções do relatório: /persona-fix');
   if (a.standalone) {
-    console.log('\n  Modo standalone configurado. A execução sem ferramenta de IA chega numa próxima versão;');
-    console.log('  por enquanto "npx ux-validate check" já roda as checagens fixas no CI.');
+    console.log(`\n  Correções pelo terminal: npx ux-validate fix (modelo ${a.standalone.provider} · ${a.standalone.model}).`);
+    if (a.standalone.apiKeyEnv) {
+      console.log(`  Antes, defina a variável ${a.standalone.apiKeyEnv} com a sua API key:`);
+      console.log(`    PowerShell: $env:${a.standalone.apiKeyEnv}="sua-chave"`);
+      console.log(`    macOS/Linux: export ${a.standalone.apiKeyEnv}=sua-chave`);
+    }
   }
   console.log('');
 }

@@ -26,7 +26,8 @@ Argumentos recebidos: `$ARGUMENTS`
    - a tabela de notas por persona;
    - os objetivos que falharam e por quê;
    - um **plano de correção em ordem**: primeiro o que bloqueia objetivos, depois críticos e altos que afetam mais personas, depois o resto agrupado por arquivo (para corrigir vários de uma vez);
-   - o caminho do `report.html`.
+   - o caminho do `report.html`;
+   - a sugestão de aplicar as correções com `/persona-fix` (ou `npx ux-validate fix`, fora do Claude Code).
 4. Com `--compare`: leia o `findings.json` e o `checks.json` da execução anterior e mostre o que foi **resolvido**, o que **continua** e o que é **novo** (compare pelo título, página e elemento, não pelo id). Mostre também como as notas mudaram.
 
 Não altere o código da aplicação neste comando.
