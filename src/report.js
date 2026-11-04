@@ -181,6 +181,12 @@ function renderMarkdown(d) {
 function renderHtml(d) {
   const esc = (s) =>
     String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  // URLs vêm das páginas testadas e do findings.json do agente: só http(s), file e caminhos relativos
+  // viram link (bloqueia javascript:, data: etc. no relatório aberto no navegador).
+  const url = (u) => {
+    const s = String(u ?? '').trim();
+    return /^(https?:|file:)/i.test(s) || !/^[a-z][a-z0-9+.-]*:/i.test(s) ? esc(s) : '#';
+  };
   const scoreClass = (n) => (n >= 85 ? 'good' : n >= 60 ? 'warn' : 'bad');
 
   const scoreRows = d.scores
@@ -218,18 +224,18 @@ function renderHtml(d) {
         <h3>[${esc(f.id)}] ${esc(f.title)}</h3></header>
       <p>${esc(f.description)}</p>
       <dl>
-        ${f.page ? `<dt>${t('report.page')}</dt><dd><a href="${esc(f.page)}">${esc(f.page)}</a></dd>` : ''}
+        ${f.page ? `<dt>${t('report.page')}</dt><dd><a href="${url(f.page)}">${esc(f.page)}</a></dd>` : ''}
         ${f.affects.length ? `<dt>${t('report.personas')}</dt><dd>${esc(f.affects.map((id) => personaName(d, id)).join(', '))}</dd>` : ''}
         ${f.viewports?.length ? `<dt>${t('report.screens')}</dt><dd>${esc(f.viewports.join(', '))}</dd>` : ''}
         ${f.heuristic ? `<dt>${t('report.criterion')}</dt><dd>${esc(f.heuristic)}</dd>` : ''}
         ${f.sourceHint?.file ? `<dt>${t('report.whereToFix')}</dt><dd><code>${esc(f.sourceHint.file)}${f.sourceHint.line ? `:${f.sourceHint.line}` : ''}</code></dd>` : ''}
         ${f.react?.components?.length ? `<dt>${t('report.component')}</dt><dd><code>${esc(f.react.components.join(' › '))}</code></dd>` : ''}
         ${f.evidence?.selector ? `<dt>${t('report.element')}</dt><dd><code>${esc(f.evidence.selector)}</code></dd>` : ''}
-        ${f.ariaTree ? `<dt>${t('report.screenReader')}</dt><dd><a href="${esc(f.ariaTree)}">${t('report.ariaTree')}</a></dd>` : ''}
+        ${f.ariaTree ? `<dt>${t('report.screenReader')}</dt><dd><a href="${url(f.ariaTree)}">${t('report.ariaTree')}</a></dd>` : ''}
       </dl>
       ${f.evidence?.snippet ? `<pre>${esc(f.evidence.snippet)}</pre>` : ''}
-      ${f.suggestion ? `<p class="fix"><strong>${t('report.howToFix')}:</strong> ${esc(f.suggestion)}${f.helpUrl ? ` <a href="${esc(f.helpUrl)}" target="_blank" rel="noopener">${t('report.referenceHtml')}</a>` : ''}</p>` : ''}
-      ${f.evidence?.screenshot ? `<details><summary>${t('report.seeScreenshot')}</summary><img loading="lazy" src="${esc(f.evidence.screenshot)}" alt="${esc(t('report.screenshotOf', { page: f.page }))}"></details>` : ''}
+      ${f.suggestion ? `<p class="fix"><strong>${t('report.howToFix')}:</strong> ${esc(f.suggestion)}${f.helpUrl ? ` <a href="${url(f.helpUrl)}" target="_blank" rel="noopener noreferrer">${t('report.referenceHtml')}</a>` : ''}</p>` : ''}
+      ${f.evidence?.screenshot ? `<details><summary>${t('report.seeScreenshot')}</summary><img loading="lazy" src="${url(f.evidence.screenshot)}" alt="${esc(t('report.screenshotOf', { page: f.page }))}"></details>` : ''}
     </article>`,
     )
     .join('');

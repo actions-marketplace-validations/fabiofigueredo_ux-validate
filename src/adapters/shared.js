@@ -2,7 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 /** Servidor MCP do Playwright: o navegador que o agente usa para navegar como cada persona. */
-export const PLAYWRIGHT_MCP = { command: 'npx', args: ['@playwright/mcp@latest'] };
+// Versão fixa: com @latest, cada abertura da ferramenta baixaria e executaria a versão mais nova publicada,
+// sem revisão. Atualize aqui (e rode o init de novo) quando quiser uma versão nova.
+export const PLAYWRIGHT_MCP_VERSION = '0.0.83';
+export const PLAYWRIGHT_MCP = { command: 'npx', args: [`@playwright/mcp@${PLAYWRIGHT_MCP_VERSION}`] };
 
 /**
  * Registra o Playwright MCP num arquivo JSON com `mcpServers` (Claude Code, Cursor, Gemini CLI),

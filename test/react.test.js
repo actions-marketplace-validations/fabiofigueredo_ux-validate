@@ -150,3 +150,25 @@ test('app React (Vite): componentes, arquivo e linha, SPA e avisos do React', { 
   assert.equal(loc.artifactLocation.uri, 'examples/react-demo/src/App.jsx');
   assert.equal(loc.region.startLine, 9);
 });
+
+test('site sem SPA: a checagem de troca de rota não navega de verdade (não trava ao fechar a aba)', { timeout: 60000 }, async () => {
+  const { chromium } = await import('playwright');
+  const { pathToFileURL } = await import('node:url');
+  const { checkClientNavigation } = await import('../src/react.js');
+  const browser = await chromium.launch(process.env.UX_VALIDATE_CHROMIUM ? { executablePath: process.env.UX_VALIDATE_CHROMIUM } : {});
+  try {
+    const page = await browser.newPage();
+    const start = pathToFileURL(path.resolve('examples/demo-site/index.html')).href;
+    await page.goto(start);
+    const found = [];
+    const result = await checkClientNavigation(page, { base: { page: start }, add: (f) => found.push(f) });
+    assert.equal(result, null, 'link comum: o teste não se aplica');
+    assert.equal(found.length, 0);
+    assert.equal(page.url(), start, 'continua na mesma página');
+    const t0 = Date.now();
+    await page.close();
+    assert.ok(Date.now() - t0 < 5000, 'fechar a aba é imediato');
+  } finally {
+    await browser.close();
+  }
+});

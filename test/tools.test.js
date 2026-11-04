@@ -90,7 +90,7 @@ test('Codex CLI: skills em .agents/skills, só chamadas explicitamente, e MCP no
   assert.match(read(dir, '.agents/skills/ux-test/SKILL.md'), /^# \$ux-test$/m);
 
   const config = read(dir, '.codex/config.toml');
-  assert.match(config, /^model = "x"\n\n\[mcp_servers\.playwright\]\ncommand = "npx"\nargs = \["@playwright\/mcp@latest"\]\n$/);
+  assert.match(config, /^model = "x"\n\n\[mcp_servers\.playwright\]\ncommand = "npx"\nargs = \["@playwright\/mcp@0\.0\.83"\]\n$/);
   codex.install({ cwd: dir, commands: loadCommands('en'), force: true });
   assert.equal(read(dir, '.codex/config.toml'), config, 'rodar de novo não duplica o servidor');
 });

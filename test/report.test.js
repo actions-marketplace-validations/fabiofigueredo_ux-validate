@@ -43,3 +43,34 @@ test('sem findings.json, gera notas gerais a partir das checagens', () => {
   assert.equal(scores.length, 1);
   assert.equal(scores[0].persona.name, 'Geral (sem persona)');
 });
+
+test('report.html só cria links http(s), file ou relativos (bloqueia javascript: vindo das páginas)', async () => {
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const { buildReport } = await import('../src/report.js');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'uxv-report-'));
+  const finding = (id, extra) => ({ id, severity: 'high', source: 'check:content', category: 'content', title: 'T', description: 'D', suggestion: 'S', ...extra });
+  fs.writeFileSync(
+    path.join(dir, 'checks.json'),
+    JSON.stringify({
+      url: 'http://localhost/',
+      pages: [{ url: 'http://localhost/' }],
+      findings: [
+        finding('C001', { page: 'javascript:alert(1)', helpUrl: 'JavaScript:alert(2)', evidence: { screenshot: 'data:text/html,<script>alert(3)</script>' } }),
+        finding('C002', { page: 'http://localhost/ok', helpUrl: 'https://dequeuniversity.com/rules/axe/x', evidence: { screenshot: 'screenshots/home.png' } }),
+      ],
+    }),
+  );
+  const log = console.log;
+  console.log = () => {};
+  try {
+    await buildReport({ cwd: dir, run: dir });
+  } finally {
+    console.log = log;
+  }
+  const html = fs.readFileSync(path.join(dir, 'report.html'), 'utf8');
+  assert.doesNotMatch(html, /href="javascript:|href="JavaScript:|src="data:/i);
+  assert.match(html, /href="http:\/\/localhost\/ok"/);
+  assert.match(html, /src="screenshots\/home\.png"/);
+  assert.match(html, /rel="noopener noreferrer"/);
+});

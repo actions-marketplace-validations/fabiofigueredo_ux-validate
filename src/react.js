@@ -161,9 +161,13 @@ export function decodeMappings(mappings) {
   return lines;
 }
 
+const decoded = new WeakMap();
+
 /** Posição original (arquivo e linha, base 1) de uma posição gerada (linha e coluna, base 1). */
 export function originalPosition(map, line, column) {
-  const lines = decodeMappings(map.mappings ?? '');
+  // Um mesmo módulo costuma ter vários problemas: decodifica o source map uma vez só.
+  if (!decoded.has(map)) decoded.set(map, decodeMappings(map.mappings ?? ''));
+  const lines = decoded.get(map);
   const segments = lines[line - 1] ?? [];
   let hit = null;
   for (const s of segments) {
@@ -191,8 +195,11 @@ async function sourceMapFor(request, url, cache) {
         const [, payload] = ref.split(',');
         map = JSON.parse(/;base64/.test(ref) ? Buffer.from(payload, 'base64').toString('utf8') : decodeURIComponent(payload));
       } else if (ref) {
-        const mapRes = await request.get(new URL(ref, url).href, { timeout: 5000 });
-        if (mapRes.ok()) map = await mapRes.json();
+        const mapUrl = new URL(ref, url);
+        if (mapUrl.origin === new URL(url).origin) {
+          const mapRes = await request.get(mapUrl.href, { timeout: 5000 });
+          if (mapRes.ok()) map = await mapRes.json();
+        }
       }
     }
   } catch {
@@ -207,6 +214,8 @@ async function sourceMapFor(request, url, cache) {
  * Só faz sentido no build de desenvolvimento: em produção os nomes são minificados e não há pilhas.
  */
 export async function annotateFindings(page, findings, { cwd, request, cache = new Map() }) {
+  // Só busca source maps no mesmo servidor da aplicação: a pilha vem da página e pode citar qualquer URL.
+  const origin = new URL(page.url()).origin;
   const targets = findings.map((f) => ({
     selector: firstSelector(f.evidence?.selector),
     text: textTarget(f),
@@ -220,12 +229,12 @@ export async function annotateFindings(page, findings, { cwd, request, cache = n
     const f = findings[i];
     if (info.components?.length) f.react = { components: info.components };
     if (f.sourceHint?.file) continue;
-    const hint = await resolveSource(info.source, { cwd, request, cache });
+    const hint = await resolveSource(info.source, { cwd, request, cache, origin });
     if (hint) f.sourceHint = hint;
   }
 }
 
-async function resolveSource(source, { cwd, request, cache }) {
+async function resolveSource(source, { cwd, request, cache, origin }) {
   if (!source) return null;
   if (source.mapped) {
     const file = projectPath(cwd, source.file);
@@ -235,7 +244,7 @@ async function resolveSource(source, { cwd, request, cache }) {
   if (!frame) return null;
   const file = projectPath(cwd, frame.url);
   // A linha da pilha é a do código transformado; o source map do servidor diz a linha do arquivo original.
-  if (/^https?:/.test(frame.url) && request) {
+  if (/^https?:/.test(frame.url) && request && new URL(frame.url).origin === origin) {
     const map = await sourceMapFor(request, frame.url, cache);
     const pos = map && originalPosition(map, frame.line, frame.column);
     if (pos) {
@@ -309,13 +318,22 @@ export async function checkClientNavigation(page, { base, add }) {
         }
       });
       if (!link) return null;
-      window.__uxvMarker = true;
       const before = { title: document.title, url: location.href };
       const live = [...document.querySelectorAll('[aria-live], [role="status"], [role="alert"]')].map((el) => el.textContent);
+      // O ouvinte na window roda depois do roteador (React registra no contêiner da aplicação).
+      // Se o roteador não assumiu o clique, cancelamos: uma navegação comum não precisa deste teste
+      // e recarregar a página aqui deixaria o navegador preso ao fechar a aba.
+      let handledByApp = false;
+      const guard = (event) => {
+        handledByApp = event.defaultPrevented;
+        event.preventDefault();
+      };
+      window.addEventListener('click', guard, { once: true });
       link.focus();
       link.click();
+      window.removeEventListener('click', guard);
+      if (!handledByApp) return null;
       await new Promise((r) => setTimeout(r, 800));
-      if (!window.__uxvMarker) return null; // recarregou: navegação comum, o navegador cuida do resto
       if (location.href === before.url) return null; // o link não trocou de rota
       const active = document.activeElement;
       const focusMoved = active && active !== document.body && active !== link && document.contains(active);

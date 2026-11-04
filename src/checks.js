@@ -187,7 +187,7 @@ async function crawl(browser, startUrl, config, add) {
     page.on('pageerror', (err) => errors.push(err.message));
     let status = 0;
     try {
-      const res = await page.goto(pageUrl, { waitUntil: 'networkidle', timeout: 20000 });
+      const res = await open(page, pageUrl);
       status = res?.status() ?? 0;
       await waitForRender(page);
     } catch {
@@ -296,6 +296,16 @@ async function crawl(browser, startUrl, config, add) {
   return { pages, react };
 }
 
+/**
+ * Abre a página e espera a rede acalmar por pouco tempo. Apps com polling, analytics ou WebSocket
+ * nunca ficam sem tráfego: esperar "networkidle" como condição de carregamento custava 20 s por página.
+ */
+async function open(page, url, timeout = 20000) {
+  const res = await page.goto(url, { waitUntil: 'load', timeout });
+  await page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {});
+  return res;
+}
+
 /** Espera a aplicação desenhar a tela (SPAs montam o conteúdo depois do carregamento). */
 async function waitForRender(page) {
   await page
@@ -317,13 +327,13 @@ async function probeNotFound(context, startUrl) {
   const page = await context.newPage();
   try {
     const probe = new URL(`/__ux-validate-404-${Date.now().toString(36)}`, start).href;
-    const res = await page.goto(probe, { waitUntil: 'networkidle', timeout: 15000 });
+    const res = await open(page, probe, 15000);
     if (!res || res.status() >= 400) return null;
     await waitForRender(page);
     const text = await renderedText(page);
     if (!text) return null;
     // Se a rota inexistente mostra a mesma tela da inicial, a aplicação ignora o caminho: não dá para comparar.
-    await page.goto(startUrl, { waitUntil: 'networkidle', timeout: 15000 });
+    await open(page, startUrl, 15000);
     await waitForRender(page);
     return text === (await renderedText(page)) ? null : text;
   } catch {
@@ -360,7 +370,7 @@ async function inspectPage(context, entry, vpName, runDir, addToRun, { checkCont
     failedRequests.push(`${t('checks.failedRequest')} ${url}`);
   });
 
-  await page.goto(entry.url, { waitUntil: 'networkidle', timeout: 20000 }).catch(() => {});
+  await open(page, entry.url).catch(() => {});
   await waitForRender(page);
 
   // Sempre com "/": o caminho é usado em links do relatório, inclusive no Windows.

@@ -263,6 +263,25 @@ export function listSourceFiles(cwd) {
   return out;
 }
 
+/**
+ * Conteúdo dos arquivos de origem, lido uma vez por lista de arquivos (uma por execução de fix/sarif).
+ * Sem isso, localizar N problemas num projeto com M arquivos fazia N × M leituras do disco.
+ */
+const contentsByList = new WeakMap();
+const MAX_CACHE_CHARS = 64 * 1024 * 1024; // acima disso, lê do disco sem guardar (projetos enormes)
+function sourceText(cwd, files, rel) {
+  let cache = contentsByList.get(files);
+  if (!cache) contentsByList.set(files, (cache = { texts: new Map(), chars: 0 }));
+  const hit = cache.texts.get(rel);
+  if (hit != null) return hit;
+  const text = fs.readFileSync(path.join(cwd, rel), 'utf8');
+  if (cache.chars + text.length <= MAX_CACHE_CHARS) {
+    cache.texts.set(rel, text);
+    cache.chars += text.length;
+  }
+  return text;
+}
+
 /** Arquivo indicado pelo agente (sourceHint) ou o arquivo onde aparecem os trechos da evidência. */
 export function locateSource(cwd, finding, files) {
   const hint = finding.sourceHint?.file;
@@ -280,7 +299,7 @@ export function locateSource(cwd, finding, files) {
   let best = null;
   let bestScore = 0;
   for (const rel of files) {
-    const text = fs.readFileSync(path.join(cwd, rel), 'utf8');
+    const text = sourceText(cwd, files, rel);
     let score = terms.reduce((s, t) => s + (text.includes(t) ? 1 : 0), 0);
     if (!score) continue;
     if (pageName && path.basename(rel) === pageName) score += 0.5; // desempate: arquivo com o nome da página

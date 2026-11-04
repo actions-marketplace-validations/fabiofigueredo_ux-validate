@@ -54,6 +54,7 @@ Observações:
 - Os comandos só rodam quando você os chama: os testes abrem navegador e gastam tokens. No Claude Code isso é o `disable-model-invocation`; no Codex, `allow_implicit_invocation: false`.
 - O Codex lê o `.codex/config.toml` e o Gemini lê o `.gemini/settings.json` só em pastas **confiáveis**; aceite a pergunta na primeira vez que abrir o projeto.
 - Arquivos de configuração existentes são preservados: o setup só adiciona o servidor `playwright` se ele não estiver lá.
+- O servidor MCP do Playwright é instalado numa **versão fixa** (`@playwright/mcp@0.0.83`), não em `@latest`: assim nenhuma versão nova e não revisada é baixada e executada sem você saber. Se você instalou uma versão anterior do ux-validate, troque `@latest` pela versão fixa no arquivo de MCP da sua ferramenta.
 - O Gemini CLI também lê `.agents/skills/`. Se você instalar Codex e Gemini juntos, o Gemini pode listar as skills do Codex; use os comandos `/ux-…`, e o Gemini pede confirmação antes de ativar qualquer skill.
 - Os argumentos vão depois do nome do comando em todas as ferramentas, ex.: `/ux-test dona-maria` ou `$ux-test dona-maria`.
 
