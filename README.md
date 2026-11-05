@@ -8,7 +8,7 @@ Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Marg
 
 ![ux-validate report: scores by persona, goals and issues](docs/ux-validate-demo-crop.gif)
 
-> **Status:** early version (0.3). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
+> **Status:** early version (0.4). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
 
 ## How it works
 

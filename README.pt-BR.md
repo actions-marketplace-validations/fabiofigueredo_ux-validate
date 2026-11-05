@@ -8,7 +8,7 @@ Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate responde:
 
 ![Relatório do ux-validate: notas por persona, objetivos e problemas](docs/ux-validate-demo-crop.gif)
 
-> **Status:** versão inicial (0.3). Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**.
+> **Status:** versão inicial (0.4). Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**.
 
 ## Como funciona
 
