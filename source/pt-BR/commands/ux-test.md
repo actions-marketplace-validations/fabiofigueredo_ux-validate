@@ -41,7 +41,7 @@ Rode:
 {{CHECK_CMD}}
 ```
 
-Isso cria uma pasta de execução em `{{WORK_DIR}}/runs/<data-hora>/` com `checks.json` (acessibilidade via axe-core e WAI-ARIA, navegação pelo teclado, links quebrados, erros de console, rolagem horizontal, textos provisórios, ortografia), screenshots e, em `aria/`, a árvore de acessibilidade de cada página (o que um leitor de tela anuncia). Anote o caminho da pasta: tudo desta execução vai para lá.
+Isso cria uma pasta de execução em `{{WORK_DIR}}/runs/<data-hora>/` com `checks.json` (acessibilidade via axe-core e WAI-ARIA, navegação pelo teclado, links quebrados, erros de console, rolagem horizontal, textos provisórios, ortografia, visão de cores), screenshots, em `color-vision/` a página como pessoas com daltonismo a veem e, em `aria/`, a árvore de acessibilidade de cada página (o que um leitor de tela anuncia). Anote o caminho da pasta: tudo desta execução vai para lá.
 
 Leia o `checks.json`. Esses problemas **já estão registrados**: não os repita como achados seus. Quando um deles atrapalhar uma persona de um jeito específico, crie um achado próprio explicando o impacto para ela e cite o id da checagem em `relatedChecks`.
 
@@ -62,6 +62,8 @@ Para cada persona, use as ferramentas de navegador do Playwright MCP (`browser_r
    - **Acessibilidade**: ela consegue usar com as ferramentas e limitações dela? Teclado, leitor de tela, contraste, informação passada só por cor, mensagens dinâmicas anunciadas. Detalhes no Passo 3b.
 
 Personas com `vision: leitor-de-tela` navegam **sem olhar a tela**: use só o teclado (`browser_press_key`) e a árvore de acessibilidade (`browser_snapshot`), nunca `browser_click` em coordenadas ou elementos que o teclado não alcança. Se algo só funciona com o mouse, para ela é um bloqueio.
+
+Personas com `vision: daltonismo` (ou `color-blind`) veem a página com as cores alteradas: antes de navegar como elas, leia `{{REFERENCES_DIR}}/color-vision.md`, compare as imagens em `<pasta da execução>/color-vision/` e simule o tipo de daltonismo no navegador (o código está nesse arquivo). Tudo o que se diferencia só pela cor (status, gráficos, aba selecionada, erros de formulário) pode ser invisível para elas.
 
 Ajuste o rigor às características da persona (ex.: `vision: reduzida` aumenta a gravidade de contraste e fontes pequenas; `tech_literacy: baixa` aumenta a de jargão e ícones sem rótulo). Arquivos de persona podem usar valores em inglês (`low`, `reduced`, `screen-reader`); trate-os como `baixa`, `reduzida`, `leitor-de-tela`.
 

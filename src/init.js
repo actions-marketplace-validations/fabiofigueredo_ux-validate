@@ -229,6 +229,7 @@ function renderConfig(a) {
     viewports: a.viewports,
     language: a.language,
     spelling: { enabled: a.language !== 'other', ignore: [] },
+    colorVision: { enabled: true, types: ['protanopia', 'deuteranopia', 'tritanopia'] },
     crawl: { maxPages: 20, checkExternalLinks: false, routes: [] },
     agent: { maxStepsPerGoal: 15 },
     ...(a.standalone ? { standalone: a.standalone } : {}),

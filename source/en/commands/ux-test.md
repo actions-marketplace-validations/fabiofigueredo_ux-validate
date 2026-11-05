@@ -43,7 +43,7 @@ Run:
 {{CHECK_CMD}}
 ```
 
-This creates a run folder at `{{WORK_DIR}}/runs/<date-time>/` with `checks.json` (accessibility via axe-core and WAI-ARIA, keyboard navigation, broken links, console errors, horizontal scrolling, placeholder text, spelling), screenshots and, in `aria/`, each page's accessibility tree (what a screen reader announces). Note the folder path: everything from this run goes there.
+This creates a run folder at `{{WORK_DIR}}/runs/<date-time>/` with `checks.json` (accessibility via axe-core and WAI-ARIA, keyboard navigation, broken links, console errors, horizontal scrolling, placeholder text, spelling, color vision), screenshots, in `color-vision/` each page as people with color blindness see it and, in `aria/`, each page's accessibility tree (what a screen reader announces). Note the folder path: everything from this run goes there.
 
 Read `checks.json`. These issues **are already recorded**: don't repeat them as your own findings. When one of them hurts a persona in a specific way, create your own finding explaining the impact on them and cite the check's id in `relatedChecks`.
 
@@ -64,6 +64,8 @@ For each persona, use the Playwright MCP browser tools (`browser_resize`, `brows
    - **Accessibility**: can they use it with their tools and limitations? Keyboard, screen reader, contrast, information conveyed only by color, dynamic messages announced. Details in Step 3b.
 
 Personas with `vision: screen-reader` browse **without looking at the screen**: use only the keyboard (`browser_press_key`) and the accessibility tree (`browser_snapshot`), never `browser_click` on coordinates or on elements the keyboard can't reach. If something only works with a mouse, it is a blocker for them.
+
+Personas with `vision: color-blind` see the page with the colors changed: before navigating as them, read `{{REFERENCES_DIR}}/color-vision.md`, compare the images in `<run folder>/color-vision/` and simulate their type of color blindness in the browser (the snippet is in that file). Anything told apart only by color (status, charts, selected tab, form errors) may be invisible to them.
 
 Adjust the rigor to the persona's traits (e.g. `vision: reduced` raises the severity of contrast and small fonts; `tech_literacy: low` raises it for jargon and unlabeled icons). Persona files may use Portuguese trait values (`baixa`, `reduzida`, `leitor-de-tela`); treat them as `low`, `reduced`, `screen-reader`.
 

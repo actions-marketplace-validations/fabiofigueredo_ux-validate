@@ -86,11 +86,12 @@ test('sem personas, explica como criar', () => {
 test('personas pré-definidas: ficha com as características e cópia para o projeto', async () => {
   const { loadPresets, describePersona, addPresets, showPresets } = await import('../src/persona.js');
   const presets = loadPresets('en');
-  assert.deepEqual(presets.map((p) => p.persona.id), ['lucas-screen-reader', 'margaret', 'raj-dev']);
+  assert.deepEqual(presets.map((p) => p.persona.id), ['lucas-screen-reader', 'margaret', 'raj-dev', 'tom-color-blind']);
   const card = describePersona(presets.find((p) => p.persona.id === 'margaret').persona);
   assert.match(card, /● Margaret \(margaret\)/);
   assert.match(card, /Device: Phone \(mobile\)/);
   assert.match(card, /Vision: Reduced/);
+  assert.match(describePersona(presets.find((p) => p.persona.id === 'tom-color-blind').persona), /Vision: Color-blind: can't rely on color alone/);
   assert.match(card, /Goals:\n {6}- Understand what the company offers/);
 
   setLocale('pt-BR');

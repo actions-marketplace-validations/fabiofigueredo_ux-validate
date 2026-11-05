@@ -3,6 +3,9 @@ import path from 'node:path';
 import YAML from 'yaml';
 import { t, getLocale } from './i18n.js';
 
+// Tipos de daltonismo simulados (mesma lista de src/color.js, sem importar o módulo inteiro aqui).
+const CVD_TYPES = ['protanopia', 'deuteranopia', 'tritanopia', 'achromatopsia'];
+
 export const WORK_DIR = '.ux-validate';
 export const RUNS_DIR = `${WORK_DIR}/runs`;
 
@@ -27,6 +30,7 @@ const DEFAULTS = {
   crawl: { maxPages: 20, checkExternalLinks: false, routes: [] },
   agent: { maxStepsPerGoal: 15 },
   spelling: { enabled: true, ignore: [] },
+  colorVision: { enabled: true, types: ['protanopia', 'deuteranopia', 'tritanopia'] },
 };
 
 export const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low'];
@@ -46,9 +50,14 @@ export function loadConfig(cwd, configPath = 'ux-validate.config.yml', { optiona
     crawl: { ...DEFAULTS.crawl, ...raw.crawl },
     agent: { ...DEFAULTS.agent, ...raw.agent },
     spelling: { ...DEFAULTS.spelling, ...raw.spelling },
+    colorVision: { ...DEFAULTS.colorVision, ...raw.colorVision },
     // Idioma do conteúdo (ortografia); sem valor, assume o idioma da ferramenta.
     language: raw.language ?? getLocale(),
   };
+  const badTypes = (config.colorVision.types ?? []).filter((v) => !CVD_TYPES.includes(v));
+  if (badTypes.length) {
+    throw new Error(t('config.unknownCvdType', { list: badTypes.join(', '), valid: CVD_TYPES.join(', ') }));
+  }
   const unknown = config.viewports.filter((v) => !VIEWPORTS[v]);
   if (unknown.length) {
     throw new Error(t('config.unknownViewport', { list: unknown.join(', '), valid: Object.keys(VIEWPORTS).join(', ') }));

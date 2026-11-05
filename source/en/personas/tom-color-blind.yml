@@ -1,0 +1,20 @@
+# Example persona. Edit the goals to reflect what matters in YOUR app.
+id: tom-color-blind
+name: Tom
+description: >
+  45, sales manager. Has deuteranopia (red-green color blindness), like about 1 in 12 men.
+  Confuses red and green, and often can't tell status colors, charts or selected tabs apart.
+viewport: desktop
+traits:
+  tech_literacy: medium
+  vision: color-blind
+  patience: medium
+  language: en
+  reading_level: intermediate
+goals:
+  - Find out the price of the product or plan
+  - Tell which option, tab or filter is currently selected
+  - Fill in a form and understand any error messages
+expectations:
+  - Status and errors shown with text or icons, not only red and green
+  - Selected items marked by more than color

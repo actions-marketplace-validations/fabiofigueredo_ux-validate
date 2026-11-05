@@ -78,6 +78,29 @@ A categoria **Acessibilidade** combina três camadas:
 
 Cada execução salva também a **árvore de acessibilidade** de cada página em `.ux-validate/runs/<data-hora>/aria/`: papéis, nomes e estados, ou seja, o que um leitor de tela anuncia. O relatório liga cada problema de acessibilidade à árvore da página.
 
+## Visão de cores (daltonismo)
+
+Cerca de 1 em cada 12 homens e 1 em cada 200 mulheres têm algum tipo de daltonismo. O ux-validate simula como cada página aparece para essas pessoas e aponta a informação que elas perdem:
+
+| Checagem | O que encontra |
+|---|---|
+| **Contraste com daltonismo** (`cvd-contrast`) | Texto que passa no contraste do WCAG para quem enxerga todas as cores, mas fica abaixo do mínimo com daltonismo (ex.: vermelho sobre fundo escuro com protanopia) |
+| **Indicadores iguais** (`cvd-indicators`) | Bolinhas de status, marcadores de legenda e outros indicadores sem texto cujas cores ficam iguais (ex.: verde × vermelho com deuteranopia) |
+| **Estado só pela cor** (`cvd-state`) | Aba, filtro ou item de menu selecionado que se diferencia dos vizinhos só pela cor e deixa de se destacar |
+
+- A simulação cobre **protanopia**, **deuteranopia** e **tritanopia** (e, se você quiser, **acromatopsia**), com as matrizes de Machado, Oliveira e Fernandes (2009). As cores são comparadas com a diferença perceptual CIEDE2000.
+- O relatório ganha a seção **Visão de cores**, com cada página como ela é vista com cada tipo de daltonismo. A evidência de cada problema é a imagem simulada.
+- Esses problemas contam só para as personas com `vision: daltonismo` (ou `color-blind`), como a persona pré-definida **Carlos**. Quem enxerga todas as cores não perde nota por eles.
+- No `/ux-test`, o agente compara as imagens e navega com o daltonismo simulado no navegador, procurando o que a checagem automática não pega: gráficos, erros de formulário só em vermelho, links destacados só pela cor.
+
+Para escolher os tipos, ou desligar a etapa, use o `ux-validate.config.yml`:
+
+```yaml
+colorVision:
+  enabled: true
+  types: [protanopia, deuteranopia, tritanopia]   # também: achromatopsia
+```
+
 ## Aplicações React
 
 O ux-validate testa a aplicação no navegador, então funciona com qualquer React: Vite, Next.js, Create React App, React Router, Remix ou Gatsby. Para aplicações React e outras SPAs (que trocam de tela sem recarregar), ele faz mais:
@@ -298,6 +321,7 @@ Uma persona é um tipo real de usuário da sua aplicação, escrito como um arqu
 | **Dona Maria** (`dona-maria`) | 68 anos, aposentada; usa WhatsApp e o app do banco, às vezes com ajuda da neta | Celular | Baixa | Reduzida | Baixa | Básico | Entender o que a empresa oferece; descobrir quanto custa; achar telefone ou WhatsApp |
 | **Lucas** (`lucas-leitor-de-tela`) | 35 anos, analista financeiro, cego desde a infância; navega com leitor de tela e teclado | Computador | Alta | Leitor de tela | Média | Avançado | Entender a oferta navegando só pelos títulos; preencher o formulário de contato |
 | **Rafael** (`rafael-dev`) | 29 anos, desenvolvedor; avalia ferramentas para o time e compara com concorrentes | Computador | Alta | Normal | Média | Avançado | Comparar planos e limites; criar conta de teste; achar a documentação |
+| **Carlos** (`carlos-daltonico`) | 45 anos, gerente comercial; tem deuteranopia (daltonismo vermelho-verde) | Computador | Média | Daltonismo | Média | Intermediário | Descobrir o preço; saber qual opção está selecionada; entender os erros de um formulário |
 
 Para ver a ficha completa (com expectativas) rode `npx ux-validate persona examples`; para adicioná-las depois, `npx ux-validate persona add <id>` ou `all`. Ajuste os objetivos ao seu produto.
 
@@ -430,6 +454,7 @@ Os comandos em `source/<idioma>/commands/` usam placeholders (`{{WORK_DIR}}`, `{
 - [x] GitHub Action com comentário no PR e saída SARIF
 - [x] `/ux-persona` e `npx ux-validate persona new` (criar personas)
 - [x] Aplicações React: componente, arquivo e linha de cada problema, rotas de SPA e avisos do React
+- [x] Visão de cores: simulação de daltonismo, checagens de contraste, indicadores e estado só pela cor
 - [ ] Navegação com personas pelo terminal (sem ferramenta de IA), com o modelo escolhido no setup
 - [ ] Repetir a navegação e só confirmar problemas que aparecem em mais de uma execução
 
