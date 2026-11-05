@@ -6,7 +6,7 @@ Persona-based testing of the **content**, **navigation**, **interface** and **ac
 
 Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Margaret, 68, on her phone, find out how much your product costs?* And if she can't, it shows where she got stuck, why, and which file to fix.
 
-![ux-validate report with scores by persona and goals achieved](docs/report-example.png)
+![ux-validate report: scores by persona, goals and issues](docs/ux-validate-demo-crop.gif)
 
 > **Status:** early version (0.3). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
 
@@ -249,7 +249,7 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - uses: fabiofigueredo/ux-validate@main
+      - uses: fabiofigueredo/ux-validate@v0.3.0
         with:
           start: npm run dev
           url: http://localhost:3000
