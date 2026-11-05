@@ -8,7 +8,7 @@ Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Marg
 
 ![ux-validate report: scores by persona, goals and issues](docs/ux-validate-demo-crop.gif)
 
-> **Status:** early version (0.4). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
+> **Status:** early version (0.5). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
 
 ## How it works
 
@@ -180,6 +180,36 @@ $env:ANTHROPIC_API_KEY="your-key"
 
 ## Installation
 
+### Claude Code plugin (recommended for Claude Code)
+
+Install once and use it in any project. In Claude Code:
+
+```
+/plugin marketplace add fabiofigueredo/ux-validate
+```
+
+```
+/plugin install ux-validate@ux-validate
+```
+
+Then, in the project you want to test:
+
+| Skill | What it does |
+|---|---|
+| `/ux-validate:ux-setup` | Sets up the project: language, app URL, start command and personas (run once) |
+| `/ux-validate:ux-test` | Tests with every persona and builds the report |
+| `/ux-validate:ux-report` | Rebuilds the report and a fix plan |
+| `/ux-validate:ux-fix` | Applies the fixes from the report |
+| `/ux-validate:ux-persona` | Creates a persona by talking with you |
+
+- The plugin brings the browser the agent uses (Playwright MCP) and the reference guides; there's nothing to copy into the project.
+- Its instructions are in English, but the agent talks to you and writes the report in the language set in the project (`locale`: `en` or `pt-BR`), chosen in `/ux-validate:ux-setup`.
+- The skills call the CLI pinned to the plugin's version (`npx -y ux-validate@<version>`), so you don't need to install the npm package. Requires **Node.js 20+**.
+- Updates: `/plugin marketplace update ux-validate`, then update the plugin in `/plugin` (or turn on auto-update for the marketplace there).
+- If you used `npx ux-validate init` with Claude Code before, remove the project's `.claude/skills/ux-*` folders and the `playwright` entry in `.mcp.json` to avoid duplicated commands.
+
+### npm package (Cursor, Codex CLI, Gemini CLI, CI)
+
 Requirements: **Node.js 20+** and one of the supported AI tools: **Claude Code**, **Cursor**, **Codex CLI** or **Gemini CLI**.
 
 In the project you want to test:
@@ -189,7 +219,7 @@ npm install -D ux-validate
 ```
 
 ```bash
-npx playwright install chromium
+npx ux-validate install-browser
 ```
 
 ```bash
@@ -360,7 +390,7 @@ git clone https://github.com/fabiofigueredo/ux-validate.git
 ```
 
 ```bash
-cd ux-validate && npm install && npx playwright install chromium
+cd ux-validate && npm install && node bin/ux-validate.js install-browser
 ```
 
 ```bash
@@ -409,7 +439,7 @@ Open `report.html` in `.ux-validate/runs/<date-time>/`.
 |---|---|
 | `/ux-test` doesn't show up | The open folder must be the project where you ran `init` (the one with `.claude/`, `.cursor/`, `.agents/` or `.gemini/`). In Gemini CLI, run `/commands reload` |
 | The agent has no browser tools | Approve or enable the `playwright` MCP server in your tool; in Codex and Gemini, trust the project folder |
-| Error saying the browser wasn't found | Run `npx playwright install chromium` in the project |
+| Error saying the browser wasn't found | Run `npx ux-validate install-browser` in the project |
 | "The start page doesn't open" | Check that the app is running and that `app.url` is right |
 | You want to change the URL after setup | Edit `app.url` in `ux-validate.config.yml` |
 
@@ -460,6 +490,7 @@ The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{C
 - [x] `/ux-persona` and `npx ux-validate persona new` (create personas)
 - [x] React apps: component, file and line for each issue, SPA routes and React warnings
 - [x] Color vision: color blindness simulation, contrast, indicator and color-only state checks
+- [x] Claude Code plugin (`/plugin install ux-validate@ux-validate`)
 - [ ] Persona browsing from the terminal (no AI tool), with the model chosen in setup
 - [ ] Repeat the browsing and only confirm issues that show up in more than one run
 

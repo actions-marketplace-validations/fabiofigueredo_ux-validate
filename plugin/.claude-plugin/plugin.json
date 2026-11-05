@@ -1,0 +1,21 @@
+{
+  "name": "ux-validate",
+  "version": "0.5.0",
+  "description": "Persona-based testing of web app content, navigation, interface and accessibility (WCAG, WAI-ARIA, color blindness), with a report and fixes.",
+  "author": {
+    "name": "Fabio Figueredo",
+    "url": "https://github.com/fabiofigueredo"
+  },
+  "homepage": "https://github.com/fabiofigueredo/ux-validate#readme",
+  "repository": "https://github.com/fabiofigueredo/ux-validate",
+  "license": "MIT",
+  "keywords": [
+    "ux",
+    "accessibility",
+    "a11y",
+    "wcag",
+    "persona",
+    "playwright",
+    "testing"
+  ]
+}
