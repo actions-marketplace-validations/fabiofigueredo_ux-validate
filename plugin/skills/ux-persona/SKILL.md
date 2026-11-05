@@ -4,7 +4,7 @@ description: Creates a persona for ux-validate tests by talking with the user
   about who uses the app, and saves the file in .ux-validate/personas/.
 argument-hint: '[free description, e.g. "older customer who shops on their phone"]'
 disable-model-invocation: true
-allowed-tools: Bash(npx -y ux-validate@0.5.0 *)
+allowed-tools: Bash(npx -y ux-validate@0.5.1 *)
 ---
 
 # /ux-validate:ux-persona
@@ -29,7 +29,7 @@ Talk to the user in English.
 
 ## Steps
 
-1. Read `${CLAUDE_PLUGIN_ROOT}/references/persona-format.md` and list the personas that already exist in the folder set in `ux-validate.config.yml` (default `.ux-validate/personas/`). If there are any, show a one-line summary of each: the new persona should be **different** from them. If the user doesn't know the predefined ones yet, show them with `npx -y ux-validate@0.5.0 persona examples`: one of them may already fit (`npx -y ux-validate@0.5.0 persona add <id>`).
+1. Read `${CLAUDE_PLUGIN_ROOT}/references/persona-format.md` and list the personas that already exist in the folder set in `ux-validate.config.yml` (default `.ux-validate/personas/`). If there are any, show a one-line summary of each: the new persona should be **different** from them. If the user doesn't know the predefined ones yet, show them with `npx -y ux-validate@0.5.1 persona examples`: one of them may already fit (`npx -y ux-validate@0.5.1 persona add <id>`).
 2. If the arguments already describe the persona, start from them. Otherwise, ask who the person is.
 3. Find out what's missing by talking:
    - who they are (approximate age, occupation, context of use) → `description`;
@@ -44,7 +44,7 @@ Talk to the user in English.
 7. Validate:
 
 ```bash
-npx -y ux-validate@0.5.0 persona validate <file path>
+npx -y ux-validate@0.5.1 persona validate <file path>
 ```
 
    Fix any errors.
