@@ -249,7 +249,7 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - uses: fabiofigueredo/ux-validate@v0.3.0
+      - uses: fabiofigueredo/ux-validate@v1
         with:
           start: npm run dev
           url: http://localhost:3000
@@ -273,6 +273,7 @@ Saídas: `issues`, `critical`, `high`, `report-dir`, `sarif-file`. O resumo tamb
 
 Observações:
 
+- `@v1` aponta sempre para a última versão estável da Action. Para fixar uma versão exata, use a tag de uma release, como `@v0.3.0`.
 - A Action roda as **checagens fixas** (acessibilidade, WAI-ARIA, links, ortografia, layout). A avaliação por persona precisa de uma ferramenta de IA e roda localmente com `/ux-test`.
 - O code scanning é gratuito em repositórios públicos; nos privados, exige o GitHub Advanced Security. Sem ele, o envio do SARIF é pulado com um aviso e o resto funciona.
 - Em pull requests vindos de forks, o GitHub dá um token só de leitura: o comentário é pulado com um aviso.

@@ -249,7 +249,7 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - uses: fabiofigueredo/ux-validate@v0.3.0
+      - uses: fabiofigueredo/ux-validate@v1
         with:
           start: npm run dev
           url: http://localhost:3000
@@ -272,6 +272,7 @@ Outputs: `issues`, `critical`, `high`, `report-dir`, `sarif-file`. The summary a
 
 Notes:
 
+- `@v1` always points to the latest stable release of the action. To freeze an exact version, use a release tag such as `@v0.3.0`.
 - The action runs the **automated checks** (accessibility, WAI-ARIA, links, spelling, layout). The persona evaluation needs an AI tool and runs locally with `/ux-test`.
 - Code scanning is free on public repositories; on private ones it needs GitHub Advanced Security. Without it, the SARIF upload step is skipped with a warning and everything else still works.
 - On pull requests from forks, GitHub gives a read-only token: the comment step is skipped with a warning.
