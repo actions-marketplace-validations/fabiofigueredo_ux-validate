@@ -40,7 +40,7 @@ O ux-validate roda **dentro da sua ferramenta de IA**: o modelo usado é o que e
 
 ## Ferramentas de IA suportadas
 
-O setup instala os mesmos comandos (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`) no formato de cada ferramenta, além do servidor MCP do Playwright, que o agente usa como navegador. Dá para escolher várias ferramentas de uma vez.
+O setup instala os mesmos comandos (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`) no formato de cada ferramenta, além do servidor MCP do Playwright, que o agente usa como navegador. Dá para escolher várias ferramentas de uma vez. Para o Claude Code existe também um [plugin](#plugin-do-claude-code-alternativa) com as mesmas funcionalidades, como alternativa ao `init`.
 
 | Ferramenta | Comandos instalados em | Como chamar | Navegador (MCP) registrado em |
 |---|---|---|---|
@@ -180,35 +180,9 @@ export ANTHROPIC_API_KEY=sua-chave
 
 ## Instalação
 
-### Plugin do Claude Code (recomendado para o Claude Code)
+Há duas formas de instalar o ux-validate, com as mesmas funcionalidades: o **pacote do npm**, que funciona com todas as ferramentas de IA suportadas (inclusive o Claude Code) e no CI, e o **plugin do Claude Code**, uma alternativa para quem prefere instalar uma vez no Claude Code.
 
-Instale uma vez e use em qualquer projeto. No Claude Code:
-
-```
-/plugin marketplace add fabiofigueredo/ux-validate
-```
-
-```
-/plugin install ux-validate@ux-validate
-```
-
-Depois, no projeto que você quer testar:
-
-| Skill | O que faz |
-|---|---|
-| `/ux-validate:ux-setup` | Configura o projeto: idioma, URL da aplicação, comando para subi-la e personas (uma vez) |
-| `/ux-validate:ux-test` | Testa com todas as personas e gera o relatório |
-| `/ux-validate:ux-report` | Refaz o relatório e monta um plano de correção |
-| `/ux-validate:ux-fix` | Aplica as correções do relatório |
-| `/ux-validate:ux-persona` | Cria uma persona conversando com você |
-
-- O plugin traz o navegador que o agente usa (Playwright MCP) e os guias de referência; nada é copiado para o projeto.
-- As instruções do plugin são em inglês, mas o agente conversa com você e escreve o relatório no idioma definido no projeto (`locale`: `pt-BR` ou `en`), escolhido no `/ux-validate:ux-setup`.
-- As skills chamam a CLI fixada na versão do plugin (`npx -y ux-validate@<versão>`), então não é preciso instalar o pacote do npm. Requer **Node.js 20+**.
-- Atualizações: `/plugin marketplace update ux-validate` e depois atualize o plugin em `/plugin` (ou ative a atualização automática do marketplace ali).
-- Se você já usou o `npx ux-validate init` com o Claude Code, apague as pastas `.claude/skills/ux-*` do projeto e a entrada `playwright` do `.mcp.json`, para não ficar com comandos duplicados.
-
-### Pacote do npm (Cursor, Codex CLI, Gemini CLI, CI)
+### Pacote do npm
 
 Pré-requisitos: **Node.js 20+** e uma das ferramentas de IA suportadas: **Claude Code**, **Cursor**, **Codex CLI** ou **Gemini CLI**.
 
@@ -249,6 +223,34 @@ E cria:
 Use `--yes` para aceitar os padrões sem perguntas, `--tools claude-code,cursor,codex,gemini` para escolher as ferramentas sem perguntas, `--personas all|none|dona-maria,rafael-dev` para escolher as personas pré-definidas sem perguntas (padrão: `all`) e `--force` para sobrescrever arquivos existentes.
 
 > **Atualizando de uma versão anterior?** Os comandos de agente mudaram de nome: `/persona-test` → `/ux-test`, `/persona-report` → `/ux-report`, `/persona-fix` → `/ux-fix` e `/persona-new` → `/ux-persona`. Rode `npx ux-validate init` de novo: ele instala os novos e remove os antigos que ele mesmo tinha criado.
+
+### Plugin do Claude Code (alternativa)
+
+Instale uma vez e use em qualquer projeto. No Claude Code:
+
+```
+/plugin marketplace add fabiofigueredo/ux-validate
+```
+
+```
+/plugin install ux-validate@ux-validate
+```
+
+Depois, no projeto que você quer testar:
+
+| Skill | O que faz |
+|---|---|
+| `/ux-validate:ux-setup` | Configura o projeto: idioma, URL da aplicação, comando para subi-la e personas (uma vez) |
+| `/ux-validate:ux-test` | Testa com todas as personas e gera o relatório |
+| `/ux-validate:ux-report` | Refaz o relatório e monta um plano de correção |
+| `/ux-validate:ux-fix` | Aplica as correções do relatório |
+| `/ux-validate:ux-persona` | Cria uma persona conversando com você |
+
+- O plugin traz o navegador que o agente usa (Playwright MCP) e os guias de referência; nada é copiado para o projeto.
+- As instruções do plugin são em inglês, mas o agente conversa com você e escreve o relatório no idioma definido no projeto (`locale`: `pt-BR` ou `en`), escolhido no `/ux-validate:ux-setup`.
+- As skills chamam a CLI fixada na versão do plugin (`npx -y ux-validate@<versão>`), então não é preciso instalar o pacote do npm. Requer **Node.js 20+**.
+- Atualizações: `/plugin marketplace update ux-validate` e depois atualize o plugin em `/plugin` (ou ative a atualização automática do marketplace ali).
+- Use um ou outro no mesmo projeto. Se o projeto já tem os comandos do `npx ux-validate init` para o Claude Code (`.claude/skills/ux-*` e a entrada `playwright` do `.mcp.json`), apague-os antes de usar o plugin, para não ficar com comandos duplicados.
 
 ## Uso
 
