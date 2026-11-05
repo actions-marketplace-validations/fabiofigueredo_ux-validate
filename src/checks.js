@@ -6,6 +6,7 @@ import { chromium } from 'playwright';
 import { AxeBuilder } from '@axe-core/playwright';
 import { VIEWPORTS, SEVERITY_ORDER, loadConfig, newRunDir } from './config.js';
 import { runAriaChecks } from './aria.js';
+import { runColorVisionChecks } from './color.js';
 import { checkSpelling, createSpeller } from './spelling.js';
 import { annotateFindings, checkClientNavigation, classifyConsole, cleanReactMessage, detectReact, isReactMessage } from './react.js';
 import { t, getLocale } from './i18n.js';
@@ -90,6 +91,8 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
           checkAria: vpName === keyboardViewport,
           // A troca de rota no navegador é testada uma vez, a partir da página inicial.
           checkNavigation: vpName === keyboardViewport && p === pages[0],
+          // Visão de cores: uma vez por página, no mesmo tamanho de tela do teste de teclado.
+          colorVision: vpName === keyboardViewport && config.colorVision.enabled ? config.colorVision : null,
           speller,
           react: react?.dev ? { cwd, sourceMaps } : null,
         });
@@ -107,7 +110,7 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
       createdAt: new Date().toISOString(),
       viewports: config.viewports,
       ...(react ? { app: { framework: react.next ? 'next' : 'react', react } } : {}),
-      pages: pages.map(({ url, status, title, ok, soft404, screenshots, ariaTree, linksTo }) => ({ url, status, title, ok, ...(soft404 ? { soft404 } : {}), screenshots, ariaTree, linksTo })),
+      pages: pages.map(({ url, status, title, ok, soft404, screenshots, ariaTree, colorVision, linksTo }) => ({ url, status, title, ok, ...(soft404 ? { soft404 } : {}), screenshots, ariaTree, ...(colorVision ? { colorVision } : {}), linksTo })),
       findings: dedupe(findings),
     };
     fs.writeFileSync(path.join(runDir, 'checks.json'), JSON.stringify(result, null, 2));
@@ -343,7 +346,7 @@ async function probeNotFound(context, startUrl) {
   }
 }
 
-async function inspectPage(context, entry, vpName, runDir, addToRun, { checkContent, checkAria, checkNavigation, speller, react }) {
+async function inspectPage(context, entry, vpName, runDir, addToRun, { checkContent, checkAria, checkNavigation, colorVision, speller, react }) {
   const page = await context.newPage();
   // Os problemas da página ficam aqui até o fim, para ligá-los aos componentes React antes de registrar.
   const found = [];
@@ -513,6 +516,12 @@ async function inspectPage(context, entry, vpName, runDir, addToRun, { checkCont
     }
     if (speller) await checkSpelling(page, { base, add, shot, speller }).catch((err) => {
       if (process.env.DEBUG) console.error('Spell check failed:', err);
+    });
+  }
+  // Antes do teclado, que interage com a página e pode mudar o que está na tela.
+  if (colorVision && !blank) {
+    await runColorVisionChecks(page, { base, add, shot, runDir, name: slug(entry.url), entry, types: colorVision.types }).catch((err) => {
+      if (process.env.DEBUG) console.error('Color vision checks failed:', err);
     });
   }
   // Por último, porque interage com a página (Tab, cliques em botões de abrir/fechar).

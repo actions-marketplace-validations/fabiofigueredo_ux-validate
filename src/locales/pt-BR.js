@@ -48,6 +48,7 @@ Opções gerais:
 
   config: {
     notFound: 'Configuração não encontrada em {path}. Rode "npx ux-validate init" primeiro.',
+    unknownCvdType: 'Tipo de daltonismo desconhecido em colorVision.types: {list}. Use: {valid}.',
     unknownViewport: 'Viewport desconhecido: {list}. Use: {valid}.',
   },
 
@@ -190,6 +191,32 @@ Opções gerais:
       title: 'Título da aba não muda com a rota',
       description: 'Depois de navegar para {to}, o título continua "{title}". Fica difícil saber em que página se está, nas abas e no histórico.',
       suggestion: 'Atualize document.title em cada rota (ex.: <title> do React 19 dentro do componente da página, ou um useEffect).',
+    },
+  },
+
+  colorVision: {
+    types: {
+      protanopia: 'protanopia (não vê o vermelho)',
+      deuteranopia: 'deuteranopia (não vê o verde)',
+      tritanopia: 'tritanopia (não vê o azul)',
+      achromatopsia: 'acromatopsia (sem cores)',
+      normal: 'visão comum',
+    },
+    shortTypes: { normal: 'Visão comum', protanopia: 'Protanopia', deuteranopia: 'Deuteranopia', tritanopia: 'Tritanopia', achromatopsia: 'Acromatopsia' },
+    contrast: {
+      title: 'Texto que perde contraste para quem tem daltonismo',
+      description: '{n} texto(s) têm contraste suficiente para quem enxerga todas as cores, mas ficam abaixo do mínimo do WCAG com {type}. A diferença entre o texto e o fundo está só no tom, não na claridade.',
+      suggestion: 'Aumente a diferença de claridade entre texto e fundo (ex.: texto mais escuro ou fundo mais claro), em vez de depender só do tom (vermelho × verde, azul × roxo).',
+    },
+    indicators: {
+      title: 'Indicadores que ficam da mesma cor para quem tem daltonismo',
+      description: '{n} par(es) de indicadores sem texto (bolinhas de status, marcadores de legenda) têm cores diferentes que parecem iguais com {type}. Para essas pessoas, a informação some.',
+      suggestion: 'Não use só a cor: acrescente texto ("Pago", "Atrasado"), ícones ou formas diferentes, ou padrões. Se for um gráfico, rotule as séries diretamente.',
+    },
+    state: {
+      title: 'Estado selecionado mostrado só pela cor',
+      description: '"{text}" se diferencia dos itens vizinhos só pela cor. Com {type}, ele fica igual aos outros e não dá para saber qual está selecionado ou ativo.',
+      suggestion: 'Marque o estado também de outro jeito: sublinhado ou borda mais grossa, negrito, ícone de check, e aria-current/aria-selected para leitores de tela.',
     },
   },
 
@@ -388,6 +415,10 @@ Opções gerais:
     page: 'Página',
     criterion: 'Critério',
     component: 'Componente React',
+    colorVision: 'Visão de cores',
+    colorVisionIntro: 'Como cada página aparece para pessoas com daltonismo (cerca de 1 em cada 12 homens e 1 em cada 200 mulheres). Compare as imagens: o que some ou fica igual é informação que essas pessoas perdem.',
+    colorVisionAlt: '{page} simulada com {type}',
+    colorVisionIssues: ({ n }) => (n ? `${n} problema(s) para quem tem daltonismo` : 'nenhum problema encontrado pelas checagens de cor'),
     whereToFix: 'Onde corrigir',
     elements: 'Elemento(s)',
     element: 'Elemento',

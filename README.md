@@ -8,7 +8,7 @@ Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Marg
 
 ![ux-validate report: scores by persona, goals and issues](docs/ux-validate-demo-crop.gif)
 
-> **Status:** early version (0.3). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
+> **Status:** early version (0.4). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
 
 ## How it works
 
@@ -77,6 +77,29 @@ The **Accessibility** category combines three layers:
 | **Agent** | Tests each widget with the keyboard following the [ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/) (dialogs, tabs, accordions, menus, combobox…), checks whether dynamic messages are announced (`role="status"`/`alert`) and browses as a screen reader user would |
 
 Each run also saves every page's **accessibility tree** in `.ux-validate/runs/<date-time>/aria/`: roles, names and states, i.e. what a screen reader announces. The report links each accessibility issue to its page's tree.
+
+## Color vision (color blindness)
+
+About 1 in 12 men and 1 in 200 women have some form of color blindness. ux-validate simulates how each page looks to them and points out the information they lose:
+
+| Check | What it finds |
+|---|---|
+| **Contrast with color blindness** (`cvd-contrast`) | Text that passes the WCAG contrast for people who see all colors but falls below the minimum with color blindness (e.g. red on a dark background with protanopia) |
+| **Indicators that look the same** (`cvd-indicators`) | Status dots, legend markers and other indicators without text whose colors become the same (e.g. green vs red with deuteranopia) |
+| **State shown only by color** (`cvd-state`) | A selected tab, filter or menu item that differs from its neighbors only by color and stops standing out |
+
+- The simulation covers **protanopia**, **deuteranopia** and **tritanopia** (and, if you want, **achromatopsia**), with the Machado, Oliveira and Fernandes (2009) matrices. Colors are compared with the CIEDE2000 perceptual difference.
+- The report gets a **Color vision** section showing each page as seen with each type of color blindness. Each issue's evidence is the simulated image.
+- These issues count only for personas with `vision: color-blind`, like the predefined persona **Tom**. People who see all colors don't lose points for them.
+- In `/ux-test`, the agent compares the images and browses with color blindness simulated in the browser, looking for what the automated check can't catch: charts, form errors shown only in red, links highlighted only by color.
+
+To choose the types, or turn the step off, use `ux-validate.config.yml`:
+
+```yaml
+colorVision:
+  enabled: true
+  types: [protanopia, deuteranopia, tritanopia]   # also: achromatopsia
+```
 
 ## React apps
 
@@ -297,6 +320,7 @@ A persona is a real kind of user of your app, written as a YAML file in `.ux-val
 | **Margaret** (`margaret`) | 68, retired; uses messaging and her banking app, sometimes with her grandson's help | Phone | Low | Reduced | Low | Basic | Understand what the company offers; find out the price; find a phone number |
 | **Lucas** (`lucas-screen-reader`) | 35, financial analyst, blind since childhood; uses a screen reader and keyboard | Computer | High | Screen reader | Medium | Advanced | Understand the offer by navigating headings only; fill in the contact form |
 | **Raj** (`raj-dev`) | 29, developer; evaluates tools for the team and compares with competitors | Computer | High | Normal | Medium | Advanced | Compare plans and limits; create a trial account; find the docs |
+| **Tom** (`tom-color-blind`) | 45, sales manager; has deuteranopia (red-green color blindness) | Computer | Medium | Color-blind | Medium | Intermediate | Find the price; tell which option is selected; understand form errors |
 
 To see the full card (with expectations) run `npx ux-validate persona examples`; to add them later, `npx ux-validate persona add <id>` or `all`. Adjust the goals to your product.
 
@@ -435,6 +459,7 @@ The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{C
 - [x] GitHub Action with a PR comment and SARIF output
 - [x] `/ux-persona` and `npx ux-validate persona new` (create personas)
 - [x] React apps: component, file and line for each issue, SPA routes and React warnings
+- [x] Color vision: color blindness simulation, contrast, indicator and color-only state checks
 - [ ] Persona browsing from the terminal (no AI tool), with the model chosen in setup
 - [ ] Repeat the browsing and only confirm issues that show up in more than one run
 

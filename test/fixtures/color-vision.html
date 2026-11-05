@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Orders</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; margin: 24px; color: #1d1d1b; background: #fff; }
+  .tabs { display: flex; gap: 8px; list-style: none; padding: 0; }
+  .tabs a { display: block; padding: 8px 14px; border-radius: 6px; color: #fff; background: #43a047; text-decoration: none; }
+  .tabs a.active { background: #e53935; }
+  .good-tabs a { display: block; padding: 8px 14px; color: #1d1d1b; text-decoration: none; border-bottom: 2px solid transparent; }
+  .good-tabs a.active { border-bottom: 4px solid #1d1d1b; font-weight: 700; }
+  .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; }
+  .ok { background: #43a047; } .late { background: #e53935; }
+  .dark { background: #1c1c1e; padding: 12px; }
+  .error { color: #ff3b30; }
+  .plain { color: #ffffff; }
+</style></head>
+<body>
+<main>
+  <h1>Orders</h1>
+  <!-- Estado ativo só pela cor (verde × vermelho, mesmo formato). -->
+  <ul class="tabs"><li><a href="#">All</a></li><li><a href="#" class="active">Overdue</a></li><li><a href="#">Paid</a></li><li><a href="#">Drafts</a></li></ul>
+  <!-- Controle negativo: estado ativo também por borda e negrito. -->
+  <ul class="tabs good-tabs"><li><a href="#">Week</a></li><li><a href="#" class="active">Month</a></li><li><a href="#">Year</a></li></ul>
+  <table>
+    <tr><th>Order</th><th>Status</th></tr>
+    <tr><td>#1001</td><td><span class="dot ok"></span></td></tr>
+    <tr><td>#1002</td><td><span class="dot late"></span></td></tr>
+  </table>
+  <!-- Controle negativo: bolinha com texto ao lado. -->
+  <p><span class="dot ok"></span> Paid · <span class="dot late"></span> Overdue</p>
+  <div class="dark">
+    <p class="error">Payment failed: card declined.</p>
+    <p class="plain">Need help? Contact support.</p>
+  </div>
+</main>
+</body>
+</html>
