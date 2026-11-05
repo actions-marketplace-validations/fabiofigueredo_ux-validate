@@ -13,10 +13,16 @@ import { detectFramework } from './react.js';
 
 const CONTENT_LANGUAGES = ['pt-BR', 'en', 'es', 'other'];
 
-export async function init({ cwd, yes = false, force = false, tools, personas }) {
+export async function init({ cwd, yes = false, force = false, tools, personas, url, start }) {
   // Projeto React (Vite, Next.js, CRA…): a URL e o comando do servidor de desenvolvimento viram o padrão.
   const framework = detectFramework(cwd);
   const answers = yes ? defaultAnswers(tools, personas, framework) : await ask(framework);
+  if (url) {
+    const valid = validateUrl(url);
+    if (valid !== true) throw new Error(valid);
+    answers.url = url;
+  }
+  if (start != null) answers.start = start;
   setLocale(answers.locale);
   // Carrega os comandos antes de gravar qualquer arquivo, para não deixar uma instalação pela metade.
   const commands = loadCommands(answers.locale);
@@ -106,7 +112,8 @@ function presetIdsFromOption(value = 'all') {
 
 function defaultAnswers(tools, personas, framework) {
   const locale = getLocale();
-  const targets = tools ? tools.split(',').map((s) => s.trim()).filter(Boolean) : ['claude-code'];
+  // "none": só a configuração, as referências e as personas (ex.: quem usa o plugin do Claude Code).
+  const targets = tools === 'none' ? [] : tools ? tools.split(',').map((s) => s.trim()).filter(Boolean) : ['claude-code'];
   const unknown = targets.filter((id) => !ADAPTERS.some((a) => a.id === id));
   if (unknown.length) throw new Error(t('init.unknownTool', { list: unknown.join(', '), valid: ADAPTERS.map((a) => a.id).join(', ') }));
   return {

@@ -19,6 +19,7 @@ const { positionals, values } = parseArgs({
     lang: { type: 'string' },
     tools: { type: 'string' },
     personas: { type: 'string' },
+    start: { type: 'string' },
     'fail-on': { type: 'string' },
     'artifact-url': { type: 'string' },
     'sarif-uploaded': { type: 'boolean' },
@@ -47,6 +48,8 @@ try {
         force: values.force,
         tools: values.tools,
         personas: values.personas,
+        url: values.url,
+        start: values.start,
       });
       break;
     }
@@ -90,6 +93,16 @@ try {
         process.exit(1);
       }
       break;
+    }
+    case 'install-browser': {
+      // Instala o Chromium da MESMA versão do Playwright que o ux-validate usa
+      // (um "npx playwright install" solto pode pegar outra versão).
+      const { spawnSync } = await import('node:child_process');
+      const { createRequire } = await import('node:module');
+      // cli.js não está nos "exports" do pacote: parte da pasta do pacote (o "main" dele).
+      const cli = path.join(path.dirname(createRequire(import.meta.url).resolve('playwright')), 'cli.js');
+      const result = spawnSync(process.execPath, [cli, 'install', 'chromium', ...positionals.slice(1)], { stdio: 'inherit' });
+      process.exit(result.status ?? 1);
     }
     case 'fix': {
       const { fix } = await import('../src/fix.js');

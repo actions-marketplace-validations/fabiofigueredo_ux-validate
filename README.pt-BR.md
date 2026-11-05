@@ -8,7 +8,7 @@ Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate responde:
 
 ![Relatório do ux-validate: notas por persona, objetivos e problemas](docs/ux-validate-demo-crop.gif)
 
-> **Status:** versão inicial (0.4). Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**.
+> **Status:** versão inicial (0.5). Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**.
 
 ## Como funciona
 
@@ -40,7 +40,7 @@ O ux-validate roda **dentro da sua ferramenta de IA**: o modelo usado é o que e
 
 ## Ferramentas de IA suportadas
 
-O setup instala os mesmos comandos (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`) no formato de cada ferramenta, além do servidor MCP do Playwright, que o agente usa como navegador. Dá para escolher várias ferramentas de uma vez.
+O setup instala os mesmos comandos (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`) no formato de cada ferramenta, além do servidor MCP do Playwright, que o agente usa como navegador. Dá para escolher várias ferramentas de uma vez. Para o Claude Code existe também um [plugin](#plugin-do-claude-code-alternativa) com as mesmas funcionalidades, como alternativa ao `init`.
 
 | Ferramenta | Comandos instalados em | Como chamar | Navegador (MCP) registrado em |
 |---|---|---|---|
@@ -180,6 +180,10 @@ export ANTHROPIC_API_KEY=sua-chave
 
 ## Instalação
 
+Há duas formas de instalar o ux-validate, com as mesmas funcionalidades: o **pacote do npm**, que funciona com todas as ferramentas de IA suportadas (inclusive o Claude Code) e no CI, e o **plugin do Claude Code**, uma alternativa para quem prefere instalar uma vez no Claude Code.
+
+### Pacote do npm
+
 Pré-requisitos: **Node.js 20+** e uma das ferramentas de IA suportadas: **Claude Code**, **Cursor**, **Codex CLI** ou **Gemini CLI**.
 
 No projeto que você quer testar:
@@ -189,7 +193,7 @@ npm install -D ux-validate
 ```
 
 ```bash
-npx playwright install chromium
+npx ux-validate install-browser
 ```
 
 ```bash
@@ -219,6 +223,34 @@ E cria:
 Use `--yes` para aceitar os padrões sem perguntas, `--tools claude-code,cursor,codex,gemini` para escolher as ferramentas sem perguntas, `--personas all|none|dona-maria,rafael-dev` para escolher as personas pré-definidas sem perguntas (padrão: `all`) e `--force` para sobrescrever arquivos existentes.
 
 > **Atualizando de uma versão anterior?** Os comandos de agente mudaram de nome: `/persona-test` → `/ux-test`, `/persona-report` → `/ux-report`, `/persona-fix` → `/ux-fix` e `/persona-new` → `/ux-persona`. Rode `npx ux-validate init` de novo: ele instala os novos e remove os antigos que ele mesmo tinha criado.
+
+### Plugin do Claude Code (alternativa)
+
+Instale uma vez e use em qualquer projeto. No Claude Code:
+
+```
+/plugin marketplace add fabiofigueredo/ux-validate
+```
+
+```
+/plugin install ux-validate@ux-validate
+```
+
+Depois, no projeto que você quer testar:
+
+| Skill | O que faz |
+|---|---|
+| `/ux-validate:ux-setup` | Configura o projeto: idioma, URL da aplicação, comando para subi-la e personas (uma vez) |
+| `/ux-validate:ux-test` | Testa com todas as personas e gera o relatório |
+| `/ux-validate:ux-report` | Refaz o relatório e monta um plano de correção |
+| `/ux-validate:ux-fix` | Aplica as correções do relatório |
+| `/ux-validate:ux-persona` | Cria uma persona conversando com você |
+
+- O plugin traz o navegador que o agente usa (Playwright MCP) e os guias de referência; nada é copiado para o projeto.
+- As instruções do plugin são em inglês, mas o agente conversa com você e escreve o relatório no idioma definido no projeto (`locale`: `pt-BR` ou `en`), escolhido no `/ux-validate:ux-setup`.
+- As skills chamam a CLI fixada na versão do plugin (`npx -y ux-validate@<versão>`), então não é preciso instalar o pacote do npm. Requer **Node.js 20+**.
+- Atualizações: `/plugin marketplace update ux-validate` e depois atualize o plugin em `/plugin` (ou ative a atualização automática do marketplace ali).
+- Use um ou outro no mesmo projeto. Se o projeto já tem os comandos do `npx ux-validate init` para o Claude Code (`.claude/skills/ux-*` e a entrada `playwright` do `.mcp.json`), apague-os antes de usar o plugin, para não ficar com comandos duplicados.
 
 ## Uso
 
@@ -361,7 +393,7 @@ git clone https://github.com/fabiofigueredo/ux-validate.git
 ```
 
 ```bash
-cd ux-validate && npm install && npx playwright install chromium
+cd ux-validate && npm install && node bin/ux-validate.js install-browser
 ```
 
 ```bash
@@ -410,7 +442,7 @@ Abra o `report.html` em `.ux-validate/runs/<data-hora>/`.
 |---|---|
 | `/ux-test` não aparece | A pasta aberta precisa ser a do projeto onde você rodou o `init` (a que tem `.claude/`, `.cursor/`, `.agents/` ou `.gemini/`). No Gemini CLI, rode `/commands reload` |
 | O agente não tem as ferramentas de navegador | Aprove ou ative o servidor MCP `playwright` na sua ferramenta; no Codex e no Gemini, marque a pasta do projeto como confiável |
-| Erro dizendo que o navegador não foi encontrado | Rode `npx playwright install chromium` no projeto |
+| Erro dizendo que o navegador não foi encontrado | Rode `npx ux-validate install-browser` no projeto |
 | "A página inicial não abre" | Confira se a aplicação está no ar e se `app.url` está certa |
 | Quer mudar a URL depois do setup | Edite `app.url` em `ux-validate.config.yml` |
 
@@ -455,6 +487,7 @@ Os comandos em `source/<idioma>/commands/` usam placeholders (`{{WORK_DIR}}`, `{
 - [x] `/ux-persona` e `npx ux-validate persona new` (criar personas)
 - [x] Aplicações React: componente, arquivo e linha de cada problema, rotas de SPA e avisos do React
 - [x] Visão de cores: simulação de daltonismo, checagens de contraste, indicadores e estado só pela cor
+- [x] Plugin do Claude Code (`/plugin install ux-validate@ux-validate`)
 - [ ] Navegação com personas pelo terminal (sem ferramenta de IA), com o modelo escolhido no setup
 - [ ] Repetir a navegação e só confirmar problemas que aparecem em mais de uma execução
 

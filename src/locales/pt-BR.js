@@ -16,8 +16,10 @@ export default {
     help: `ux-validate — testes de conteúdo, navegação, interface e acessibilidade guiados por personas
 
 Uso:
-  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini] [--personas all|none|id,id]
+  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini|none] [--personas all|none|id,id]
+                     [--url <url>] [--start <comando>]
                                                  Configura o projeto e instala os comandos nas suas ferramentas de IA
+  ux-validate install-browser                    Instala o navegador (Chromium) da versão do Playwright que o ux-validate usa
   ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
                                                  Roda as checagens fixas (acessibilidade, links, ortografia, conteúdo)
   ux-validate report [--run <dir>]               Gera report.md e report.html a partir de uma execução
@@ -107,7 +109,7 @@ Opções gerais:
     next: {
       title: '\nPróximos passos:',
       personas: ({ dir, n }) =>
-        `  1. ${n} persona(s) em ${dir}/. Ajuste os objetivos ao seu produto; para criar mais, use npx ux-validate persona new ou o comando ux-persona abaixo.`,
+        `  1. ${n} persona(s) em ${dir}/. Ajuste os objetivos ao seu produto; para criar mais, use npx ux-validate persona new ou o comando ux-persona na sua ferramenta de IA.`,
       noPersonas: ({ dir }) =>
         `  1. Nenhuma persona em ${dir}/ ainda. Antes de testar, escolha as pré-definidas (npx ux-validate persona examples) ou crie as suas (npx ux-validate persona new). O ux-test também vai pedir isso.`,
       useTools: '  2. Na sua ferramenta de IA:',

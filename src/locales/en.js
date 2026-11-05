@@ -16,8 +16,10 @@ export default {
     help: `ux-validate — persona-based testing of content, navigation, UI and accessibility
 
 Usage:
-  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini] [--personas all|none|id,id]
+  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini|none] [--personas all|none|id,id]
+                     [--url <url>] [--start <command>]
                                                  Set up the project and install the commands in your AI tools
+  ux-validate install-browser                    Install the browser (Chromium) for the Playwright version ux-validate uses
   ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
                                                  Run the automated checks (accessibility, links, spelling, content)
   ux-validate report [--run <dir>]               Build report.md and report.html from a run
@@ -107,7 +109,7 @@ General options:
     next: {
       title: '\nNext steps:',
       personas: ({ dir, n }) =>
-        `  1. ${n} persona(s) in ${dir}/. Adjust their goals to your product; to add more, use npx ux-validate persona new or the ux-persona command below.`,
+        `  1. ${n} persona(s) in ${dir}/. Adjust their goals to your product; to add more, use npx ux-validate persona new or the ux-persona command in your AI tool.`,
       noPersonas: ({ dir }) =>
         `  1. No personas in ${dir}/ yet. Before testing, pick the predefined ones (npx ux-validate persona examples) or create your own (npx ux-validate persona new). ux-test will ask for this too.`,
       useTools: '  2. In your AI tool:',

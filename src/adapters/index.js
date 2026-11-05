@@ -26,20 +26,22 @@ export function sourceDir(locale = getLocale()) {
 export const ADAPTERS = [claudeCode, cursor, codex, gemini];
 
 /** Placeholders que os comandos podem usar; mantém os textos independentes da ferramenta. */
-const vars = (locale) => ({
+export const commandVars = (locale) => ({
   WORK_DIR,
   REFERENCES_DIR: `${WORK_DIR}/references`,
   DICTIONARY: projectDictionary(locale),
   CHECK_CMD: 'npx ux-validate check',
   REPORT_CMD: 'npx ux-validate report',
+  FIX_CMD: 'npx ux-validate fix',
   PERSONA_VALIDATE_CMD: 'npx ux-validate persona validate',
   PERSONA_EXAMPLES_CMD: 'npx ux-validate persona examples',
   PERSONA_ADD_CMD: 'npx ux-validate persona add',
 });
 
-export function loadCommands(locale = getLocale()) {
+/** `overrides` troca valores dos placeholders (ex.: o plugin do Claude Code aponta para os próprios arquivos). */
+export function loadCommands(locale = getLocale(), overrides = {}) {
   const dir = path.join(sourceDir(locale), 'commands');
-  const values = vars(locale);
+  const values = { ...commandVars(locale), ...overrides };
   return fs
     .readdirSync(dir)
     .filter((f) => f.endsWith('.md'))
@@ -53,7 +55,7 @@ export function loadCommands(locale = getLocale()) {
 }
 
 /** Lê um comando (frontmatter YAML + corpo em Markdown) e substitui os placeholders. */
-export function parseCommand(text, values = vars(getLocale())) {
+export function parseCommand(text, values = commandVars(getLocale())) {
   // No Windows o Git pode converter as quebras de linha para CRLF; normalizamos antes de ler.
   const normalized = text.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
   const match = normalized.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
