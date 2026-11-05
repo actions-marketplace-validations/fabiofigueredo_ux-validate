@@ -4,7 +4,7 @@ description: Builds or refreshes the report for the latest ux-validate run and
   summarizes what to fix first (optionally comparing with the previous run).
 argument-hint: "[run folder] [--compare]"
 disable-model-invocation: true
-allowed-tools: Bash(npx -y ux-validate@0.5.0 *)
+allowed-tools: Bash(npx -y ux-validate@0.5.1 *)
 ---
 
 # /ux-validate:ux-report
@@ -27,7 +27,7 @@ Answer in English.
 2. Build the report:
 
 ```bash
-npx -y ux-validate@0.5.0 report --run <run folder>
+npx -y ux-validate@0.5.1 report --run <run folder>
 ```
 
    If the folder only has `checks.json` (no `findings.json`), the report has no scores by persona. Tell the user and suggest `/ux-validate:ux-test` for the full evaluation.
@@ -36,7 +36,7 @@ npx -y ux-validate@0.5.0 report --run <run folder>
    - the goals that failed and why;
    - a **fix plan in order**: first what blocks goals, then critical and high issues that affect the most personas, then the rest grouped by file (to fix several at once);
    - the path to `report.html`;
-   - a suggestion to apply the fixes with `/ux-validate:ux-fix` (or `npx -y ux-validate@0.5.0 fix`, outside Claude Code).
+   - a suggestion to apply the fixes with `/ux-validate:ux-fix` (or `npx -y ux-validate@0.5.1 fix`, outside Claude Code).
 4. With `--compare`: read `findings.json` and `checks.json` from the previous run and show what was **resolved**, what **remains** and what is **new** (compare by title, page and element, not by id). Also show how the scores changed.
 
 Don't change the app's code in this command.

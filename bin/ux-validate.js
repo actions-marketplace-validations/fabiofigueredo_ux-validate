@@ -98,10 +98,8 @@ try {
       // Instala o Chromium da MESMA versão do Playwright que o ux-validate usa
       // (um "npx playwright install" solto pode pegar outra versão).
       const { spawnSync } = await import('node:child_process');
-      const { createRequire } = await import('node:module');
-      // cli.js não está nos "exports" do pacote: parte da pasta do pacote (o "main" dele).
-      const cli = path.join(path.dirname(createRequire(import.meta.url).resolve('playwright')), 'cli.js');
-      const result = spawnSync(process.execPath, [cli, 'install', 'chromium', ...positionals.slice(1)], { stdio: 'inherit' });
+      const { installBrowserArgs } = await import('../src/browser.js');
+      const result = spawnSync(process.execPath, installBrowserArgs(undefined, positionals.slice(1)), { stdio: 'inherit' });
       process.exit(result.status ?? 1);
     }
     case 'fix': {

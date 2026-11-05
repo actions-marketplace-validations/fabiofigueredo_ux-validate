@@ -4,7 +4,7 @@ description: Applies the fixes from the latest ux-validate report to the code,
   one at a time, showing each change and checking the result.
 argument-hint: "[ids, e.g. A001,C003] [--severity critical|high|medium|low] [--run <folder>]"
 disable-model-invocation: true
-allowed-tools: Bash(npx -y ux-validate@0.5.0 *)
+allowed-tools: Bash(npx -y ux-validate@0.5.1 *)
 ---
 
 # /ux-validate:ux-fix
@@ -42,7 +42,7 @@ Answer in English.
 5. When done, run the checks again to confirm:
 
 ```bash
-npx -y ux-validate@0.5.0 check
+npx -y ux-validate@0.5.1 check
 ```
 
    Compare with the previous run: what was resolved, what remains, and whether anything new appeared because of the changes. If it did, fix it or explain it.
