@@ -6,7 +6,7 @@ Testes de **conteúdo**, **navegação**, **interface** e **acessibilidade** de 
 
 Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate responde: *a Dona Maria, de 68 anos, no celular, consegue descobrir quanto custa o seu produto?* E se não consegue, mostra onde ela travou, por quê e em qual arquivo corrigir.
 
-![Relatório do ux-validate com notas por persona e objetivos cumpridos](docs/relatorio-exemplo.png)
+![Relatório do ux-validate: notas por persona, objetivos e problemas](docs/ux-validate-demo-crop.gif)
 
 > **Status:** versão inicial (0.3). Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**.
 
@@ -249,7 +249,7 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - uses: fabiofigueredo/ux-validate@main
+      - uses: fabiofigueredo/ux-validate@v0.3.0
         with:
           start: npm run dev
           url: http://localhost:3000
