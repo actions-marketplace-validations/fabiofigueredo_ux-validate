@@ -30,7 +30,7 @@ Answer in English.
    - the goals that failed and why;
    - a **fix plan in order**: first what blocks goals, then critical and high issues that affect the most personas, then the rest grouped by file (to fix several at once);
    - the path to `report.html`;
-   - a suggestion to apply the fixes with `/ux-fix` (or `npx ux-validate fix`, outside Claude Code).
+   - a suggestion to apply the fixes with `/ux-fix` (or `{{FIX_CMD}}`, outside Claude Code).
 4. With `--compare`: read `findings.json` and `checks.json` from the previous run and show what was **resolved**, what **remains** and what is **new** (compare by title, page and element, not by id). Also show how the scores changed.
 
 Don't change the app's code in this command.

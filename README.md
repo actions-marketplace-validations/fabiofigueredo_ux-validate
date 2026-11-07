@@ -6,9 +6,9 @@ Persona-based testing of the **content**, **navigation**, **interface** and **ac
 
 Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Margaret, 68, on her phone, find out how much your product costs?* And if she can't, it shows where she got stuck, why, and which file to fix.
 
-![ux-validate report with scores by persona and goals achieved](docs/report-example.png)
+![ux-validate report: scores by persona, goals and issues](docs/ux-validate-demo-crop.gif)
 
-> **Status:** early version (0.3). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
+> **Status:** early version (0.5). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
 
 ## How it works
 
@@ -40,7 +40,7 @@ ux-validate runs **inside your AI tool**: the model used is whichever one that t
 
 ## Supported AI tools
 
-Setup installs the same commands (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`) in each tool's own format, plus the Playwright MCP server the agent uses as its browser. You can pick several tools at once.
+Setup installs the same commands (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`) in each tool's own format, plus the Playwright MCP server the agent uses as its browser. You can pick several tools at once. For Claude Code there is also a [plugin](#claude-code-plugin-alternative) with the same features, as an alternative to `init`.
 
 | Tool | Commands are installed in | How to call them | Browser (MCP) registered in |
 |---|---|---|---|
@@ -77,6 +77,29 @@ The **Accessibility** category combines three layers:
 | **Agent** | Tests each widget with the keyboard following the [ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/) (dialogs, tabs, accordions, menus, combobox…), checks whether dynamic messages are announced (`role="status"`/`alert`) and browses as a screen reader user would |
 
 Each run also saves every page's **accessibility tree** in `.ux-validate/runs/<date-time>/aria/`: roles, names and states, i.e. what a screen reader announces. The report links each accessibility issue to its page's tree.
+
+## Color vision (color blindness)
+
+About 1 in 12 men and 1 in 200 women have some form of color blindness. ux-validate simulates how each page looks to them and points out the information they lose:
+
+| Check | What it finds |
+|---|---|
+| **Contrast with color blindness** (`cvd-contrast`) | Text that passes the WCAG contrast for people who see all colors but falls below the minimum with color blindness (e.g. red on a dark background with protanopia) |
+| **Indicators that look the same** (`cvd-indicators`) | Status dots, legend markers and other indicators without text whose colors become the same (e.g. green vs red with deuteranopia) |
+| **State shown only by color** (`cvd-state`) | A selected tab, filter or menu item that differs from its neighbors only by color and stops standing out |
+
+- The simulation covers **protanopia**, **deuteranopia** and **tritanopia** (and, if you want, **achromatopsia**), with the Machado, Oliveira and Fernandes (2009) matrices. Colors are compared with the CIEDE2000 perceptual difference.
+- The report gets a **Color vision** section showing each page as seen with each type of color blindness. Each issue's evidence is the simulated image.
+- These issues count only for personas with `vision: color-blind`, like the predefined persona **Tom**. People who see all colors don't lose points for them.
+- In `/ux-test`, the agent compares the images and browses with color blindness simulated in the browser, looking for what the automated check can't catch: charts, form errors shown only in red, links highlighted only by color.
+
+To choose the types, or turn the step off, use `ux-validate.config.yml`:
+
+```yaml
+colorVision:
+  enabled: true
+  types: [protanopia, deuteranopia, tritanopia]   # also: achromatopsia
+```
 
 ## React apps
 
@@ -157,6 +180,10 @@ $env:ANTHROPIC_API_KEY="your-key"
 
 ## Installation
 
+There are two ways to install ux-validate, with the same features: the **npm package**, which works with every supported AI tool (Claude Code included) and in CI, and the **Claude Code plugin**, an alternative for those who prefer installing it once in Claude Code.
+
+### npm package
+
 Requirements: **Node.js 20+** and one of the supported AI tools: **Claude Code**, **Cursor**, **Codex CLI** or **Gemini CLI**.
 
 In the project you want to test:
@@ -166,7 +193,7 @@ npm install -D ux-validate
 ```
 
 ```bash
-npx playwright install chromium
+npx ux-validate install-browser
 ```
 
 ```bash
@@ -196,6 +223,34 @@ And creates:
 Use `--yes` to accept the defaults without questions, `--tools claude-code,cursor,codex,gemini` to choose the tools without questions, `--personas all|none|margaret,raj-dev` to choose the predefined personas without questions (default: `all`), and `--force` to overwrite existing files.
 
 > **Upgrading from an earlier version?** The agent commands were renamed: `/persona-test` → `/ux-test`, `/persona-report` → `/ux-report`, `/persona-fix` → `/ux-fix` and `/persona-new` → `/ux-persona`. Run `npx ux-validate init` again: it installs the new ones and removes the old ones it had created.
+
+### Claude Code plugin (alternative)
+
+Install once and use it in any project. In Claude Code:
+
+```
+/plugin marketplace add fabiofigueredo/ux-validate
+```
+
+```
+/plugin install ux-validate@ux-validate
+```
+
+Then, in the project you want to test:
+
+| Skill | What it does |
+|---|---|
+| `/ux-validate:ux-setup` | Sets up the project: language, app URL, start command and personas (run once) |
+| `/ux-validate:ux-test` | Tests with every persona and builds the report |
+| `/ux-validate:ux-report` | Rebuilds the report and a fix plan |
+| `/ux-validate:ux-fix` | Applies the fixes from the report |
+| `/ux-validate:ux-persona` | Creates a persona by talking with you |
+
+- The plugin brings the browser the agent uses (Playwright MCP) and the reference guides; there's nothing to copy into the project.
+- Its instructions are in English, but the agent talks to you and writes the report in the language set in the project (`locale`: `en` or `pt-BR`), chosen in `/ux-validate:ux-setup`.
+- The skills call the CLI pinned to the plugin's version (`npx -y ux-validate@<version>`), so you don't need to install the npm package. Requires **Node.js 20+**.
+- Updates: `/plugin marketplace update ux-validate`, then update the plugin in `/plugin` (or turn on auto-update for the marketplace there).
+- Use one or the other in the same project. If the project already has the commands from `npx ux-validate init` for Claude Code (`.claude/skills/ux-*` and the `playwright` entry in `.mcp.json`), remove them before using the plugin, to avoid duplicated commands.
 
 ## Usage
 
@@ -249,7 +304,7 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - uses: fabiofigueredo/ux-validate@main
+      - uses: fabiofigueredo/ux-validate@v1
         with:
           start: npm run dev
           url: http://localhost:3000
@@ -272,6 +327,7 @@ Outputs: `issues`, `critical`, `high`, `report-dir`, `sarif-file`. The summary a
 
 Notes:
 
+- `@v1` always points to the latest stable release of the action. To freeze an exact version, use a release tag such as `@v0.3.0`.
 - The action runs the **automated checks** (accessibility, WAI-ARIA, links, spelling, layout). The persona evaluation needs an AI tool and runs locally with `/ux-test`.
 - Code scanning is free on public repositories; on private ones it needs GitHub Advanced Security. Without it, the SARIF upload step is skipped with a warning and everything else still works.
 - On pull requests from forks, GitHub gives a read-only token: the comment step is skipped with a warning.
@@ -296,6 +352,7 @@ A persona is a real kind of user of your app, written as a YAML file in `.ux-val
 | **Margaret** (`margaret`) | 68, retired; uses messaging and her banking app, sometimes with her grandson's help | Phone | Low | Reduced | Low | Basic | Understand what the company offers; find out the price; find a phone number |
 | **Lucas** (`lucas-screen-reader`) | 35, financial analyst, blind since childhood; uses a screen reader and keyboard | Computer | High | Screen reader | Medium | Advanced | Understand the offer by navigating headings only; fill in the contact form |
 | **Raj** (`raj-dev`) | 29, developer; evaluates tools for the team and compares with competitors | Computer | High | Normal | Medium | Advanced | Compare plans and limits; create a trial account; find the docs |
+| **Tom** (`tom-color-blind`) | 45, sales manager; has deuteranopia (red-green color blindness) | Computer | Medium | Color-blind | Medium | Intermediate | Find the price; tell which option is selected; understand form errors |
 
 To see the full card (with expectations) run `npx ux-validate persona examples`; to add them later, `npx ux-validate persona add <id>` or `all`. Adjust the goals to your product.
 
@@ -335,7 +392,7 @@ git clone https://github.com/fabiofigueredo/ux-validate.git
 ```
 
 ```bash
-cd ux-validate && npm install && npx playwright install chromium
+cd ux-validate && npm install && node bin/ux-validate.js install-browser
 ```
 
 ```bash
@@ -384,7 +441,7 @@ Open `report.html` in `.ux-validate/runs/<date-time>/`.
 |---|---|
 | `/ux-test` doesn't show up | The open folder must be the project where you ran `init` (the one with `.claude/`, `.cursor/`, `.agents/` or `.gemini/`). In Gemini CLI, run `/commands reload` |
 | The agent has no browser tools | Approve or enable the `playwright` MCP server in your tool; in Codex and Gemini, trust the project folder |
-| Error saying the browser wasn't found | Run `npx playwright install chromium` in the project |
+| Error saying the browser wasn't found | Run `npx ux-validate install-browser` in the project |
 | "The start page doesn't open" | Check that the app is running and that `app.url` is right |
 | You want to change the URL after setup | Edit `app.url` in `ux-validate.config.yml` |
 
@@ -434,6 +491,8 @@ The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{C
 - [x] GitHub Action with a PR comment and SARIF output
 - [x] `/ux-persona` and `npx ux-validate persona new` (create personas)
 - [x] React apps: component, file and line for each issue, SPA routes and React warnings
+- [x] Color vision: color blindness simulation, contrast, indicator and color-only state checks
+- [x] Claude Code plugin (`/plugin install ux-validate@ux-validate`)
 - [ ] Persona browsing from the terminal (no AI tool), with the model chosen in setup
 - [ ] Repeat the browsing and only confirm issues that show up in more than one run
 

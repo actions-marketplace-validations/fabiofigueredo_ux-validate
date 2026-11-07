@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { latestRunDir } from './config.js';
+import YAML from 'yaml';
+import { latestRunDir, loadConfig } from './config.js';
 import { t, getLocale, formatDate } from './i18n.js';
 
 const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low'];
@@ -24,7 +25,7 @@ export async function buildReport({ cwd, run }) {
   const agent = readJson(path.join(runDir, 'findings.json'));
   if (!checks && !agent) throw new Error(t('report.noData', { dir: runDir }));
 
-  const data = analyze(checks, agent);
+  const data = analyze(checks, agent, { traits: personaTraits(cwd) });
   fs.writeFileSync(path.join(runDir, 'report.md'), renderMarkdown(data));
   fs.writeFileSync(path.join(runDir, 'report.html'), renderHtml(data));
 
@@ -33,6 +34,24 @@ export async function buildReport({ cwd, run }) {
   console.log(`  ${path.relative(cwd, path.join(runDir, 'report.html'))}`);
   return { runDir, ...data };
 }
+
+/** Características das personas (traits), lidas dos arquivos do projeto: o findings.json não as repete. */
+function personaTraits(cwd) {
+  const traits = {};
+  try {
+    const dir = path.resolve(cwd, loadConfig(cwd, undefined, { optional: true }).personas);
+    for (const file of fs.existsSync(dir) ? fs.readdirSync(dir) : []) {
+      if (!/\.ya?ml$/.test(file)) continue;
+      const p = YAML.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+      if (p?.id) traits[p.id] = p.traits ?? {};
+    }
+  } catch {
+    // Sem configuração ou persona inválida: segue sem as características.
+  }
+  return traits;
+}
+
+const COLOR_BLIND = new Set(['color-blind', 'daltonismo']);
 
 function readJson(file) {
   if (!fs.existsSync(file)) return null;
@@ -43,7 +62,7 @@ function readJson(file) {
   }
 }
 
-export function analyze(checks, agent) {
+export function analyze(checks, agent, { traits = {} } = {}) {
   const personas = agent?.personas ?? [];
   const checkFindings = (checks?.findings ?? []).map((f) => ({ ...f, origin: 'check' }));
   const agentFindings = (agent?.findings ?? []).map((f) => ({ ...f, origin: 'agent' }));
@@ -54,7 +73,7 @@ export function analyze(checks, agent) {
 
   const ariaTrees = Object.fromEntries((checks?.pages ?? []).filter((p) => p.ariaTree).map((p) => [p.url, p.ariaTree]));
   for (const f of findings) {
-    f.affects = affectedPersonas(f, personas);
+    f.affects = affectedPersonas(f, personas, traits);
     if (f.category === 'accessibility' && ariaTrees[f.page]) f.ariaTree = ariaTrees[f.page];
   }
   findings.sort(
@@ -79,8 +98,12 @@ export function analyze(checks, agent) {
   };
 }
 
-function affectedPersonas(f, personas) {
+function affectedPersonas(f, personas, traits) {
   if (f.personas?.length) return f.personas;
+  // Checagem de visão de cores: só conta para as personas com daltonismo (quando conhecemos as características).
+  if (f.audience === 'color-blind' && Object.keys(traits).length) {
+    return personas.filter((p) => COLOR_BLIND.has(String(traits[p.id]?.vision ?? ''))).map((p) => p.id);
+  }
   // Checagem fixa: afeta as personas que usam o tamanho de tela em que o problema apareceu.
   return personas.filter((p) => !f.viewports?.length || f.viewports.includes(p.viewport)).map((p) => p.id);
 }
@@ -137,6 +160,16 @@ function renderMarkdown(d) {
     }
   }
 
+  const cvPages = d.pages.filter((p) => p.colorVision);
+  if (cvPages.length) {
+    lines.push(`## ${t('report.colorVision')}`, '', t('report.colorVisionIntro'), '');
+    for (const p of cvPages) {
+      const links = Object.entries(p.colorVision).map(([type, file]) => `[${t(`colorVision.shortTypes.${type}`)}](${file})`);
+      lines.push(`- ${p.url}: ${links.join(' · ')}`);
+    }
+    lines.push('');
+  }
+
   const top = d.findings.filter((f) => f.severity === 'critical' || f.severity === 'high');
   lines.push(`## ${t('report.fixFirst')}`, '');
   if (!top.length) lines.push(t('report.noTop'), '');
@@ -188,6 +221,24 @@ function renderHtml(d) {
     return /^(https?:|file:)/i.test(s) || !/^[a-z][a-z0-9+.-]*:/i.test(s) ? esc(s) : '#';
   };
   const scoreClass = (n) => (n >= 85 ? 'good' : n >= 60 ? 'warn' : 'bad');
+
+  // Como cada página aparece para cada tipo de daltonismo (capturas simuladas pelo Chromium).
+  const cvPages = d.pages.filter((p) => p.colorVision);
+  const colorVision = cvPages.length
+    ? `<h2>${t('report.colorVision')}</h2><p class="muted">${esc(t('report.colorVisionIntro'))}</p>` +
+      cvPages
+        .map((p) => {
+          const issues = d.findings.filter((f) => f.audience === 'color-blind' && f.page === p.url).length;
+          const figures = Object.entries(p.colorVision)
+            .map(([type, file]) => {
+              const label = esc(t(`colorVision.shortTypes.${type}`));
+              return `<figure><figcaption>${label}</figcaption><a href="${url(file)}"><img loading="lazy" src="${url(file)}" alt="${esc(t('report.colorVisionAlt', { page: p.url, type: t(`colorVision.shortTypes.${type}`) }))}"></a></figure>`;
+            })
+            .join('');
+          return `<section class="card"><h3>${esc(p.url)} <small>${esc(t('report.colorVisionIssues', { n: issues }))}</small></h3><div class="cv">${figures}</div></section>`;
+        })
+        .join('')
+    : '';
 
   const scoreRows = d.scores
     .map(
@@ -264,12 +315,14 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:
 .fix{border-left:3px solid var(--accent);padding-left:10px}img{max-width:100%;border:1px solid var(--line);border-radius:6px;margin-top:8px}
 a{color:var(--accent)}.filters{display:flex;flex-wrap:wrap;gap:8px}.filters button{font:inherit;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
 .filters button[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.cv{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}.cv figure{margin:0}.cv img{margin-top:4px;display:block}.cv figcaption{font-size:13px;color:var(--muted)}
 </style></head><body><main>
 <h1>${t('report.title')}</h1>
 <p class="muted">${esc(d.url ?? '')} · ${esc(formatDate(d.createdAt))}${d.agentInfo ? ` · ${esc([d.agentInfo.tool, d.agentInfo.model].filter(Boolean).join(' · '))}` : ''} · ${t('report.pagesCount', { n: d.pages.length })}</p>
 <h2>${t('report.scoresTitle')}</h2>
 <div style="overflow-x:auto"><table><thead><tr><th>${t('report.persona')}</th><th>${t('report.overall')}</th>${categoryEntries().map(([, c]) => `<th>${c}</th>`).join('')}<th>${t('report.goals')}</th></tr></thead><tbody>${scoreRows}</tbody></table></div>
 ${goals ? `<h2>${t('report.goals')}</h2>${goals}` : ''}
+${colorVision}
 <h2>${t('report.issues')} (${d.findings.length})</h2>
 <div class="filters"><button data-filter="all" aria-pressed="true">${t('report.all')}</button>${filters}</div>
 ${d.findings.length ? `<p class="card">${t('report.applyFixesHtml')}</p>` : ''}

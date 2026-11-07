@@ -80,12 +80,23 @@ h2 { font: 800 clamp(25px, 3.3vw, 30px)/1.15 var(--head); letter-spacing: -0.015
 .lang { font: 500 12px/1 var(--mono); border: 1.5px solid var(--line); background: var(--white); color: var(--ink); border-radius: 8px; padding: 9px; cursor: pointer; }
 @media (max-width: 900px) { .nav-links { display: none; } .nav-actions { margin-left: auto; } }
 @media (max-width: 520px) { .nav .gh-label { display: none; } .nav-bar { gap: 8px; padding-left: 12px; } .nav .btn { padding-inline: 12px; } }
+/* Celular: logo, idioma, GitHub e Começar precisam caber numa linha só. */
+@media (max-width: 440px) {
+  .nav-bar { gap: 6px; padding: 8px 8px 8px 12px; }
+  .logo { gap: 8px; font-size: 15px; }
+  .dots { gap: 3px; } .dots i { width: 8px; height: 8px; }
+  .nav-actions { gap: 6px; min-width: 0; }
+  .nav .btn { padding: 8px 10px; }
+  .nav .btn.dark svg { display: none; }
+}
+@media (max-width: 350px) { .dots { display: none; } .nav-bar { padding-left: 10px; } }
 
 /* ---------- Hero ---------- */
 .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 20px; align-items: center; padding-block: 34px 26px; }
 .hero-copy { display: grid; gap: 22px; justify-items: start; }
 .hero .hand { font-size: 27px; }
 .spark { position: absolute; width: 34px; height: 30px; }
+@media (max-width: 380px) { .spark { display: none; } } /* enfeite ao lado do título sairia da tela */
 .selection { position: relative; border: 1.5px solid var(--ink-2); padding: 4px 18px 0; max-width: 100%; }
 .selection .h { position: absolute; width: 11px; height: 11px; border: 1.5px solid var(--ink); }
 .selection .tl { left: -6px; top: -6px; background: var(--yellow); }
@@ -224,7 +235,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
       </div>
       <div class="nav-actions">
         <button class="lang" type="button" id="lang" aria-label="Switch to English">EN</button>
-        <a class="btn light" href="https://github.com/fabiofigueredo/ux-validate" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#branch"/></svg><span class="gh-label">GitHub</span></a>
+        <a class="btn light" href="https://github.com/fabiofigueredo/ux-validate" target="_blank" rel="noopener" aria-label="GitHub"><svg aria-hidden="true"><use href="#branch"/></svg><span class="gh-label">GitHub</span></a>
         <a class="btn dark" href="#comecar" data-start><span data-i18n="nav.start">Começar</span><svg aria-hidden="true"><use href="#arrow"/></svg></a>
       </div>
     </nav>
@@ -394,6 +405,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
         <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span>axe-core</span></li>
         <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="a11y.l3">Testes de teclado e WAI-ARIA</span></li>
         <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="a11y.l4">Árvore de acessibilidade (o que o leitor de tela anuncia)</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="a11y.l5">Simulação de daltonismo</span></li>
       </ul>
     </div>
   </section>
@@ -460,7 +472,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
     'int.text': 'Run ux-validate with the tools you already use, in the terminal and in GitHub CI.',
     'a11y.hand': 'compliance and inclusion', 'a11y.title': 'Accessibility to the right standard.',
     'a11y.text': 'Automated checks and hands-on tests, aligned with the main references.',
-    'a11y.l1': 'WCAG 2.2 (level AA)', 'a11y.l3': 'Keyboard and WAI-ARIA tests', 'a11y.l4': 'Accessibility tree (what the screen reader announces)',
+    'a11y.l1': 'WCAG 2.2 (level AA)', 'a11y.l3': 'Keyboard and WAI-ARIA tests', 'a11y.l4': 'Accessibility tree (what the screen reader announces)', 'a11y.l5': 'Color blindness simulation',
     'bar.title': 'Validate your app now', 'bar.text': 'Deliver a more inclusive, efficient and reliable experience.',
     'dlg.hand': 'in 3 commands', 'dlg.title': 'Start in your project',
     'dlg.note': 'Setup asks you to choose the personas: the predefined ones, your own, or both. Then, in Claude Code, Cursor or Gemini CLI, run /ux-test. In Codex, $ux-test.',

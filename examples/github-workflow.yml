@@ -22,7 +22,7 @@ jobs:
 
       - run: npm ci
 
-      - uses: fabiofigueredo/ux-validate@main
+      - uses: fabiofigueredo/ux-validate@v1
         with:
           start: npm run dev # ou / or: npm run build && npm run preview
           url: http://localhost:3000

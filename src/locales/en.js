@@ -16,8 +16,10 @@ export default {
     help: `ux-validate — persona-based testing of content, navigation, UI and accessibility
 
 Usage:
-  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini] [--personas all|none|id,id]
+  ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini|none] [--personas all|none|id,id]
+                     [--url <url>] [--start <command>]
                                                  Set up the project and install the commands in your AI tools
+  ux-validate install-browser                    Install the browser (Chromium) for the Playwright version ux-validate uses
   ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
                                                  Run the automated checks (accessibility, links, spelling, content)
   ux-validate report [--run <dir>]               Build report.md and report.html from a run
@@ -48,6 +50,7 @@ General options:
 
   config: {
     notFound: 'Config not found at {path}. Run "npx ux-validate init" first.',
+    unknownCvdType: 'Unknown color vision type in colorVision.types: {list}. Use: {valid}.',
     unknownViewport: 'Unknown viewport: {list}. Use: {valid}.',
   },
 
@@ -106,7 +109,7 @@ General options:
     next: {
       title: '\nNext steps:',
       personas: ({ dir, n }) =>
-        `  1. ${n} persona(s) in ${dir}/. Adjust their goals to your product; to add more, use npx ux-validate persona new or the ux-persona command below.`,
+        `  1. ${n} persona(s) in ${dir}/. Adjust their goals to your product; to add more, use npx ux-validate persona new or the ux-persona command in your AI tool.`,
       noPersonas: ({ dir }) =>
         `  1. No personas in ${dir}/ yet. Before testing, pick the predefined ones (npx ux-validate persona examples) or create your own (npx ux-validate persona new). ux-test will ask for this too.`,
       useTools: '  2. In your AI tool:',
@@ -190,6 +193,32 @@ General options:
       title: "Tab title doesn't change with the route",
       description: 'After navigating to {to}, the title is still "{title}". It is hard to tell which page you are on, in tabs and in history.',
       suggestion: 'Update document.title on each route (e.g. React 19 <title> inside the page component, or a useEffect).',
+    },
+  },
+
+  colorVision: {
+    types: {
+      protanopia: 'protanopia (no red)',
+      deuteranopia: 'deuteranopia (no green)',
+      tritanopia: 'tritanopia (no blue)',
+      achromatopsia: 'achromatopsia (no color)',
+      normal: 'typical vision',
+    },
+    shortTypes: { normal: 'Typical vision', protanopia: 'Protanopia', deuteranopia: 'Deuteranopia', tritanopia: 'Tritanopia', achromatopsia: 'Achromatopsia' },
+    contrast: {
+      title: 'Text that loses contrast for color-blind users',
+      description: '{n} text(s) have enough contrast for people who see all colors, but fall below the WCAG minimum with {type}. The difference between text and background is only in hue, not in lightness.',
+      suggestion: 'Increase the lightness difference between text and background (e.g. darker text or lighter background) instead of relying on hue alone (red vs green, blue vs purple).',
+    },
+    indicators: {
+      title: 'Indicators that look the same to color-blind users',
+      description: '{n} pair(s) of indicators without text (status dots, legend markers) have different colors that look the same with {type}. For these people, the information disappears.',
+      suggestion: "Don't rely on color alone: add text (\"Paid\", \"Overdue\"), different icons or shapes, or patterns. For charts, label the series directly.",
+    },
+    state: {
+      title: 'Selected state shown only by color',
+      description: '"{text}" differs from the items next to it only by color. With {type}, it looks like the others and you can\'t tell which one is selected or active.',
+      suggestion: 'Show the state another way too: underline or thicker border, bold, a check icon, and aria-current/aria-selected for screen readers.',
     },
   },
 
@@ -390,6 +419,10 @@ General options:
     page: 'Page',
     criterion: 'Criterion',
     component: 'React component',
+    colorVision: 'Color vision',
+    colorVisionIntro: 'How each page looks to people with color blindness (about 1 in 12 men and 1 in 200 women). Compare the images: whatever disappears or looks the same is information these people lose.',
+    colorVisionAlt: '{page} simulated with {type}',
+    colorVisionIssues: ({ n }) => (n ? `${n} issue(s) for color-blind users` : 'no issues found by the color checks'),
     whereToFix: 'Where to fix',
     elements: 'Element(s)',
     element: 'Element',

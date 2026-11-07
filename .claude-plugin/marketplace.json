@@ -1,0 +1,14 @@
+{
+  "name": "ux-validate",
+  "owner": { "name": "Fabio Figueredo", "url": "https://github.com/fabiofigueredo" },
+  "description": "ux-validate: persona-based UX and accessibility testing for web apps.",
+  "plugins": [
+    {
+      "name": "ux-validate",
+      "source": "./plugin",
+      "description": "Persona-based testing of web app content, navigation, interface and accessibility (WCAG, WAI-ARIA, color blindness), with a report and fixes.",
+      "category": "testing",
+      "tags": ["ux", "accessibility", "wcag", "persona", "playwright"]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+# Persona de exemplo. Edite os objetivos para refletir o que importa na SUA aplicação.
+id: carlos-daltonico
+name: Carlos
+description: >
+  45 anos, gerente comercial. Tem deuteranopia (daltonismo vermelho-verde), como cerca de 1 em cada
+  12 homens. Confunde vermelho e verde e muitas vezes não distingue cores de status, gráficos ou a aba selecionada.
+viewport: desktop
+traits:
+  tech_literacy: média
+  vision: daltonismo
+  patience: média
+  language: pt-BR
+  reading_level: intermediário
+goals:
+  - Descobrir o preço do produto ou plano
+  - Saber qual opção, aba ou filtro está selecionado
+  - Preencher um formulário e entender as mensagens de erro
+expectations:
+  - Status e erros mostrados com texto ou ícone, não só em vermelho e verde
+  - Item selecionado marcado por algo além da cor
