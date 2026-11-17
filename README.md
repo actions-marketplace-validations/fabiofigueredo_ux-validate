@@ -8,7 +8,7 @@ Instead of just saying "contrast is below 4.5:1", ux-validate asks, through a si
 
 ![ux-validate report: scores by persona, goals and issues](docs/ux-validate-demo-crop.gif)
 
-> **Status:** early version (0.5). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
+> **Status:** early version (0.6). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
 
 ## How it works
 
@@ -218,6 +218,7 @@ Setup asks for:
 - the **language of the content**, for the spell check;
 - whether to set up a **model to apply fixes from the terminal** (`npx ux-validate fix`): **provider** (Anthropic, OpenAI, Google, Ollama), **model** and the name of the environment variable holding your API key;
 - **which personas to use** (mandatory step): setup shows the predefined personas with each one's characteristics, and you choose to use them (all or only some), create your own right there, or both. See [Personas](#personas).
+- **which tasks the personas should try** (mandatory step): goals without step-by-step, such as "You want to know how much the cheapest plan costs". See [Tasks](#tasks).
 
 And creates:
 
@@ -254,6 +255,7 @@ Then, in the project you want to test:
 | `/ux-validate:ux-report` | Rebuilds the report and a fix plan |
 | `/ux-validate:ux-fix` | Applies the fixes from the report |
 | `/ux-validate:ux-persona` | Creates a persona by talking with you |
+| `/ux-validate:ux-task` | Creates tasks for the personas to try |
 
 - The plugin brings the browser the agent uses (Playwright MCP) and the reference guides; there's nothing to copy into the project.
 - Its instructions are in English, but the agent talks to you and writes the report in the language set in the project (`locale`: `en` or `pt-BR`), chosen in `/ux-validate:ux-setup`.
@@ -268,6 +270,7 @@ In your AI tool, inside your project (in Codex, use `$` instead of `/`):
 | Command | What it does |
 |---|---|
 | `/ux-persona` | Creates a persona by talking with you about who uses the app |
+| `/ux-task` | Creates tasks for the personas to try (goals without step-by-step) |
 | `/ux-test` | Tests with every persona and builds the report |
 | `/ux-test margaret` | Tests with a single persona |
 | `/ux-test --only accessibility` | Evaluates a single category (`content`, `navigation`, `ui`, `accessibility`) |
@@ -283,6 +286,8 @@ npx ux-validate persona examples # show the predefined personas and their charac
 npx ux-validate persona add all  # copy the predefined ones into the project (or: add margaret)
 npx ux-validate persona new      # create a persona with a step-by-step wizard
 npx ux-validate persona validate # check the persona files
+npx ux-validate task new         # create tasks for the personas to try
+npx ux-validate task validate    # check the tasks file
 npx ux-validate check            # automated checks only
 npx ux-validate report           # report for the latest run
 npx ux-validate fix              # apply the fixes with the model set up in init
@@ -389,6 +394,27 @@ goals:
 ```
 
 Full format and the effect of each trait: [`source/en/references/persona-format.md`](source/en/references/persona-format.md). Trait values can be in English or Portuguese.
+
+## Tasks
+
+Tasks are what the simulated personas try to do in your app, as in a task-based usability test: **the goal, with no step-by-step**. The test checks whether each persona finds the way on their own. They live in `.ux-validate/tasks.yml` and apply to every persona, unless a task lists only some.
+
+```yaml
+- id: cheapest-plan-price
+  task: You want to know how much the cheapest plan costs.
+  success: The page shows the price of the cheapest plan.   # optional: where to get, not how
+- id: talk-to-someone
+  task: You have a question about your order and want to talk to a person.
+  personas: [margaret]                                       # optional
+```
+
+- **Required in setup:** `init` asks for at least one task after the personas (or pass `--task "…"` without questions), and `/ux-validate:ux-setup` does the same in the plugin. If there are none, `/ux-test` asks before testing.
+- **Writing them:** the goal, not the path ("You want to know how much the cheapest plan costs", not "Click Pricing…"), and without the exact words of menus and buttons. `/ux-task` helps you write them, and `npx ux-validate check` warns when a task uses the exact label of a link or button on the site, because that gives the answer away.
+- **What the agent records** for each persona and task: the outcome (judged by `success` when there is one), steps, the **first click** and whether it was on the right path, **backtracks**, and where they got lost, with a screenshot.
+- **In the report:** a **Tasks** table (task × persona, ✅ ⚠️ ❌ and number of steps) and the details of each task. Tasks count toward the "Goals" column along with the personas' own goals.
+- It's an AI simulation: it shows where the path may be unclear before you test with people, not instead of it. See [Limitations](#limitations).
+
+Commands: `npx ux-validate task new` (wizard) and `npx ux-validate task validate`. Format: `.ux-validate/references/tasks-format.md`.
 
 ## Try it with the demo site
 
@@ -502,6 +528,7 @@ The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{C
 - [x] React apps: component, file and line for each issue, SPA routes and React warnings
 - [x] Color vision: color blindness simulation, contrast, indicator and color-only state checks
 - [x] Claude Code plugin (`/plugin install ux-validate@ux-validate`)
+- [x] Tasks: goals without step-by-step, first click, backtracks and a task × persona table
 - [ ] Persona browsing from the terminal (no AI tool), with the model chosen in setup
 - [ ] Repeat the browsing and only confirm issues that show up in more than one run
 

@@ -26,6 +26,7 @@ export const PROVIDERS = {
 const DEFAULTS = {
   app: { url: 'http://localhost:3000' },
   personas: `${WORK_DIR}/personas`,
+  tasks: `${WORK_DIR}/tasks.yml`,
   viewports: ['mobile', 'desktop'],
   crawl: { maxPages: 20, checkExternalLinks: false, routes: [] },
   agent: { maxStepsPerGoal: 15 },

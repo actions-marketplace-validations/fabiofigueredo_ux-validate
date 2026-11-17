@@ -7,6 +7,7 @@ import { AxeBuilder } from '@axe-core/playwright';
 import { VIEWPORTS, SEVERITY_ORDER, loadConfig, newRunDir } from './config.js';
 import { runAriaChecks } from './aria.js';
 import { runColorVisionChecks } from './color.js';
+import { leadingLabels, loadTasks } from './tasks.js';
 import { checkSpelling, createSpeller } from './spelling.js';
 import { annotateFindings, checkClientNavigation, classifyConsole, cleanReactMessage, detectReact, isReactMessage } from './react.js';
 import { t, getLocale } from './i18n.js';
@@ -102,6 +103,16 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
 
     checkSiteWide(pages, add);
 
+    // Tarefas que entregam a resposta (usam as palavras exatas de links e botões do site).
+    let taskWarnings = [];
+    try {
+      const { tasks } = loadTasks(cwd, configPath);
+      taskWarnings = leadingLabels(tasks, pages.flatMap((p) => p.labels ?? []));
+      for (const w of taskWarnings) console.warn(t('tasks.leading', { id: w.id, labels: w.labels.map((l) => `"${l}"`).join(', ') }));
+    } catch {
+      // Arquivo de tarefas inválido: o "task validate" e o agente apontam o problema.
+    }
+
     const result = {
       tool: 'ux-validate',
       kind: 'checks',
@@ -110,6 +121,7 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
       createdAt: new Date().toISOString(),
       viewports: config.viewports,
       ...(react ? { app: { framework: react.next ? 'next' : 'react', react } } : {}),
+      ...(taskWarnings.length ? { taskWarnings } : {}),
       pages: pages.map(({ url, status, title, ok, soft404, screenshots, ariaTree, colorVision, linksTo }) => ({ url, status, title, ok, ...(soft404 ? { soft404 } : {}), screenshots, ariaTree, ...(colorVision ? { colorVision } : {}), linksTo })),
       findings: dedupe(findings),
     };
@@ -228,6 +240,12 @@ async function crawl(browser, startUrl, config, add) {
     }
 
     if (ok) {
+      // Rótulos de links e botões: servem para avisar quando uma tarefa usa as palavras da interface.
+      entry.labels = await page
+        .$$eval('a, button, [role=button], [role=link], [role=tab], [role=menuitem], input[type=submit], input[type=button]', (els) =>
+          els.map((el) => (el.innerText || el.value || el.getAttribute('aria-label') || '').trim()).filter(Boolean),
+        )
+        .catch(() => []);
       const links = await page.$$eval('a', (as) =>
         as.map((a) => ({
           href: a.getAttribute('href'),

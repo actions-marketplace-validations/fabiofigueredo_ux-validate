@@ -33,6 +33,7 @@ export function pluginVars(version = pkg.version) {
     PERSONA_VALIDATE_CMD: `${cli} persona validate`,
     PERSONA_EXAMPLES_CMD: `${cli} persona examples`,
     PERSONA_ADD_CMD: `${cli} persona add`,
+    TASK_VALIDATE_CMD: `${cli} task validate`,
     INIT_CMD: `${cli} init --tools none`,
     INSTALL_BROWSER_CMD: `${cli} install-browser`,
   };
@@ -44,7 +45,7 @@ const SETUP_NOTE = `> **Setup:** if \`ux-validate.config.yml\` doesn't exist in 
 
 /** /ux-test → /ux-validate:ux-test (skills de plugin têm o nome do plugin como prefixo). */
 function namespaced(body) {
-  return body.replace(/(^|[\s`(])\/(ux-(?:test|report|fix|persona|setup))\b/g, (_, before, name) => `${before}/${PLUGIN_NAME}:${name}`);
+  return body.replace(/(^|[\s`(])\/(ux-(?:test|report|fix|persona|task|setup))\b/g, (_, before, name) => `${before}/${PLUGIN_NAME}:${name}`);
 }
 
 function skill(cmd, version) {

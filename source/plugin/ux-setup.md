@@ -1,6 +1,6 @@
 ---
 name: ux-setup
-description: Sets up ux-validate in the current project (app URL, language and personas) so the other ux-validate skills can run.
+description: Sets up ux-validate in the current project (app URL, language, personas and tasks) so the other ux-validate skills can run.
 shortDescription: Set up ux-validate in this project
 argumentHint: "[app URL]"
 ---
@@ -26,11 +26,12 @@ Arguments received: `$ARGUMENTS` (optionally, the URL of the app to test).
 ```
 
    Use `--personas none` when the user only wants their own personas. Then, if they want their own, follow the `/ux-persona` flow for each one.
-6. **Content language.** `language` in the config is the language of the app's content, used by the spell check (default: the same as the tool). If the app's text is in another language (e.g. tool in Portuguese, site in English), change `language` in `ux-validate.config.yml` (`pt-BR`, `en`, `es`, or `other` to turn off the spell check).
-7. **Browser.** Install the browser the automated checks use (once per machine):
+6. **Tasks (required step).** Ask what the personas should try to do in the app, following the `/ux-task` flow: goals written as scenarios, no step-by-step, no interface words, with a success criterion when possible. At least one task. Save them in `{{WORK_DIR}}/tasks.yml` and validate with `{{TASK_VALIDATE_CMD}}`.
+7. **Content language.** `language` in the config is the language of the app's content, used by the spell check (default: the same as the tool). If the app's text is in another language (e.g. tool in Portuguese, site in English), change `language` in `ux-validate.config.yml` (`pt-BR`, `en`, `es`, or `other` to turn off the spell check).
+8. **Browser.** Install the browser the automated checks use (once per machine):
 
 ```bash
 {{INSTALL_BROWSER_CMD}}
 ```
 
-8. **Done.** Summarize what was created (`ux-validate.config.yml`, `{{WORK_DIR}}/personas/`, `{{WORK_DIR}}/references/`) and tell the user they can run `/ux-test` now (with the app running, or with `app.start` set).
+9. **Done.** Summarize what was created (`ux-validate.config.yml`, `{{WORK_DIR}}/personas/`, `{{WORK_DIR}}/tasks.yml`, `{{WORK_DIR}}/references/`) and tell the user they can run `/ux-test` now (with the app running, or with `app.start` set).

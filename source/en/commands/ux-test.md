@@ -33,7 +33,10 @@ Write everything (findings, summaries, your answer) in English.
    2. Ask what they prefer: **use the predefined ones** (all or only some), **create their own**, or **both**. Wait for the answer; don't choose for them.
    3. For the chosen predefined personas, run `{{PERSONA_ADD_CMD}} <ids>` (or `all`). To create one, follow the `/ux-persona` flow (conversation, confirmation, YAML file, validation).
    4. Only continue the test once the folder has at least one persona.
-3. Check that the app responds at `app.url`. If it doesn't and there is an `app.start`, start it in the background and wait until it is available (up to ~60s). If it is still down, stop and explain to the user.
+3. Read the project's tasks in `tasks` from the config (default `{{WORK_DIR}}/tasks.yml`). The format and how to write them are in `{{REFERENCES_DIR}}/tasks-format.md`. If the file looks invalid, run `{{TASK_VALIDATE_CMD}}` and show the errors.
+
+   **If there are no tasks, this step is mandatory before any test:** ask the user what the personas should try to do in the app, following the `/ux-task` flow (goals written as scenarios, no step-by-step, no interface words, with a success criterion when possible). Write the file, validate it, and only continue once there is at least one task.
+4. Check that the app responds at `app.url`. If it doesn't and there is an `app.start`, start it in the background and wait until it is available (up to ~60s). If it is still down, stop and explain to the user.
 
 ## Step 2: automated checks
 
@@ -52,12 +55,19 @@ Read `checks.json`. These issues **are already recorded**: don't repeat them as 
 For each persona, use the Playwright MCP browser tools (`browser_resize`, `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_take_screenshot`, etc.):
 
 1. Resize the window to the persona's viewport: mobile 390×844, tablet 768×1024, desktop 1440×900.
-2. Open `app.url`. For **each goal** of the persona:
+2. **Tasks first.** Open the task's `start` (default `app.url`) and, for **each task** that applies to the persona (no `personas` field, or the persona's id listed in it):
+   - Read only the `task` text, as the persona would hear it from a facilitator. **Don't use what you know from the code, routes or previous personas**: no typed URLs, no site search unless the persona would think of it, no shortcuts. The point is to see whether the interface leads them there.
+   - Write down the **first click** (or tap) and whether it led toward the goal (`onPath`). It is the best predictor of success.
+   - Count steps and **backtracks** (going back, reopening the menu, retracing the path). Stop as in the goals below.
+   - Judge the outcome by `success` when the task has it; `partial` when they got there by luck or weren't sure they had.
+   - Where they got lost or gave up, take a screenshot (`lostAt`) and record why in `notes`. Create findings for the causes (unclear labels, information in an unexpected place, missing link) and list them in `blockers`.
+   - Before the next task, go back to the starting page: each task starts fresh.
+3. Then, for **each goal** of the persona:
    - Try to achieve it starting from the home page, the way they would. Use `browser_snapshot` to read the page and decide the next step.
    - Count each action (click, typing, scrolling to look for something) as one step. Stop when the goal is achieved, when you reach `maxStepsPerGoal`, or earlier if the persona's behavior says they would give up (e.g. `patience: low` gives up after 3 or 4 steps without visible progress).
    - Record the path (URLs visited), the outcome (`success`, `partial` or `fail`) and, in `notes`, the exact moment they hesitated or got stuck and why.
    - At each friction point, take a screenshot with `browser_take_screenshot` and save it in `<run folder>/screenshots/` with a descriptive name (e.g. `anna-checkout-hidden-button.png`).
-3. Along the way, evaluate the four categories through the persona's eyes, using `{{REFERENCES_DIR}}/heuristics.md`, `{{REFERENCES_DIR}}/content-guidelines.md` and `{{REFERENCES_DIR}}/wai-aria.md`:
+4. Along the way, evaluate the four categories through the persona's eyes, using `{{REFERENCES_DIR}}/heuristics.md`, `{{REFERENCES_DIR}}/content-guidelines.md` and `{{REFERENCES_DIR}}/wai-aria.md`:
    - **Content**: do they understand the text? Jargon, unexplained foreign terms, wrong tone, information they look for and can't find, contradictory or overly generic text.
    - **Navigation**: do they know where they are and how to go back? Clear menus, labels that say where they lead, dead ends, unnecessary steps, feedback after actions.
    - **Interface**: can they see it and use it? Size and readability for their eyesight, touch targets on mobile, loading and error states, visual consistency, things that look clickable and aren't (or the other way around).
@@ -112,6 +122,8 @@ For each of your findings, look in the project's code for the likely file. Searc
 
 3. Answer the user with:
    - the table of scores by persona (at the top of `report.md`);
+   - the tasks table (task × persona) and, for each task that failed, where the personas got lost;
+   - any warning from `checks.json` (`taskWarnings`) about tasks that use the interface's own words: suggest rewriting them;
    - the goals that failed and why, one line each;
    - the 5 most important issues, with the likely file to fix;
    - the path to `report.html` to see everything with screenshots;
