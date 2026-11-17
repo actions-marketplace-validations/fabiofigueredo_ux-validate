@@ -10,13 +10,15 @@ import { projectDictionary } from './spelling.js';
 import { t, getLocale, setLocale } from './i18n.js';
 import { loadPresets, describePersona, addPresets, newPersona, countPersonas } from './persona.js';
 import { detectFramework } from './react.js';
+import { detectStaticSite } from './app-server.js';
 import { askTasks, withIds, writeTasks, loadTasks, tasksFile } from './tasks.js';
 
 const CONTENT_LANGUAGES = ['pt-BR', 'en', 'es', 'other'];
 
 export async function init({ cwd, yes = false, force = false, tools, personas, url, start, tasks }) {
   // Projeto React (Vite, Next.js, CRA…): a URL e o comando do servidor de desenvolvimento viram o padrão.
-  const framework = detectFramework(cwd);
+  // Sem React: um site só com HTML (index.html na raiz ou numa subpasta) é servido com http-server.
+  const framework = detectFramework(cwd) ?? detectStaticSite(cwd);
   const answers = yes ? defaultAnswers(tools, personas, framework) : await ask(framework);
   if (url) {
     const valid = validateUrl(url);
@@ -186,7 +188,7 @@ async function ask(framework) {
     // Várias ferramentas podem ser escolhidas: cada uma recebe os comandos no seu formato.
   });
 
-  if (framework) console.log(t('init.frameworkDetected', { name: framework.label }));
+  if (framework) console.log(framework.id === 'static' ? t('init.staticDetected', { dir: framework.dir }) : t('init.frameworkDetected', { name: framework.label }));
   const url = await input({ message: t('init.urlQ'), default: framework?.url ?? 'http://localhost:3000', validate: validateUrl });
   const start = await input({ message: t('init.startQ'), default: framework?.start ?? '' });
 

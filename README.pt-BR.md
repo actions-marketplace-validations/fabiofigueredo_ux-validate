@@ -213,7 +213,7 @@ O setup pergunta:
 
 - o **idioma da ferramenta** (português ou inglês);
 - **em quais ferramentas de IA** você vai usar os comandos (Claude Code, Cursor, Codex CLI, Gemini CLI; uma ou mais);
-- a **URL** da aplicação e, opcionalmente, o comando para subi-la;
+- a **URL** da aplicação e o **comando para subi-la** (`app.start`). Com ele, o `npx ux-validate check` inicia a aplicação quando ela não está no ar e a encerra no fim. O setup sugere o comando para projetos React e para sites só com HTML (um `index.html` na raiz ou numa subpasta: `npx -y http-server <pasta> -p 3000 -c-1`);
 - os **tamanhos de tela** (mobile, tablet, desktop);
 - o **idioma do conteúdo**, para a verificação ortográfica;
 - se quer configurar um **modelo para aplicar correções pelo terminal** (`npx ux-validate fix`), escolhendo **provedor** (Anthropic, OpenAI, Google, Ollama), **modelo** e o nome da variável de ambiente com a sua API key;
@@ -475,6 +475,7 @@ Abra o `report.html` em `.ux-validate/runs/<data-hora>/`.
 
 | Sintoma | Solução |
 |---|---|
+| "Nada está respondendo em http://localhost:…" | A aplicação não está no ar. Inicie-a, ou configure o `app.start` no `ux-validate.config.yml` para o `check` iniciá-la (site só com HTML: `npx -y http-server <pasta> -p 3000 -c-1`) |
 | `/ux-test` não aparece | A pasta aberta precisa ser a do projeto onde você rodou o `init` (a que tem `.claude/`, `.cursor/`, `.agents/` ou `.gemini/`). No Gemini CLI, rode `/commands reload` |
 | O agente não tem as ferramentas de navegador | Aprove ou ative o servidor MCP `playwright` na sua ferramenta; no Codex e no Gemini, marque a pasta do projeto como confiável |
 | Erro dizendo que o navegador não foi encontrado | Rode `npx ux-validate install-browser` no projeto |

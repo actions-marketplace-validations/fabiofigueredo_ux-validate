@@ -213,7 +213,7 @@ Setup asks for:
 
 - the **tool's language** (English or Portuguese);
 - **which AI tools** you'll use the commands in (Claude Code, Cursor, Codex CLI, Gemini CLI; one or more);
-- the app's **URL** and, optionally, the command to start it;
+- the app's **URL** and the **command to start it** (`app.start`). With it, `npx ux-validate check` starts the app when it isn't running and stops it at the end. Setup suggests it for React projects and for plain HTML sites (an `index.html` in the root or a subfolder: `npx -y http-server <folder> -p 3000 -c-1`);
 - the **screen sizes** (mobile, tablet, desktop);
 - the **language of the content**, for the spell check;
 - whether to set up a **model to apply fixes from the terminal** (`npx ux-validate fix`): **provider** (Anthropic, OpenAI, Google, Ollama), **model** and the name of the environment variable holding your API key;
@@ -474,6 +474,7 @@ Open `report.html` in `.ux-validate/runs/<date-time>/`.
 
 | Symptom | Fix |
 |---|---|
+| "Nothing is responding at http://localhost:…" | The app isn't running. Start it, or set `app.start` in `ux-validate.config.yml` so `check` starts it (plain HTML site: `npx -y http-server <folder> -p 3000 -c-1`) |
 | `/ux-test` doesn't show up | The open folder must be the project where you ran `init` (the one with `.claude/`, `.cursor/`, `.agents/` or `.gemini/`). In Gemini CLI, run `/commands reload` |
 | The agent has no browser tools | Approve or enable the `playwright` MCP server in your tool; in Codex and Gemini, trust the project folder |
 | Error saying the browser wasn't found | Run `npx ux-validate install-browser` in the project |

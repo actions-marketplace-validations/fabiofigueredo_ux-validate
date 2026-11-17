@@ -69,6 +69,7 @@ General options:
     targetsQ: 'Which AI tool will you use the commands in?',
     soon: '(coming soon)',
     unknownTool: 'Unknown AI tool: {list}. Use: {valid}.',
+    staticDetected: '\n  Static site detected in the {dir} folder: we suggest serving it with http-server on port 3000 (ux-validate starts and stops the server itself).\n',
     frameworkDetected: '\n  {name} project detected: we suggest the development server, where ux-validate can point to the component and file of each issue.\n',
     urlQ: 'URL of the app to test (e.g. http://localhost:3000):',
     startQ: 'Command to start the app (optional, e.g. npm run dev):',
@@ -257,6 +258,17 @@ General options:
       summary: '{ok} of {total} task(s) valid ({file}).',
       failed: '{n} task(s) with errors.',
     },
+  },
+
+  app: {
+    notRunning:
+      "Nothing is responding at {url}. Start the app first (e.g. npm run dev) or set app.start in ux-validate.config.yml " +
+      'so ux-validate starts it. For a plain HTML site, use for example: app.start: npx -y http-server <folder> -p 3000 -c-1',
+    starting: 'Starting the app: {command}',
+    started: '✔ App is up at {url}.',
+    exited: 'The command "{command}" ended before {url} responded. Check the command in app.start.',
+    timeout: "{url} didn't respond within {seconds}s after \"{command}\". Check the port in app.url and the command in app.start.",
+    staticLabel: 'Static site (HTML)',
   },
 
   checks: {
