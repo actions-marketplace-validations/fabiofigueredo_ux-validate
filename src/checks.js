@@ -8,6 +8,7 @@ import { VIEWPORTS, SEVERITY_ORDER, loadConfig, newRunDir } from './config.js';
 import { runAriaChecks } from './aria.js';
 import { runColorVisionChecks } from './color.js';
 import { leadingLabels, loadTasks } from './tasks.js';
+import { ensureAppRunning } from './app-server.js';
 import { checkSpelling, createSpeller } from './spelling.js';
 import { annotateFindings, checkClientNavigation, classifyConsole, cleanReactMessage, detectReact, isReactMessage } from './react.js';
 import { t, getLocale } from './i18n.js';
@@ -58,6 +59,8 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
   const runDir = out ? path.resolve(cwd, out) : newRunDir(cwd);
   fs.mkdirSync(path.join(runDir, 'screenshots'), { recursive: true });
 
+  // Sobe a aplicação com app.start, se ela não estiver no ar (e a encerra no fim).
+  const app = await ensureAppRunning({ url: startUrl, start: config.app.start, cwd });
   const browser = await chromium.launch(
     process.env.UX_VALIDATE_CHROMIUM ? { executablePath: process.env.UX_VALIDATE_CHROMIUM } : {},
   );
@@ -151,6 +154,7 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
     return { runDir, result };
   } finally {
     await browser.close();
+    app.stop();
   }
 }
 
@@ -188,7 +192,7 @@ async function crawl(browser, startUrl, config, add) {
     }
   });
   const queue = [...new Set([normalize(startUrl), ...extra.filter(Boolean)])];
-  const seen = new Set(queue);
+  const seen = new Set(queue.map(samePage));
   const pages = [];
   const checkedExternal = new Map();
   let react = null;
@@ -282,8 +286,8 @@ async function crawl(browser, startUrl, config, add) {
         if (target.origin === origin) {
           const next = normalize(target.href);
           entry.linksTo.push(next);
-          if (!seen.has(next)) {
-            seen.add(next);
+          if (!seen.has(samePage(next))) {
+            seen.add(samePage(next));
             queue.push(next);
           }
         } else if (config.crawl.checkExternalLinks && !checkedExternal.has(target.href)) {
@@ -628,6 +632,16 @@ function groupBy(list, fn) {
   const m = new Map();
   for (const x of list) m.set(fn(x), [...(m.get(fn(x)) ?? []), x]);
   return m;
+}
+
+/**
+ * Chave para saber se duas URLs são a mesma página: num servidor, "/" e "/index.html" mostram o mesmo
+ * arquivo e não devem ser analisados duas vezes (duplicaria todos os problemas da página inicial).
+ */
+export function samePage(u) {
+  const url = new URL(u);
+  if (/^https?:$/.test(url.protocol)) url.pathname = url.pathname.replace(/\/index\.html?$/i, '/');
+  return url.href;
 }
 
 /** Tira âncoras (#secao), mas mantém rotas de hash (#/planos, #!/planos), comuns em SPAs com HashRouter. */

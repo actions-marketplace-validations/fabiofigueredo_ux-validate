@@ -36,7 +36,7 @@ Write everything (findings, summaries, your answer) in English.
 3. Read the project's tasks in `tasks` from the config (default `{{WORK_DIR}}/tasks.yml`). The format and how to write them are in `{{REFERENCES_DIR}}/tasks-format.md`. If the file looks invalid, run `{{TASK_VALIDATE_CMD}}` and show the errors.
 
    **If there are no tasks, this step is mandatory before any test:** ask the user what the personas should try to do in the app, following the `/ux-task` flow (goals written as scenarios, no step-by-step, no interface words, with a success criterion when possible). Write the file, validate it, and only continue once there is at least one task.
-4. Check that the app responds at `app.url`. If it doesn't and there is an `app.start`, start it in the background and wait until it is available (up to ~60s). If it is still down, stop and explain to the user.
+4. Check that the app responds at `app.url`. If it doesn't and there is an `app.start`, run **exactly that command** in the background and wait until it is available (up to ~60s); it must stay up while you browse. **Don't improvise another command** to start the app: if there is no `app.start`, or the app is still down, stop and ask the user to start it or to set `app.start` (for a plain HTML site, e.g. `npx -y http-server <folder> -p 3000 -c-1`).
 
 ## Step 2: automated checks
 

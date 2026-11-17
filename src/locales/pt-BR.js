@@ -69,6 +69,7 @@ Opções gerais:
     targetsQ: 'Em qual ferramenta de IA você vai usar os comandos?',
     soon: '(em breve)',
     unknownTool: 'Ferramenta de IA desconhecida: {list}. Use: {valid}.',
+    staticDetected: '\n  Site estático detectado na pasta {dir}: sugerimos servi-la com http-server na porta 3000 (o ux-validate inicia e encerra o servidor sozinho).\n',
     frameworkDetected: '\n  Projeto {name} detectado: sugerimos o servidor de desenvolvimento, onde o ux-validate consegue apontar o componente e o arquivo de cada problema.\n',
     urlQ: 'URL da aplicação a ser testada (ex.: http://localhost:3000):',
     startQ: 'Comando para subir a aplicação (opcional, ex.: npm run dev):',
@@ -257,6 +258,17 @@ Opções gerais:
       summary: '{ok} de {total} tarefa(s) válidas ({file}).',
       failed: '{n} tarefa(s) com erro.',
     },
+  },
+
+  app: {
+    notRunning:
+      'Nada está respondendo em {url}. Inicie a aplicação antes (ex.: npm run dev) ou configure app.start no ux-validate.config.yml ' +
+      'para o ux-validate iniciá-la sozinho. Para um site só com HTML, use por exemplo: app.start: npx -y http-server <pasta> -p 3000 -c-1',
+    starting: 'Iniciando a aplicação: {command}',
+    started: '✔ Aplicação no ar em {url}.',
+    exited: 'O comando "{command}" terminou antes de {url} responder. Confira o comando em app.start.',
+    timeout: '{url} não respondeu em {seconds}s depois de "{command}". Confira a porta em app.url e o comando em app.start.',
+    staticLabel: 'Site estático (HTML)',
   },
 
   checks: {

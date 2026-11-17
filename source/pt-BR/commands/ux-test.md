@@ -34,7 +34,7 @@ Argumentos recebidos: `$ARGUMENTS`
 3. Leia as tarefas do projeto em `tasks` na configuração (padrão `{{WORK_DIR}}/tasks.yml`). O formato e como escrevê-las estão em `{{REFERENCES_DIR}}/tasks-format.md`. Se o arquivo parecer inválido, rode `{{TASK_VALIDATE_CMD}}` e mostre os erros.
 
    **Se não houver tarefas, este passo é obrigatório antes de qualquer teste:** pergunte ao usuário o que as personas devem tentar fazer na aplicação, seguindo o fluxo do `/ux-task` (objetivos escritos como cenário, sem passo a passo, sem as palavras da interface e, quando possível, com critério de sucesso). Grave o arquivo, valide e só continue quando houver pelo menos uma tarefa.
-4. Verifique se a aplicação responde na `app.url`. Se não responder e houver `app.start`, suba-a em segundo plano e espere ficar disponível (até ~60s). Se continuar fora do ar, pare e explique ao usuário.
+4. Verifique se a aplicação responde na `app.url`. Se não responder e houver `app.start`, rode **exatamente esse comando** em segundo plano e espere ficar disponível (até ~60s); ela precisa continuar no ar enquanto você navega. **Não improvise outro comando** para subir a aplicação: se não houver `app.start`, ou se continuar fora do ar, pare e peça ao usuário para iniciá-la ou configurar o `app.start` (para um site só com HTML, por exemplo `npx -y http-server <pasta> -p 3000 -c-1`).
 
 ## Passo 2: checagens fixas
 
