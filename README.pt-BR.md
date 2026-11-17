@@ -38,6 +38,15 @@ Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate responde:
 
 O ux-validate roda **dentro da sua ferramenta de IA**: o modelo usado é o que ela estiver usando.
 
+## Limitações
+
+O ux-validate é uma **primeira checagem**. Ele não substitui testes manuais de acessibilidade nem testes com pessoas reais, inclusive pessoas com deficiência.
+
+- **O que roda sem IA.** O `npx ux-validate check` não usa modelo de linguagem: axe-core (WCAG 2.2 AA), sintaxe ARIA, comportamento de teclado e WAI-ARIA (armadilha de foco, foco invisível, elementos clicáveis sem acesso pelo teclado), links quebrados, erros de console, rolagem horizontal, ortografia offline (Hunspell), texto de preenchimento (lorem ipsum, `NaN`…), checagens de daltonismo e checagens específicas de React.
+- **O que precisa de uma ferramenta de IA externa.** Os testes com personas (`/ux-test`) rodam dentro do Claude Code, Cursor, Codex CLI ou Gemini CLI, que são ferramentas proprietárias. A CLI do ux-validate é de código aberto (MIT); essas ferramentas, não.
+- **A automação cobre só parte das WCAG.** Num teste informal do autor (17/11/2026), o `check` rodou nas 142 páginas de teste do [alphagov/accessibility-tool-audit](https://github.com/alphagov/accessibility-tool-audit), que têm defeitos propositais e resultados de 13 ferramentas como referência. Ele detectou cerca de um terço dos casos, na mesma faixa do axe sozinho (40 de 141) e abaixo da melhor ferramenta paga (56 de 141). Na página de controle, sem defeitos, não houve falso positivo de acessibilidade. É um teste informal, não um estudo.
+- **As personas são simuladas por IA.** Elas podem repetir vieses dos modelos e ainda não foram validadas com pessoas reais. Use-as como apoio, nunca como substituto de pesquisa com pessoas.
+
 ## Ferramentas de IA suportadas
 
 O setup instala os mesmos comandos (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`) no formato de cada ferramenta, além do servidor MCP do Playwright, que o agente usa como navegador. Dá para escolher várias ferramentas de uma vez. Para o Claude Code existe também um [plugin](#plugin-do-claude-code-alternativa) com as mesmas funcionalidades, como alternativa ao `init`.

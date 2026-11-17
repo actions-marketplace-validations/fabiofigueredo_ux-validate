@@ -38,6 +38,15 @@ Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Marg
 
 ux-validate runs **inside your AI tool**: the model used is whichever one that tool is using.
 
+## Limitations
+
+ux-validate is a **first-pass check**. It doesn't replace manual accessibility testing or testing with real people, including people with disabilities.
+
+- **What runs without AI.** `npx ux-validate check` uses no language model: axe-core (WCAG 2.2 AA), ARIA syntax, keyboard and WAI-ARIA behavior (focus traps, invisible focus, clickable elements the keyboard can't reach), broken links, console errors, horizontal scrolling, offline spell check (Hunspell), placeholder text (lorem ipsum, `NaN`…), color blindness checks and React-specific checks.
+- **What needs an external AI tool.** Persona tests (`/ux-test`) run inside Claude Code, Cursor, Codex CLI or Gemini CLI, which are proprietary tools. The ux-validate CLI is open source (MIT); those tools are not.
+- **Automation covers only part of WCAG.** In an informal test by the author (2026-11-17), `check` ran on the 142 test pages of [alphagov/accessibility-tool-audit](https://github.com/alphagov/accessibility-tool-audit), which have deliberate defects and results from 13 tools for reference. It detected about a third of the cases, in the same range as axe alone (40 of 141) and below the best paid tool (56 of 141). On the control page with no defects, it reported no accessibility false positives. This is an informal test, not a study.
+- **Personas are simulated by AI.** They can repeat the models' biases, and they have not yet been validated against real people. Use them as a support, never as a substitute for research with people.
+
 ## Supported AI tools
 
 Setup installs the same commands (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`) in each tool's own format, plus the Playwright MCP server the agent uses as its browser. You can pick several tools at once. For Claude Code there is also a [plugin](#claude-code-plugin-alternative) with the same features, as an alternative to `init`.

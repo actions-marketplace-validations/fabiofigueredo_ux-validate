@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ux-validate</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Valide projetos web com personas reais, combinando usabilidade, acessibilidade e conteúdo. Código aberto, roda com Claude Code, Cursor, Codex CLI e Gemini CLI.">
+<meta name="description" content="Primeira checagem de projetos web: acessibilidade, usabilidade e conteúdo, com checagens automáticas e personas simuladas por IA. CLI de código aberto (MIT); os testes com personas usam Claude Code, Cursor, Codex CLI ou Gemini CLI.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,500;9..40,700;9..40,800&family=Pixelify+Sans:wght@600;700&display=swap">
@@ -155,6 +155,11 @@ h1 { font: 700 clamp(44px, 8vw, 76px)/1.05 var(--display); white-space: nowrap; 
 .personas .rule { align-self: stretch; background: var(--line); margin-block: 30px; }
 .art img { width: 100%; height: auto; display: block; }
 @media (max-width: 860px) { .personas { grid-template-columns: 1fr; gap: 20px; } .personas .rule { display: none; } .personas .art { max-width: 300px; } }
+/* ---------- Limites ---------- */
+.limits { display: grid; grid-template-columns: minmax(0, .9fr) 1.5px minmax(0, 1.6fr); gap: 34px; align-items: center; padding-block: 26px 30px; }
+.limits .rule { align-self: stretch; background: var(--line); }
+.nowrap { white-space: nowrap; }
+@media (max-width: 860px) { .limits { grid-template-columns: 1fr; gap: 16px; } .limits .rule { display: none; } }
 
 /* ---------- Relatórios ---------- */
 .band { background: var(--lilac-soft); border-radius: 22px; padding: 28px 30px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 1.5px minmax(0, .95fr); gap: 30px; align-items: center; }
@@ -216,6 +221,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <symbol id="tick" viewBox="0 0 20 20"><rect x="1.5" y="1.5" width="17" height="17" rx="4" fill="#c6ef5a" stroke="#111" stroke-width="1.6"/><path d="M5.5 10.5 8.5 13.5 14.5 6.5" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="warn" viewBox="0 0 20 20"><rect x="1.5" y="1.5" width="17" height="17" rx="4" fill="#fde68a" stroke="#111" stroke-width="1.6"/><path d="M10 5.5v5.5" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round"/><circle cx="10" cy="14.4" r="1.4" fill="#111"/></symbol>
     <symbol id="check" viewBox="0 0 16 16"><path d="M2.5 8.5 6 12 13.5 4" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="arrow" viewBox="0 0 24 16"><path d="M2 8h18M14 2l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="burst" viewBox="0 0 40 40"><path d="M8 14 3 9M18 8l-1-6M28 13l6-6M30 23h7" fill="none" stroke="#c6ef5a" stroke-width="3.6" stroke-linecap="round"/></symbol>
@@ -254,7 +260,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
         <span class="h tl"></span><span class="h tr"></span><span class="h bl"></span><span class="h br"></span>
         <h1 id="titulo">ux-validate</h1>
       </div>
-      <p class="tagline" data-i18n="hero.tagline">Valide projetos web com personas reais, combinando usabilidade, acessibilidade e conteúdo.</p>
+      <p class="tagline" data-i18n="hero.tagline">Primeira checagem de projetos web: acessibilidade, usabilidade e conteúdo, com checagens automáticas e personas simuladas por IA.</p>
       <div class="hero-ctas">
         <a class="btn dark" href="#comecar" data-start><span data-i18n="cta.start">Começar agora</span><svg aria-hidden="true"><use href="#arrow"/></svg></a>
         <a class="btn light" href="https://github.com/fabiofigueredo/ux-validate" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#branch"/></svg><span data-i18n="cta.github">Ver no GitHub</span></a>
@@ -274,9 +280,9 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
   <!-- ===== Faixa ===== -->
   <div class="wrap">
     <div class="strip">
-      <div class="pill"><svg viewBox="0 0 36 36" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="13" cy="12" r="5.5"/><path d="M3 30c1-6 5-9.5 10-9.5s9 3.5 10 9.5"/><circle cx="25" cy="13" r="4"/><path d="M24 20.5c4.5 0 8 3 9 8"/></svg><span data-i18n="strip.pill">Teste com<br>personas reais</span></div>
+      <div class="pill"><svg viewBox="0 0 36 36" fill="none" stroke="#111" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="13" cy="12" r="5.5"/><path d="M3 30c1-6 5-9.5 10-9.5s9 3.5 10 9.5"/><circle cx="25" cy="13" r="4"/><path d="M24 20.5c4.5 0 8 3 9 8"/></svg><span data-i18n="strip.pill">Teste com<br>personas simuladas</span></div>
       <span class="bar" aria-hidden="true"></span>
-      <p data-i18n="strip.text">Simule o uso da sua aplicação por diferentes perfis, como uma pessoa idosa, alguém com deficiência visual e outros contextos de uso.</p>
+      <p data-i18n="strip.text">Simule o uso da sua aplicação por diferentes perfis, como uma pessoa idosa, alguém com deficiência visual e outros contextos de uso. É uma simulação: não substitui testes com pessoas reais.</p>
       <svg class="spark-s" aria-hidden="true"><use href="#burst"/></svg>
     </div>
   </div>
@@ -333,7 +339,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
     <div>
       <span class="hand sm" data-i18n="per.hand">personas que importam</span>
       <h2 id="per-t" data-i18n="per.title">Do estudante à pessoa idosa, cada experiência conta.</h2>
-      <p class="body" data-i18n="per.text">Valide sua aplicação com diferentes perfis de uso, como pessoas idosas, pessoas com deficiência visual, baixa familiaridade com tecnologia e muito mais. Cada persona tem aparelho, limites e objetivos próprios.</p>
+      <p class="body" data-i18n="per.text">Use personas como apoio, nunca como substituto de pesquisa com pessoas. Valide sua aplicação com diferentes perfis de uso, como pessoas idosas, pessoas com deficiência visual, baixa familiaridade com tecnologia e muito mais. Cada persona tem aparelho, limites e objetivos próprios.</p>
     </div>
     <span class="rule" aria-hidden="true"></span>
     <ul class="check-list">
@@ -341,7 +347,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
       <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="per.l2">Deficiência visual e leitor de tela</span></li>
       <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="per.l3">Baixa familiaridade com tecnologia</span></li>
       <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="per.l4">Celular, tablet ou computador</span></li>
-      <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="per.l5">Outros contextos reais, criados por você</span></li>
+      <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="per.l5">Outros contextos de uso, criados por você</span></li>
     </ul>
   </section>
 
@@ -391,6 +397,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
         <div class="tool"><svg viewBox="0 0 26 26" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="22" height="20" rx="5" fill="#c6ef5a"/><path d="M10 8c-2 0-2 1-2 2.5S6.5 13 6.5 13s1.5.5 1.5 2.5S8 18 10 18M16 8c2 0 2 1 2 2.5s1.5 2.5 1.5 2.5-1.5.5-1.5 2.5S18 18 16 18"/></svg>Codex CLI</div>
         <div class="tool"><svg viewBox="0 0 26 26" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="22" height="16" rx="5" fill="#9ccbf5"/><path d="M8 20l-1 4 5-4M8 10h10M8 14h6"/></svg>Gemini CLI</div>
       </div>
+      <p class="body" data-i18n="int.note">CLI de código aberto (MIT). Os testes com personas usam uma ferramenta de IA externa (Claude Code, Cursor, Codex CLI ou Gemini CLI).</p>
     </div>
     <span class="rule" aria-hidden="true"></span>
     <div class="art">
@@ -410,13 +417,27 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
     </div>
   </section>
 
+  <!-- ===== Limites ===== -->
+  <section class="wrap limits" aria-labelledby="lim-t">
+    <div>
+      <span class="hand sm" data-i18n="lim.hand">limites</span>
+      <h2 id="lim-t" data-i18n="lim.title">O que o <span class="nowrap">ux-validate</span> não faz</h2>
+    </div>
+    <span class="rule" aria-hidden="true"></span>
+    <ul class="check-list">
+      <li><svg class="tick" aria-hidden="true"><use href="#warn"/></svg><span data-i18n="lim.l1">Não substitui testes com pessoas reais, inclusive pessoas com deficiência.</span></li>
+      <li><svg class="tick" aria-hidden="true"><use href="#warn"/></svg><span data-i18n="lim.l2">A automação cobre só parte dos critérios das WCAG. O resto exige teste manual.</span></li>
+      <li><svg class="tick" aria-hidden="true"><use href="#warn"/></svg><span data-i18n="lim.l3">As personas são simuladas por IA e podem repetir vieses dos modelos. Ainda estão em validação.</span></li>
+    </ul>
+  </section>
+
   <!-- ===== Barra final ===== -->
   <div class="wrap">
     <div class="cta-bar">
       <svg class="star" viewBox="0 0 34 34" fill="none" stroke-linejoin="round" aria-hidden="true"><path d="M15 3l3 9 9 3-9 3-3 9-3-9-9-3 9-3z" stroke="#c6ef5a" stroke-width="2.4"/><path d="M27 2l1.2 3.3L31.5 6.5l-3.3 1.2L27 11l-1.2-3.3L22.5 6.5l3.3-1.2z" fill="#c6ef5a"/></svg>
       <strong data-i18n="bar.title">Valide agora sua aplicação</strong>
       <span class="rule" aria-hidden="true"></span>
-      <p data-i18n="bar.text">Garanta uma experiência mais inclusiva, eficiente e confiável.</p>
+      <p data-i18n="bar.text">Comece por uma primeira checagem e depois teste com pessoas reais.</p>
       <a class="btn" href="#comecar" data-start><span data-i18n="cta.start">Começar agora</span><svg aria-hidden="true"><use href="#arrow"/></svg></a>
     </div>
   </div>
@@ -452,28 +473,33 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
   const EN = {
     'nav.features': 'Features', 'nav.how': 'How it works', 'nav.reports': 'Reports', 'nav.integrations': 'Integrations', 'nav.start': 'Get started',
     'hero.hand': 'validate the real experience',
-    'hero.tagline': 'Validate web projects with real personas, combining usability, accessibility and content.',
+    'hero.tagline': 'A first-pass check for web projects: accessibility, usability and content, with automated checks and AI-simulated personas.',
     'cta.start': 'Get started', 'cta.github': 'View on GitHub', 'hero.b1': 'Open source (MIT)', 'hero.b3': 'AI + Personas',
-    'strip.pill': 'Test with<br>real personas',
-    'strip.text': 'Simulate how different people use your app, like an older adult, someone with a visual impairment and other contexts of use.',
+    'strip.pill': 'Test with<br>simulated personas',
+    'strip.text': 'Simulate how different people use your app, like an older adult, someone with a visual impairment and other contexts of use. It\'s a simulation: it does not replace testing with real people.',
     'why.hand': 'why validate?', 'why.title': 'Because not everyone uses your app the same way.',
     'why.text': 'AI can build interfaces fast, but only validating through the eyes of real people reveals the barriers that actually get in the way.',
     'why.n1': 'Hard to navigate', 'why.n2': 'Broken links', 'why.n3': 'Low contrast',
     'how.hand': 'how it works', 'how.title': 'Five steps, from persona to fix.',
     'how.s1': '1. Define the personas', 'how.s2': '2. Simulate their goals', 'how.s3': '3. Run the checks', 'how.s4': '4. Read the report', 'how.s5': '5. Fix and improve',
     'per.hand': 'personas that matter', 'per.title': 'From students to older adults, every experience counts.',
-    'per.text': 'Validate your app with different profiles, such as older adults, people with visual impairments, low familiarity with technology and more. Each persona has its own device, limits and goals.',
-    'per.l1': 'Older adults', 'per.l2': 'Visual impairment and screen readers', 'per.l3': 'Low familiarity with technology', 'per.l4': 'Phone, tablet or computer', 'per.l5': 'Other real contexts, written by you',
+    'per.text': 'Use personas as a support, never as a substitute for research with people. Validate your app with different usage profiles, such as older adults, people with visual impairments, low familiarity with technology and more. Each persona has its own device, limits and goals.',
+    'per.l1': 'Older adults', 'per.l2': 'Visual impairment and screen readers', 'per.l3': 'Low familiarity with technology', 'per.l4': 'Phone, tablet or computer', 'per.l5': 'Other contexts of use, written by you',
     'rep.hand': 'what you get', 'rep.title': 'Clear, actionable reports.',
     'rep.text': 'See what works, what needs fixing and where to change it, with evidence, scores and objective suggestions.',
     'rep.ring': 'score · example', 'cat.content': 'Content', 'cat.nav': 'Navigation', 'cat.ui': 'Interface', 'cat.a11y': 'Accessibility',
     'rep.l1': 'Scores by persona and category', 'rep.l2': 'Evidence (screenshots and snippets)', 'rep.l3': 'Goals not achieved and where people got stuck', 'rep.l4': 'Files and lines to fix',
     'int.hand': 'integrations', 'int.title': 'Works with your development workflow.',
     'int.text': 'Run ux-validate with the tools you already use, in the terminal and in GitHub CI.',
+    'int.note': 'Open-source CLI (MIT). Persona tests use an external AI tool (Claude Code, Cursor, Codex CLI or Gemini CLI).',
     'a11y.hand': 'compliance and inclusion', 'a11y.title': 'Accessibility to the right standard.',
     'a11y.text': 'Automated checks and hands-on tests, aligned with the main references.',
     'a11y.l1': 'WCAG 2.2 (level AA)', 'a11y.l3': 'Keyboard and WAI-ARIA tests', 'a11y.l4': 'Accessibility tree (what the screen reader announces)', 'a11y.l5': 'Color blindness simulation',
-    'bar.title': 'Validate your app now', 'bar.text': 'Deliver a more inclusive, efficient and reliable experience.',
+    'lim.hand': 'limits', 'lim.title': 'What <span class="nowrap">ux-validate</span> doesn\'t do',
+    'lim.l1': "It doesn't replace testing with real people, including people with disabilities.",
+    'lim.l2': 'Automation covers only part of the WCAG success criteria. The rest needs manual testing.',
+    'lim.l3': 'Personas are simulated by AI and may repeat model biases. They are still being validated.',
+    'bar.title': 'Validate your app now', 'bar.text': 'Start with a first-pass check, then test with real people.',
     'dlg.hand': 'in 3 commands', 'dlg.title': 'Start in your project',
     'dlg.note': 'Setup asks you to choose the personas: the predefined ones, your own, or both. Then, in Claude Code, Cursor or Gemini CLI, run /ux-test. In Codex, $ux-test.',
     'dlg.copy': 'Copy commands', 'dlg.copied': 'Copied', 'dlg.docs': 'Read the docs'
