@@ -4,7 +4,7 @@
 
 Testes de **conteúdo**, **navegação**, **interface** e **acessibilidade** de aplicações web, feitos do ponto de vista de **personas**, geradas por IA ou não, e executados pelo agente de IA que você já usa.
 
-Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate responde: *a Dona Maria, de 68 anos, no celular, consegue descobrir quanto custa o seu produto?* E se não consegue, mostra onde ela travou, por quê e em qual arquivo corrigir.
+Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate pergunta, por meio de uma persona simulada: *a Dona Maria, de 68 anos, no celular, consegue descobrir quanto custa o seu produto?* E se não consegue, mostra onde ela travou, por quê e em qual arquivo corrigir.
 
 ![Relatório do ux-validate: notas por persona, objetivos e problemas](docs/ux-validate-demo-crop.gif)
 

@@ -95,6 +95,7 @@ h2 { font: 800 clamp(25px, 3.3vw, 30px)/1.15 var(--head); letter-spacing: -0.015
 .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 20px; align-items: center; padding-block: 34px 26px; }
 .hero-copy { display: grid; gap: 22px; justify-items: start; }
 .hero .hand { font-size: 27px; }
+@media (max-width: 360px) { .hero .hand { font-size: 23px; } } /* o título manuscrito cabe numa linha em telas estreitas */
 .spark { position: absolute; width: 34px; height: 30px; }
 @media (max-width: 380px) { .spark { display: none; } } /* enfeite ao lado do título sairia da tela */
 .selection { position: relative; border: 1.5px solid var(--ink-2); padding: 4px 18px 0; max-width: 100%; }
@@ -253,7 +254,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
   <section class="wrap hero" aria-labelledby="titulo">
     <div class="hero-copy">
       <div style="position:relative">
-        <span class="hand" data-i18n="hero.hand">valide a experiência de verdade</span>
+        <span class="hand" data-i18n="hero.hand">valide antes de testar com pessoas</span>
         <svg class="spark" style="right:-50px;top:-10px" aria-hidden="true"><use href="#burst"/></svg>
       </div>
       <div class="selection">
@@ -472,7 +473,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
   /* ---------- Idioma: português por padrão, inglês opcional ---------- */
   const EN = {
     'nav.features': 'Features', 'nav.how': 'How it works', 'nav.reports': 'Reports', 'nav.integrations': 'Integrations', 'nav.start': 'Get started',
-    'hero.hand': 'validate the real experience',
+    'hero.hand': 'check before you test with people',
     'hero.tagline': 'A first-pass check for web projects: accessibility, usability and content, with automated checks and AI-simulated personas.',
     'cta.start': 'Get started', 'cta.github': 'View on GitHub', 'hero.b1': 'Open source (MIT)', 'hero.b3': 'AI + Personas',
     'strip.pill': 'Test with<br>simulated personas',

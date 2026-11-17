@@ -4,7 +4,7 @@
 
 Persona-based testing of the **content**, **navigation**, **interface** and **accessibility** of web apps, whether AI-generated or not, run by the AI agent you already use.
 
-Instead of just saying "contrast is below 4.5:1", ux-validate answers: *can Margaret, 68, on her phone, find out how much your product costs?* And if she can't, it shows where she got stuck, why, and which file to fix.
+Instead of just saying "contrast is below 4.5:1", ux-validate asks, through a simulated persona: *can Margaret, 68, on her phone, find out how much your product costs?* And if she can't, it shows where she got stuck, why, and which file to fix.
 
 ![ux-validate report: scores by persona, goals and issues](docs/ux-validate-demo-crop.gif)
 
