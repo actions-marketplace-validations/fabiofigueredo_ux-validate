@@ -23,6 +23,19 @@ File written by the agent at `.ux-validate/runs/<run>/findings.json`. The `ux-va
           "notes": "Found it in the menu, but hesitated because the item is called 'Tiers'.",
           "blockers": []
         }
+      ],
+      "tasks": [
+        {
+          "id": "cheapest-plan-price",
+          "outcome": "partial",
+          "steps": 6,
+          "firstClick": { "label": "Products", "onPath": false },
+          "backtracks": 2,
+          "path": ["http://localhost:3000/", "http://localhost:3000/products", "http://localhost:3000/plans"],
+          "notes": "Expected the price under Products; came back and found it under 'Tiers', but wasn't sure it was the cheapest.",
+          "lostAt": { "page": "http://localhost:3000/products", "screenshot": "screenshots/margaret-task-price-products.png" },
+          "blockers": ["A001"]
+        }
       ]
     }
   ],
@@ -56,7 +69,11 @@ File written by the agent at `.ux-validate/runs/<run>/findings.json`. The `ux-va
 | Field | Values | Notes |
 |---|---|---|
 | `outcome` | `success`, `partial`, `fail` | `partial` = achieved by luck or without being sure it worked |
-| `blockers` | finding ids | Findings that prevented or delayed the goal |
+| `blockers` | finding ids | Findings that prevented or delayed the goal or task |
+| `tasks[].id` | id from `tasks.yml` | One entry per task that applies to the persona (see `tasks-format.md`) |
+| `tasks[].firstClick` | `{ label, onPath }` | The first thing the persona clicked or tapped, and whether it led toward the goal |
+| `tasks[].backtracks` | number | How many times they went back or retraced the path |
+| `tasks[].lostAt` | `{ page, screenshot }` | Where they got lost or gave up, with a screenshot |
 | `category` | `content`, `navigation`, `ui`, `accessibility` | One per finding; if it touches two, pick the cause. Keyboard, screen reader, ARIA and WCAG issues go in `accessibility` |
 | `severity` | `critical`, `high`, `medium`, `low` | See the table below |
 | `personas` | ids of the affected personas | Required, not empty |

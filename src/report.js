@@ -3,6 +3,7 @@ import path from 'node:path';
 import YAML from 'yaml';
 import { latestRunDir, loadConfig } from './config.js';
 import { t, getLocale, formatDate } from './i18n.js';
+import { loadTasks, tasksFor } from './tasks.js';
 
 const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low'];
 const PENALTY = { critical: 30, high: 15, medium: 6, low: 2 };
@@ -25,7 +26,7 @@ export async function buildReport({ cwd, run }) {
   const agent = readJson(path.join(runDir, 'findings.json'));
   if (!checks && !agent) throw new Error(t('report.noData', { dir: runDir }));
 
-  const data = analyze(checks, agent, { traits: personaTraits(cwd) });
+  const data = analyze(checks, agent, { traits: personaTraits(cwd), tasks: projectTasks(cwd) });
   fs.writeFileSync(path.join(runDir, 'report.md'), renderMarkdown(data));
   fs.writeFileSync(path.join(runDir, 'report.html'), renderHtml(data));
 
@@ -53,6 +54,31 @@ function personaTraits(cwd) {
 
 const COLOR_BLIND = new Set(['color-blind', 'daltonismo']);
 
+function projectTasks(cwd) {
+  try {
+    return loadTasks(cwd).tasks;
+  } catch {
+    return [];
+  }
+}
+
+const OUTCOME_ICON = { success: '✅', partial: '⚠️', fail: '❌' };
+
+/** Tabela de tarefas: cada tarefa do projeto × as personas a que ela se aplica, com o resultado de cada uma. */
+function taskMatrix(tasks, personas) {
+  const defs = [...tasks];
+  // Tarefas que o agente registrou mas não estão no arquivo (ex.: arquivo mudou depois do teste).
+  for (const p of personas) for (const r of p.tasks ?? []) if (r.id && !defs.some((d) => d.id === r.id)) defs.push({ id: r.id, task: r.task ?? r.id });
+  return defs.map((task) => ({
+    ...task,
+    results: personas.map((p) => ({
+      persona: p,
+      applies: tasksFor([task], p.id).length > 0,
+      result: (p.tasks ?? []).find((r) => r.id === task.id) ?? null,
+    })),
+  }));
+}
+
 function readJson(file) {
   if (!fs.existsSync(file)) return null;
   try {
@@ -62,7 +88,7 @@ function readJson(file) {
   }
 }
 
-export function analyze(checks, agent, { traits = {} } = {}) {
+export function analyze(checks, agent, { traits = {}, tasks = [] } = {}) {
   const personas = agent?.personas ?? [];
   const checkFindings = (checks?.findings ?? []).map((f) => ({ ...f, origin: 'check' }));
   const agentFindings = (agent?.findings ?? []).map((f) => ({ ...f, origin: 'agent' }));
@@ -95,6 +121,8 @@ export function analyze(checks, agent, { traits = {} } = {}) {
     personas,
     findings,
     scores,
+    tasks: taskMatrix(tasks, personas),
+    taskWarnings: checks?.taskWarnings ?? [],
   };
 }
 
@@ -115,7 +143,8 @@ function scoreFor(findings, persona) {
     // Curva decrescente: cada problema pesa, mas a nota não zera com poucos itens e ainda diferencia "ruim" de "péssimo".
     result[cat] = Math.round(100 * Math.exp(-penalty / 100));
   }
-  const goals = persona?.goals ?? [];
+  // Objetivos da persona e tarefas do projeto contam juntos.
+  const goals = [...(persona?.goals ?? []), ...(persona?.tasks ?? [])].filter((g) => g.outcome);
   if (goals.length) {
     const done = goals.reduce((s, g) => s + (g.outcome === 'success' ? 1 : g.outcome === 'partial' ? 0.5 : 0), 0);
     result.goalRate = Math.round((done / goals.length) * 100);
@@ -145,6 +174,32 @@ function renderMarkdown(d) {
     );
   }
   lines.push('');
+
+  if (d.tasks.length && d.personas.length) {
+    lines.push(`## ${t('report.tasksTitle')}`, '', `_${t('report.tasksIntro')}_`, '');
+    lines.push(`| ${t('report.task')} | ${d.personas.map((p) => p.name).join(' | ')} |`, `|---|${d.personas.map(() => ':---:').join('|')}|`);
+    for (const task of d.tasks) {
+      const cells = task.results.map((r) => (!r.applies ? '—' : r.result ? `${OUTCOME_ICON[r.result.outcome] ?? '?'} ${r.result.steps ?? '?'}` : t('report.notTested')));
+      lines.push(`| ${task.task.replace(/\|/g, '\\|')} | ${cells.join(' | ')} |`);
+    }
+    lines.push('', `${t('report.tasksLegend')}`, '');
+    for (const task of d.tasks) {
+      lines.push(`### ${task.task}`, '');
+      if (task.success) lines.push(`**${t('report.successCriterion')}:** ${task.success}  `);
+      for (const { persona, result } of task.results.filter((r) => r.result)) {
+        const fc = result.firstClick;
+        const extra = [
+          fc?.label ? `${t('report.firstClick')}: "${fc.label}"${fc.onPath === false ? ` (${t('report.offPath')})` : fc.onPath ? ` (${t('report.onPath')})` : ''}` : null,
+          result.backtracks ? `${t('report.backtracks')}: ${result.backtracks}` : null,
+        ].filter(Boolean).join(' · ');
+        lines.push(`- **${persona.name}** — ${OUTCOME_LABEL[result.outcome] ?? result.outcome} (${result.steps ?? '?'} ${t('report.steps')})${extra ? ` · ${extra}` : ''}`);
+        if (result.notes) lines.push(`  - ${result.notes}`);
+        if (result.lostAt?.screenshot) lines.push(`  - ${t('report.lostAt')}: [${result.lostAt.page ?? result.lostAt.screenshot}](${result.lostAt.screenshot})`);
+      }
+      lines.push('');
+    }
+    for (const w of d.taskWarnings) lines.push(`> ${t('tasks.leading', { id: w.id, labels: w.labels.map((l) => `"${l}"`).join(', ') })}`, '');
+  }
 
   if (d.personas.length) {
     lines.push(`## ${t('report.goals')}`, '');
@@ -249,6 +304,44 @@ function renderHtml(d) {
     )
     .join('');
 
+  const tasksHtml =
+    d.tasks.length && d.personas.length
+      ? `<h2>${t('report.tasksTitle')}</h2><p class="muted">${esc(t('report.tasksIntro'))}</p>
+<div style="overflow-x:auto"><table class="tasks"><thead><tr><th>${t('report.task')}</th>${d.personas.map((p) => `<th>${esc(p.name)}</th>`).join('')}</tr></thead><tbody>${d.tasks
+          .map(
+            (task) =>
+              `<tr><th scope="row">${esc(task.task)}</th>${task.results
+                .map((r) =>
+                  !r.applies
+                    ? '<td class="muted">—</td>'
+                    : r.result
+                      ? `<td class="${esc(r.result.outcome)}"><span aria-hidden="true">${OUTCOME_ICON[r.result.outcome] ?? '?'}</span> <span class="sr">${esc(OUTCOME_LABEL[r.result.outcome] ?? r.result.outcome)}</span> ${r.result.steps ?? '?'}</td>`
+                      : `<td class="muted">${esc(t('report.notTested'))}</td>`,
+                )
+                .join('')}</tr>`,
+          )
+          .join('')}</tbody></table></div>
+<p class="muted">${esc(t('report.tasksLegend'))}</p>
+${d.taskWarnings.map((w) => `<p class="card warn-note">${esc(t('tasks.leading', { id: w.id, labels: w.labels.map((l) => `"${l}"`).join(', ') }))}</p>`).join('')}
+${d.tasks
+  .map((task) => {
+    const rows = task.results
+      .filter((r) => r.result)
+      .map(({ persona, result }) => {
+        const fc = result.firstClick;
+        const meta = [
+          `${result.steps ?? '?'} ${t('report.steps')}`,
+          fc?.label ? `${t('report.firstClick')}: “${esc(fc.label)}”${fc.onPath === false ? ` (${t('report.offPath')})` : fc.onPath ? ` (${t('report.onPath')})` : ''}` : null,
+          result.backtracks ? `${t('report.backtracks')}: ${result.backtracks}` : null,
+        ].filter(Boolean).join(' · ');
+        return `<li class="${esc(result.outcome)}"><strong>${esc(persona.name)}</strong> ${esc(OUTCOME_LABEL[result.outcome] ?? result.outcome)} <span class="muted">${meta}</span>${result.notes ? `<div class="muted">${esc(result.notes)}</div>` : ''}${result.lostAt?.screenshot ? `<details><summary>${t('report.lostAt')}</summary><img loading="lazy" src="${url(result.lostAt.screenshot)}" alt="${esc(t('report.lostAt'))}: ${esc(persona.name)}"></details>` : ''}</li>`;
+      })
+      .join('');
+    return rows ? `<section class="card"><h3>${esc(task.task)}</h3>${task.success ? `<p class="muted">${t('report.successCriterion')}: ${esc(task.success)}</p>` : ''}<ul class="goals">${rows}</ul></section>` : '';
+  })
+  .join('')}`
+      : '';
+
   const goals = d.personas
     .map(
       (p) => `<section class="card"><h3>${esc(p.name)} <small>${esc(p.viewport ?? '')}</small></h3>
@@ -315,12 +408,15 @@ pre{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:
 .fix{border-left:3px solid var(--accent);padding-left:10px}img{max-width:100%;border:1px solid var(--line);border-radius:6px;margin-top:8px}
 a{color:var(--accent)}.filters{display:flex;flex-wrap:wrap;gap:8px}.filters button{font:inherit;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
 .filters button[aria-pressed=true]{background:var(--accent);color:#fff;border-color:var(--accent)}
+table.tasks th[scope=row]{font-weight:400;max-width:420px}table.tasks td{text-align:center;white-space:nowrap}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.warn-note{border-left:3px solid var(--warn)}
 .cv{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}.cv figure{margin:0}.cv img{margin-top:4px;display:block}.cv figcaption{font-size:13px;color:var(--muted)}
 </style></head><body><main>
 <h1>${t('report.title')}</h1>
 <p class="muted">${esc(d.url ?? '')} · ${esc(formatDate(d.createdAt))}${d.agentInfo ? ` · ${esc([d.agentInfo.tool, d.agentInfo.model].filter(Boolean).join(' · '))}` : ''} · ${t('report.pagesCount', { n: d.pages.length })}</p>
 <h2>${t('report.scoresTitle')}</h2>
 <div style="overflow-x:auto"><table><thead><tr><th>${t('report.persona')}</th><th>${t('report.overall')}</th>${categoryEntries().map(([, c]) => `<th>${c}</th>`).join('')}<th>${t('report.goals')}</th></tr></thead><tbody>${scoreRows}</tbody></table></div>
+${tasksHtml}
 ${goals ? `<h2>${t('report.goals')}</h2>${goals}` : ''}
 ${colorVision}
 <h2>${t('report.issues')} (${d.findings.length})</h2>
