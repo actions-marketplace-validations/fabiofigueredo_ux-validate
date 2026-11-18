@@ -13,7 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import { loadCommands, parseCommand, commandVars } from '../src/adapters/index.js';
-import { PLAYWRIGHT_MCP_VERSION } from '../src/adapters/shared.js';
+import { PLAYWRIGHT_MCP_ARGS, PLAYWRIGHT_MCP_VERSION } from '../src/adapters/shared.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const PLUGIN_DIR = path.join(ROOT, 'plugin');
@@ -88,7 +88,7 @@ export function buildPlugin(version = pkg.version) {
 
   // O navegador que o agente usa para navegar como cada persona.
   files['.mcp.json'] =
-    JSON.stringify({ mcpServers: { playwright: { command: 'npx', args: ['-y', `@playwright/mcp@${PLAYWRIGHT_MCP_VERSION}`] } } }, null, 2) + '\n';
+    JSON.stringify({ mcpServers: { playwright: { command: 'npx', args: ['-y', `@playwright/mcp@${PLAYWRIGHT_MCP_VERSION}`, ...PLAYWRIGHT_MCP_ARGS] } } }, null, 2) + '\n';
 
   for (const cmd of [...commands, setup]) files[`skills/${cmd.name}/SKILL.md`] = skill(cmd, version);
 

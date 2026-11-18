@@ -26,7 +26,7 @@ Answer in English.
 
 ## Steps
 
-1. Find the run folder and read `checks.json` and `findings.json`. Build the list of issues to fix according to the arguments, from most to least severe. The agent's ids start with `A`; automated check ids start with `C`. A finding with `relatedChecks` already covers those checks.
+1. Find the run folder and read `findings.json` and `checks-brief.md` (in older runs without it, `checks.json`). Build the list of issues to fix according to the arguments, from most to least severe. The agent's ids start with `A`; automated check ids start with `C`. A finding with `relatedChecks` already covers those checks. Open `checks.json` only for the details (selector, components, file) of the issues you are going to fix.
 2. If the project uses Git and the files you will touch have uncommitted changes, warn the user before starting.
 3. Show the plan: which issues, in which files (use `sourceHint`; without it, search the code for the text, selector or snippet in `evidence`). Separate those that depend on information from the user. Ask for confirmation.
 4. Fix one issue at a time. For each:
@@ -39,5 +39,5 @@ Answer in English.
 {{CHECK_CMD}}
 ```
 
-   Compare with the previous run: what was resolved, what remains, and whether anything new appeared because of the changes. If it did, fix it or explain it.
+   Compare the new run's `checks-brief.md` with the previous one: what was resolved, what remains, and whether anything new appeared because of the changes. If it did, fix it or explain it.
 6. Answer with: issues fixed (file and change, one line each), issues that depend on the user (and what is missing), issues that remain and why, and a suggestion to review with `git diff`.

@@ -12,6 +12,7 @@ import { ensureAppRunning } from './app-server.js';
 import { checkSpelling, createSpeller } from './spelling.js';
 import { annotateFindings, checkClientNavigation, classifyConsole, cleanReactMessage, detectReact, isReactMessage } from './react.js';
 import { t, getLocale } from './i18n.js';
+import { buildBrief } from './brief.js';
 
 /**
  * Checagens determinísticas: dão o mesmo resultado com qualquer modelo de linguagem.
@@ -129,6 +130,8 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
       findings: dedupe(findings),
     };
     fs.writeFileSync(path.join(runDir, 'checks.json'), JSON.stringify(result, null, 2));
+    // Resumo curto para o agente: ele lê este arquivo e só abre o checks.json para os detalhes de um id.
+    fs.writeFileSync(path.join(runDir, 'checks-brief.md'), buildBrief(result));
 
     const count = (s) => result.findings.filter((f) => f.severity === s).length;
     console.log(

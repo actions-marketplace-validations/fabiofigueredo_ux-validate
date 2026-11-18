@@ -68,3 +68,18 @@ test('versão 1.0.0 igual no pacote, no plugin e no changelog', () => {
   assert.match(fs.readFileSync('CHANGELOG.md', 'utf8'), new RegExp(`## ${pkg.version.replace(/\./g, '\\.')} `));
   assert.ok(pkg.files.includes('CHANGELOG.md'));
 });
+
+test('instruções deixam claro que personas e tarefas precisam de IA; sem ela, só a validação automática', async () => {
+  const { t, setLocale: set } = await import('../src/i18n.js');
+  for (const [lang, readme, help] of [
+    ['en', 'README.md', /requires an AI tool[\s\S]*Without AI, only the automated validation runs/],
+    ['pt-BR', 'README.pt-BR.md', /precisa de uma ferramenta de IA[\s\S]*Sem IA, roda só a validação automática/],
+  ]) {
+    set(lang);
+    assert.match(t('cli.help'), help);
+    assert.match(t('init.next.aiRequired'), lang === 'en' ? /only tested inside an AI tool/ : /só são testadas dentro de uma ferramenta de IA/);
+    const text = fs.readFileSync(readme, 'utf8');
+    assert.match(text, lang === 'en' ? /\*\*Important: the persona and task test requires AI\.\*\*/ : /\*\*Importante: o teste com personas e tarefas precisa de IA\.\*\*/);
+  }
+  set('en');
+});

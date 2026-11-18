@@ -15,6 +15,9 @@ export default {
   cli: {
     help: `ux-validate — persona-based testing of content, navigation, UI and accessibility
 
+Complete test (personas and tasks): requires an AI tool. Run /ux-test in Claude Code, Cursor,
+Codex CLI ($ux-test) or Gemini CLI. Without AI, only the automated validation runs: ux-validate check and ux-validate report.
+
 Usage:
   ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini|none] [--personas all|none|id,id]
                      [--url <url>] [--start <command>] [--task "<task>" …]
@@ -118,6 +121,9 @@ General options:
       noPersonas: ({ dir }) =>
         `  1. No personas in ${dir}/ yet. Before testing, pick the predefined ones (npx ux-validate persona examples) or create your own (npx ux-validate persona new). ux-test will ask for this too.`,
       useTools: '  2. In your AI tool:',
+      aiRequired:
+        '\n  Important: personas and tasks are only tested inside an AI tool (/ux-test).\n' +
+        '  Without one, run npx ux-validate check: automated validation only.',
       tools: {
         'claude-code':
           '     • Claude Code: open it in this project, approve the "playwright" MCP server and run /ux-test.\n' +
@@ -269,6 +275,22 @@ General options:
     exited: 'The command "{command}" ended before {url} responded. Check the command in app.start.',
     timeout: "{url} didn't respond within {seconds}s after \"{command}\". Check the port in app.url and the command in app.start.",
     staticLabel: 'Static site (HTML)',
+  },
+
+  brief: {
+    title: 'Automated checks: summary for the agent',
+    url: 'URL',
+    viewports: 'viewports',
+    details: 'Full details of each issue (selector, screenshot, components, documentation): look up its id in checks.json, only when you need them.',
+    pages: 'Pages',
+    page: 'page',
+    pageTitle: 'title',
+    aria: 'accessibility tree',
+    taskWarnings: 'Tasks that use the words of a link or button',
+    issues: 'Issues (grouped, most severe first)',
+    none: 'No issues.',
+    only: 'only for',
+    more: '…and {n} more: {ids}',
   },
 
   checks: {

@@ -21,6 +21,8 @@ The complete validation has two parts, and the report brings them together:
 
 The result is in `.ux-validate/runs/<date-time>/report.html` (and `report.md`). Before validating, the app must be running, or have its start command in `app.start`: ux-validate starts and stops the app itself.
 
+> **Important: the persona and task test requires AI.** It only runs inside an AI tool with an agent (Claude Code, Cursor, Codex CLI or Gemini CLI), using that tool's model and account. **Without one, ux-validate runs only the automated validation** (`npx ux-validate check`): accessibility, keyboard, color blindness, links, errors, layout and spelling. Personas and tasks are not tested, and the report says so at the top.
+
 ### Path 1: npm package (Claude Code, Cursor, Codex CLI or Gemini CLI)
 
 Once per project, in a terminal, in the project folder:
@@ -131,8 +133,9 @@ Setup installs the same commands (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`
 Notes:
 
 - The commands only run when you call them: the tests open a browser and use tokens. In Claude Code this is `disable-model-invocation`; in Codex, `allow_implicit_invocation: false`.
+- **Fewer tokens, same test:** the agent reads a short summary of the automated checks (`checks-brief.md`) instead of the full `checks.json`, tests each persona in a clean context when the tool has subagents (Claude Code), opens color-blindness images and accessibility trees only where needed, and the browser doesn't repeat console logs at every step. To spend even less, test one persona (`/ux-test margaret`) or one category (`--only accessibility`).
 - Codex reads `.codex/config.toml` and Gemini reads `.gemini/settings.json` only in folders you **trust**; accept the prompt the first time you open the project.
-- Existing config files are preserved: setup only adds the `playwright` server if it isn't there.
+- Existing config files are preserved: setup only adds the `playwright` server if it isn't there (or updates the one an earlier ux-validate version wrote).
 - The Playwright MCP server is installed at a **pinned version** (`@playwright/mcp@0.0.83`), not `@latest`, so no new, unreviewed version is downloaded and run without you knowing. If you installed an earlier ux-validate version, replace `@latest` with the pinned version in your tool's MCP file.
 - Gemini CLI also reads `.agents/skills/`. If you install both Codex and Gemini, Gemini may list the Codex skills too; use the `/ux-…` commands, and Gemini asks for confirmation before activating any skill.
 - Arguments go after the command name in every tool, e.g. `/ux-test margaret` or `$ux-test margaret`.
@@ -335,7 +338,7 @@ Then, in the project you want to test:
 
 ## Usage
 
-In your AI tool, inside your project (in Codex, use `$` instead of `/`):
+The persona and task test runs **only inside your AI tool**, in your project (in Codex, use `$` instead of `/`):
 
 | Command | What it does |
 |---|---|
@@ -349,7 +352,7 @@ In your AI tool, inside your project (in Codex, use `$` instead of `/`):
 | `/ux-fix` | Applies the report's fixes (critical, high and medium) |
 | `/ux-fix A001,C003` | Applies only the fixes for these issues |
 
-From the terminal (useful in CI):
+From the terminal, **without AI** (automated validation only; personas and tasks are not tested; useful in CI):
 
 ```bash
 npx ux-validate persona examples # show the predefined personas and their characteristics

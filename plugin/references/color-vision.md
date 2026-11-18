@@ -15,7 +15,7 @@ About 1 in 12 men and 1 in 200 women have some form of color blindness. The most
 
 ## Testing as a color-blind persona
 
-1. Compare `color-vision/<page>-normal.jpg` with the simulated images. Anything that disappears or looks the same is information the persona loses.
+1. On the pages with `check:color` issues or with information told apart by color, compare `color-vision/<page>-normal.jpg` with the image of the persona's type (not all of them: each image costs tokens). Anything that disappears or looks the same is information the persona loses.
 2. Simulate in the browser while navigating: run this with `browser_evaluate`, changing `type` (`protanopia`, `deuteranopia`, `tritanopia`), then use `browser_take_screenshot`:
 
 ```js

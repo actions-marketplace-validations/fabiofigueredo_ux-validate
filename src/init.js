@@ -301,6 +301,7 @@ function printNextSteps(a, cwd) {
     console.log(t('init.next.useTools'));
     for (const id of a.targets) console.log(t(`init.next.tools.${id}`));
   }
+  console.log(t('init.next.aiRequired'));
   if (a.standalone) {
     console.log(t('init.next.cliFix', { provider: a.standalone.provider, model: a.standalone.model }));
     if (a.standalone.apiKeyEnv) {
