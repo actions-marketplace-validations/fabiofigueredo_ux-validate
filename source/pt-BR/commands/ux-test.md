@@ -20,6 +20,7 @@ Argumentos recebidos: `$ARGUMENTS`
 3. **Fique na pele da persona.** Ela não lê o código, não digita URLs na barra de endereço, não abre o DevTools e não conhece rotas escondidas. Só usa o que está visível na tela.
 4. **Não altere o código da aplicação** durante o teste. Este comando só diagnostica. Correções vêm depois, se o usuário pedir.
 5. **Não use dados reais.** Em formulários, use dados de teste óbvios (ex.: `teste+persona@example.com`). Não finalize pagamentos nem envie mensagens a terceiros.
+6. **Economize tokens sem pular nada.** Leia cada arquivo de referência uma vez por execução, só quando começar o passo que precisa dele. Cada ação no navegador já devolve o snapshot da página: não chame `browser_snapshot` de novo logo depois de uma. Tire screenshots só como evidência de um problema ou de onde a persona se perdeu, da área visível (não `fullPage`) ou só do elemento (`target`), com `scale: "css"`, e não abra imagens de que não precisa para julgar. Preencha formulários com `browser_fill_form` (todos os campos de uma vez), em vez de um `browser_type` por campo.
 
 ## Passo 1: preparar
 
@@ -44,11 +45,13 @@ Rode:
 {{CHECK_CMD}}
 ```
 
-Isso cria uma pasta de execução em `{{WORK_DIR}}/runs/<data-hora>/` com `checks.json` (acessibilidade via axe-core e WAI-ARIA, navegação pelo teclado, links quebrados, erros de console, rolagem horizontal, textos provisórios, ortografia, visão de cores), screenshots, em `color-vision/` a página como pessoas com daltonismo a veem e, em `aria/`, a árvore de acessibilidade de cada página (o que um leitor de tela anuncia). Anote o caminho da pasta: tudo desta execução vai para lá.
+Isso cria uma pasta de execução em `{{WORK_DIR}}/runs/<data-hora>/` com `checks-brief.md` (o resumo para você), `checks.json` (acessibilidade via axe-core e WAI-ARIA, navegação pelo teclado, links quebrados, erros de console, rolagem horizontal, textos provisórios, ortografia, visão de cores), screenshots, em `color-vision/` a página como pessoas com daltonismo a veem e, em `aria/`, a árvore de acessibilidade de cada página (o que um leitor de tela anuncia). Anote o caminho da pasta: tudo desta execução vai para lá.
 
-Leia o `checks.json`. Esses problemas **já estão registrados**: não os repita como achados seus. Quando um deles atrapalhar uma persona de um jeito específico, crie um achado próprio explicando o impacto para ela e cite o id da checagem em `relatedChecks`.
+Leia o `checks-brief.md`, não o `checks.json`: ele tem as páginas, os avisos sobre tarefas e todos os problemas agrupados, com id, página e o elemento envolvido, numa fração do tamanho. Abra o `checks.json` só para ver os detalhes de um id específico (seletor, componentes, screenshot). Esses problemas **já estão registrados**: não os repita como achados seus. Quando um deles atrapalhar uma persona de um jeito específico, crie um achado próprio explicando o impacto para ela e cite o id da checagem em `relatedChecks`.
 
 ## Passo 3: navegar como cada persona
+
+**Uma persona por vez, cada uma num contexto limpo.** Se a sua ferramenta puder delegar a um subagente com as mesmas ferramentas de navegador (ex.: a ferramenta Agent/Task do Claude Code), entregue cada persona a um subagente, **uma depois da outra, nunca em paralelo** (elas dividem o navegador). Passe a ele: o arquivo da persona, as tarefas, a pasta da execução, o caminho destas instruções (Passos 3, 3c e 4), as referências de que ele precisa e uma faixa de ids para os achados (primeira persona `A101`–`A199`, segunda `A201`–`A299`…). Ele responde só com a entrada dele em `personas` e os `findings` dele, no formato do `findings.json`; você junta tudo no Passo 5. Assim, o que uma persona viu não ocupa espaço (nem influencia) a próxima. Sem subagentes, faça tudo aqui, em ordem.
 
 Para cada persona, use as ferramentas de navegador do Playwright MCP (`browser_resize`, `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_take_screenshot` etc.):
 
@@ -61,7 +64,7 @@ Para cada persona, use as ferramentas de navegador do Playwright MCP (`browser_r
    - Onde ela se perdeu ou desistiu, tire um screenshot (`lostAt`) e registre o motivo em `notes`. Crie achados para as causas (rótulos pouco claros, informação em lugar inesperado, link que falta) e liste-os em `blockers`.
    - Antes da próxima tarefa, volte à página de partida: cada tarefa começa do zero.
 3. Depois, para **cada objetivo** da persona:
-   - Tente cumpri-lo partindo da página inicial, como ela faria. Use `browser_snapshot` para ler a página e decidir o próximo passo.
+   - Tente cumpri-lo partindo da página inicial, como ela faria. Leia o snapshot que cada ação devolve para decidir o próximo passo.
    - Conte cada ação (clique, digitação, rolagem para procurar algo) como um passo. Pare quando cumprir o objetivo, quando chegar a `maxStepsPerGoal` ou antes, se o comportamento da persona indicar que ela desistiria (ex.: `patience: baixa` desiste após 3 ou 4 passos sem progresso visível).
    - Registre o caminho (URLs visitadas), o resultado (`success`, `partial` ou `fail`) e, em `notes`, o momento exato em que hesitou ou travou e por quê.
    - Em cada ponto de atrito, tire um screenshot com `browser_take_screenshot` e salve-o em `<pasta da execução>/screenshots/` com nome descritivo (ex.: `ana-checkout-botao-escondido.png`).
@@ -73,7 +76,7 @@ Para cada persona, use as ferramentas de navegador do Playwright MCP (`browser_r
 
 Personas com `vision: leitor-de-tela` navegam **sem olhar a tela**: use só o teclado (`browser_press_key`) e a árvore de acessibilidade (`browser_snapshot`), nunca `browser_click` em coordenadas ou elementos que o teclado não alcança. Se algo só funciona com o mouse, para ela é um bloqueio.
 
-Personas com `vision: daltonismo` (ou `color-blind`) veem a página com as cores alteradas: antes de navegar como elas, leia `{{REFERENCES_DIR}}/color-vision.md`, compare as imagens em `<pasta da execução>/color-vision/` e simule o tipo de daltonismo no navegador (o código está nesse arquivo). Tudo o que se diferencia só pela cor (status, gráficos, aba selecionada, erros de formulário) pode ser invisível para elas.
+Personas com `vision: daltonismo` (ou `color-blind`) veem a página com as cores alteradas: antes de navegar como elas, leia `{{REFERENCES_DIR}}/color-vision.md` e simule o tipo de daltonismo no navegador (o código está nesse arquivo). As checagens `check:color` já comparam as cores de todas as páginas; abra as imagens de `<pasta da execução>/color-vision/` só das páginas com esses problemas ou com gráficos, status ou qualquer coisa diferenciada pela cor, e só a `normal` e a do tipo da persona. Tudo o que se diferencia só pela cor (status, gráficos, aba selecionada, erros de formulário) pode ser invisível para elas.
 
 Ajuste o rigor às características da persona (ex.: `vision: reduzida` aumenta a gravidade de contraste e fontes pequenas; `tech_literacy: baixa` aumenta a de jargão e ícones sem rótulo). Arquivos de persona podem usar valores em inglês (`low`, `reduced`, `screen-reader`); trate-os como `baixa`, `reduzida`, `leitor-de-tela`.
 
@@ -81,9 +84,9 @@ Ajuste o rigor às características da persona (ex.: `vision: reduzida` aumenta 
 
 Faça uma vez por execução (não por persona), a menos que `--only` exclua `accessibility`. Siga `{{REFERENCES_DIR}}/wai-aria.md`.
 
-1. Para cada página visitada, leia a árvore em `<pasta da execução>/aria/`. Verifique nomes acessíveis, papéis, estados, landmarks e a hierarquia de títulos.
+1. Para cada página visitada, use a árvore de acessibilidade: o snapshot que você já tem da navegação ou, para páginas que nenhuma persona visitou, o arquivo em `<pasta da execução>/aria/` (listado no `checks-brief.md`). Não leia os dois para a mesma página. Verifique nomes acessíveis, papéis, estados, landmarks e a hierarquia de títulos.
 2. Identifique os **widgets** da aplicação: diálogos, abas, acordeões, menus, combobox/autocomplete, carrosséis, checkboxes ou selects customizados, formulários.
-3. Teste cada tipo de widget **pelo teclado**, com o padrão do APG correspondente: abrir, operar, fechar, e para onde vai o foco depois. Use `browser_press_key` e confira o resultado com `browser_snapshot`.
+3. Teste cada tipo de widget **pelo teclado**, com o padrão do APG correspondente: abrir, operar, fechar, e para onde vai o foco depois. Use `browser_press_key` e confira o resultado com `browser_snapshot` limitado ao widget (`target`). Para localizar um widget, `browser_find` custa menos que um snapshot inteiro; use-o só nesta auditoria, nunca ao navegar como persona (funciona como um Ctrl+F, que ela não usaria).
 4. Em formulários, envie com erro de propósito (dados de teste) e verifique se o erro é anunciado: `aria-invalid`, `aria-describedby`, foco no primeiro erro, mensagens em `role="alert"`/`status`.
 5. Registre os achados com `category: "accessibility"`, citando no `heuristic` o critério WCAG e o padrão do APG. Em `personas`, liste quem é afetado: em geral, as personas com `vision` diferente de `normal`, mas pense em quem mais sofre (ex.: foco invisível atrapalha qualquer um que use teclado).
 
@@ -97,13 +100,7 @@ O dicionário (checagem `check:spelling`) aponta palavras desconhecidas e palavr
 
 ## Passo 3d: aplicações React e outras SPAs
 
-Se o `checks.json` tiver `app.framework` (`react` ou `next`), ou se a aplicação trocar de tela sem recarregar a página:
-
-1. **Rotas que não são links.** Telas abertas por botão (`navigate()`), abas ou modais não entram no rastreamento automático. Se encontrar telas importantes assim, sugira ao usuário incluí-las em `crawl.routes` no `ux-validate.config.yml`.
-2. **Troca de rota.** Ao navegar como a persona, confira o que o navegador faria numa página comum: o título da aba muda? O foco vai para o conteúdo novo ou fica perdido? Personas com leitor de tela precisam ouvir que a página mudou. A checagem `check:spa` testa uma troca; avalie as demais pelo caminho da persona.
-3. **Estados assíncronos.** Carregando, vazio e erro: aparecem, são anunciados (`aria-busy`, `role="status"`) e não deixam a tela em branco? Botões ficam desabilitados durante o envio e voltam depois?
-4. **Onde corrigir.** As checagens já trazem `react.components` (o componente que desenhou o elemento e os que estão acima dele) e, no servidor de desenvolvimento, `sourceHint` com arquivo e linha. Use isso nos seus achados: procure primeiro no arquivo do componente. Lembre que no JSX o atributo `class` é `className` e textos podem estar divididos em expressões (`{nome}`).
-5. **Build de produção.** Se o `checks.json` indicar `react.dev: false`, não há nomes de componentes nem arquivos: diga ao usuário que rodar contra o servidor de desenvolvimento (ex.: `npm run dev`) melhora a indicação de onde corrigir.
+Só se o `checks-brief.md` mostrar um framework (`react` ou `next`) na linha da URL, ou se a aplicação trocar de tela sem recarregar a página: leia `{{REFERENCES_DIR}}/spa.md` e siga. Caso contrário, pule este passo.
 
 ## Passo 4: apontar onde corrigir
 
@@ -111,7 +108,7 @@ Para cada achado seu, procure no código do projeto o arquivo provável. Busque 
 
 ## Passo 5: registrar e gerar o relatório
 
-1. Escreva `<pasta da execução>/findings.json` seguindo exatamente `{{REFERENCES_DIR}}/findings-format.md`. Classifique a gravidade com a tabela daquele arquivo. Use `confidence: "confirmed"` só quando reproduziu o problema; caso contrário, `"likely"`.
+1. Escreva `<pasta da execução>/findings.json` seguindo exatamente `{{REFERENCES_DIR}}/findings-format.md`. Se usou subagentes, junte todas as `personas` e os `findings` deles neste único arquivo. Classifique a gravidade com a tabela daquele arquivo. Use `confidence: "confirmed"` só quando reproduziu o problema; caso contrário, `"likely"`.
 2. Gere o relatório:
 
 ```bash
@@ -121,7 +118,7 @@ Para cada achado seu, procure no código do projeto o arquivo provável. Busque 
 3. Responda ao usuário com:
    - a tabela de notas por persona (está no topo do `report.md`);
    - a tabela de tarefas (tarefa × persona) e, para cada tarefa que falhou, onde as personas se perderam;
-   - os avisos do `checks.json` (`taskWarnings`) sobre tarefas que usam as palavras da própria interface: sugira reescrevê-las;
+   - os avisos do `checks-brief.md` sobre tarefas que usam as palavras da própria interface: sugira reescrevê-las;
    - os objetivos que falharam e o motivo, em uma linha cada;
    - os 5 problemas mais importantes, com o arquivo provável de correção;
    - o caminho do `report.html` para ver tudo com screenshots;

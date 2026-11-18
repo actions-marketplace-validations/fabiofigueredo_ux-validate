@@ -15,6 +15,9 @@ export default {
   cli: {
     help: `ux-validate — testes de conteúdo, navegação, interface e acessibilidade guiados por personas
 
+Teste completo (personas e tarefas): precisa de uma ferramenta de IA. Rode /ux-test no Claude Code, Cursor,
+Codex CLI ($ux-test) ou Gemini CLI. Sem IA, roda só a validação automática: ux-validate check e ux-validate report.
+
 Uso:
   ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini|none] [--personas all|none|id,id]
                      [--url <url>] [--start <comando>] [--task "<tarefa>" …]
@@ -22,6 +25,11 @@ Uso:
   ux-validate install-browser                    Instala o navegador (Chromium) da versão do Playwright que o ux-validate usa
   ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
                                                  Roda as checagens fixas (acessibilidade, links, ortografia, conteúdo)
+  ux-validate audit  <url> [--yes] [--personas id,id|all] [--task "<tarefa>" …] [--max-pages 20]
+                     [--viewports mobile,desktop] [--fail-on high]
+                                                 Audita um site publicado, sem o código (sites pelos quais você responde
+                                                 ou tem autorização; respeita o robots.txt e nunca envia formulários).
+                                                 Com personas e tarefas: /ux-audit <url> na sua ferramenta de IA
   ux-validate report [--run <dir>]               Gera report.md e report.html a partir de uma execução
   ux-validate sarif  [--run <dir>] [--out <arquivo>]
                                                  Exporta os problemas em SARIF (code scanning do GitHub)
@@ -39,6 +47,7 @@ Uso:
 
 Opções gerais:
   --config <arquivo>   Caminho do arquivo de configuração (padrão: ux-validate.config.yml)
+  --dir <pasta>        Roda o comando em outra pasta (ex.: uma auditoria: ux-validate-audits/<domínio>)
   --lang <en|pt-BR>    Idioma das mensagens da ferramenta (padrão: o da configuração ou do sistema)
   -h, --help           Mostra esta ajuda
 `,
@@ -118,19 +127,22 @@ Opções gerais:
       noPersonas: ({ dir }) =>
         `  1. Nenhuma persona em ${dir}/ ainda. Antes de testar, escolha as pré-definidas (npx ux-validate persona examples) ou crie as suas (npx ux-validate persona new). O ux-test também vai pedir isso.`,
       useTools: '  2. Na sua ferramenta de IA:',
+      aiRequired:
+        '\n  Importante: as personas e as tarefas só são testadas dentro de uma ferramenta de IA (/ux-test).\n' +
+        '  Sem ela, rode npx ux-validate check: só a validação automática.',
       tools: {
         'claude-code':
           '     • Claude Code: abra neste projeto, aprove o servidor MCP "playwright" e rode /ux-test.\n' +
-          '       Também: /ux-task, /ux-persona, /ux-report, /ux-fix',
+          '       Também: /ux-task, /ux-persona, /ux-report, /ux-fix, /ux-audit <url> (site publicado)',
         cursor:
           '     • Cursor: abra este projeto, ative o servidor MCP "playwright" nas configurações de MCP e rode /ux-test no chat do agente.\n' +
-          '       Também: /ux-task, /ux-persona, /ux-report, /ux-fix',
+          '       Também: /ux-task, /ux-persona, /ux-report, /ux-fix, /ux-audit <url> (site publicado)',
         codex:
           '     • Codex CLI: rode codex neste projeto e marque-o como confiável (para o .codex/config.toml carregar o navegador), depois digite $ux-test.\n' +
-          '       Também: $ux-task, $ux-persona, $ux-report, $ux-fix',
+          '       Também: $ux-task, $ux-persona, $ux-report, $ux-fix, $ux-audit <url> (site publicado)',
         gemini:
           '     • Gemini CLI: rode gemini neste projeto (confie na pasta se ele perguntar, para o .gemini/settings.json carregar o navegador) e digite /ux-test.\n' +
-          '       Também: /ux-task, /ux-persona, /ux-report, /ux-fix',
+          '       Também: /ux-task, /ux-persona, /ux-report, /ux-fix, /ux-audit <url> (site publicado)',
       },
       cliFix: '\n  Correções pelo terminal: npx ux-validate fix (modelo {provider} · {model}).',
       setKey: '  Antes, defina a variável {env} com a sua API key:',
@@ -269,6 +281,46 @@ Opções gerais:
     exited: 'O comando "{command}" terminou antes de {url} responder. Confira o comando em app.start.',
     timeout: '{url} não respondeu em {seconds}s depois de "{command}". Confira a porta em app.url e o comando em app.start.',
     staticLabel: 'Site estático (HTML)',
+  },
+
+  audit: {
+    noUrl: 'Informe a URL do site: npx ux-validate audit https://www.exemplo.com.br',
+    invalidUrl: 'URL inválida: {url}. Use o endereço de um site publicado (http:// ou https://).',
+    invalidMaxPages: 'Valor inválido para --max-pages: {value}. Use um número inteiro maior que 0.',
+    permissionIntro: '\nAudite só sites pelos quais você responde ou que tem autorização para testar.\nA auditoria visita páginas públicas ({url}), uma por segundo, respeita o robots.txt e nunca envia formulários.\n',
+    permissionQ: 'Você é responsável por este site ou tem autorização para testá-lo?',
+    needsYes: 'Confirme com --yes que você é responsável pelo site ou tem autorização para testá-lo (necessário fora de um terminal interativo, ex.: no CI).',
+    notAuthorized: 'Auditoria cancelada: audite só sites pelos quais você responde ou que tem autorização para testar.',
+    folder: 'Pasta da auditoria: {dir}',
+    gitignoreComment: '# ux-validate: auditorias de sites publicados',
+    gitignored: '{dir} adicionada ao .gitignore (esta pasta está num repositório Git).',
+    configHeader: '# ux-validate: auditoria de site publicado (criada por "npx ux-validate audit"). As personas e tarefas desta pasta são reaproveitadas na próxima auditoria.',
+    unreachable: 'Não consegui abrir {url}. Confira o endereço e se o site está no ar.',
+    robotsStart: '{url} está bloqueada pelo robots.txt do site ({robots}): a auditoria respeita o arquivo e para aqui.',
+    robotsRead: ({ n }) => `Lendo robots.txt… ${n === 0 ? 'nenhum caminho bloqueado.' : `${n} ${n === 1 ? 'caminho bloqueado será ignorado' : 'caminhos bloqueados serão ignorados'}.`}`,
+    robotsNone: 'Sem robots.txt: todas as páginas públicas do site podem ser visitadas.',
+    skippedSummary: ({ n }) => `${n} ${n === 1 ? 'página não foi visitada' : 'páginas não foram visitadas'} (robots.txt ou links de sair/excluir): veja "Limites desta auditoria" no relatório.`,
+    done: '✔ Relatório da auditoria:',
+    next: '\nEsta foi a parte automática (sem IA). Para testar com personas e tarefas, rode /ux-audit {url} na sua ferramenta de IA\n(no Codex, $ux-audit; com o plugin do Claude Code, /ux-validate:ux-audit). As personas e tarefas deste site ficam em {dir}.',
+    notForAudit: 'Este comando trabalha no código do projeto, e uma auditoria não tem código. Compartilhe o relatório da auditoria com quem mantém o site.',
+  },
+
+  brief: {
+    title: 'Checagens automáticas: resumo para o agente',
+    url: 'URL',
+    viewports: 'telas',
+    details: 'Detalhes completos de cada problema (seletor, captura de tela, componentes, documentação): procure o id no checks.json, só quando precisar.',
+    pages: 'Páginas',
+    page: 'página',
+    pageTitle: 'título',
+    aria: 'árvore de acessibilidade',
+    taskWarnings: 'Tarefas que usam as palavras de um link ou botão',
+    issues: 'Problemas (agrupados, os mais graves primeiro)',
+    none: 'Nenhum problema.',
+    only: 'só para',
+    skipped: 'Não visitadas (auditoria): não abra estas páginas',
+    unsafe: 'link de sair/excluir',
+    more: '…e mais {n}: {ids}',
   },
 
   checks: {
@@ -431,6 +483,23 @@ Opções gerais:
   },
 
   report: {
+    audit: {
+      title: 'Auditoria de site publicado',
+      site: 'Site',
+      onlyChecks: 'Esta auditoria tem só as checagens automáticas (sem IA). As personas e as tarefas ainda não foram testadas: rode /ux-audit na sua ferramenta de IA para a auditoria completa.',
+      limitsTitle: 'Limites desta auditoria',
+      limitsIntro: 'Só páginas públicas foram visitadas, no máximo uma por segundo. Nenhum formulário foi enviado, nenhuma conta foi criada e nenhuma compra ou contato foi feito.',
+      skippedRobots: 'Páginas não visitadas: bloqueadas pelo robots.txt',
+      skippedUnsafe: 'Links não seguidos: sair, excluir, cancelar ou descadastrar',
+      agentLimits: 'O que as personas não puderam testar',
+      andMore: '…e mais {n}',
+      planTitle: 'Plano para quem mantém o site',
+      planIntro: 'Nesta ordem: primeiro o que impede as pessoas de concluir o que vieram fazer, depois os problemas graves, depois o resto agrupado por tipo de problema.',
+      planBlocking: 'O que impede as personas de cumprir objetivos e tarefas',
+      planUrgent: 'Problemas críticos e altos',
+      planOthers: 'Demais problemas, por tipo',
+      planNone: 'Nada aqui.',
+    },
     title: 'Relatório ux-validate',
     generated: '✔ Relatório gerado:',
     noRun: 'Nenhuma execução encontrada. Rode /ux-test ou "npx ux-validate check".',

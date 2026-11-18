@@ -81,6 +81,7 @@ File written by the agent at `.ux-validate/runs/<run>/findings.json`. The `ux-va
 | `sourceHint` | `{ file, line? }` | Only when you are sure; otherwise leave it out |
 | `confidence` | `confirmed`, `likely` | `confirmed` = reproduced in the browser |
 | `relatedChecks` | ids from `checks.json` (e.g. `C004`) | When the finding explains the impact of an automated check; the report then stops showing the duplicated check |
+| `limits` | list of sentences, at the top level | Audit of a published site (`/ux-audit`) only: what couldn't be tested (login, payment, forms not submitted). Shown under "Limits of this audit" |
 
 The agent's finding ids start with `A` (`A001`, `A002`…). Automated check ids start with `C`.
 

@@ -5,7 +5,7 @@ description: Creates tasks for the simulated personas to try in the app (goals
   .ux-validate/tasks.yml.
 argument-hint: '[what users come to do, e.g. "find the price and talk to support"]'
 disable-model-invocation: true
-allowed-tools: Bash(npx -y ux-validate@1.0.0 *)
+allowed-tools: Bash(npx -y ux-validate@1.1.1 *)
 ---
 
 # /ux-validate:ux-task
@@ -39,7 +39,7 @@ Arguments received: `$ARGUMENTS` (optional: what users come to do in the app).
 8. Validate:
 
 ```bash
-npx -y ux-validate@1.0.0 task validate
+npx -y ux-validate@1.1.1 task validate
 ```
 
 9. Tell the user the tasks are ready and that `/ux-validate:ux-test` will have each persona try them.

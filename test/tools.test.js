@@ -15,7 +15,7 @@ setLocale('en');
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'uxv-tools-'));
 const read = (dir, rel) => fs.readFileSync(path.join(dir, rel), 'utf8');
-const NAMES = ['ux-fix', 'ux-persona', 'ux-report', 'ux-task', 'ux-test'];
+const NAMES = ['ux-audit', 'ux-fix', 'ux-persona', 'ux-report', 'ux-task', 'ux-test'];
 
 test('as quatro ferramentas estão disponíveis', () => {
   assert.deepEqual(ADAPTERS.map((a) => [a.id, a.available]), [
@@ -80,7 +80,7 @@ test('Codex CLI: skills em .agents/skills, só chamadas explicitamente, e MCP no
     assert.deepEqual(Object.keys(front).sort(), ['description', 'name'], 'o Codex só aceita campos conhecidos');
     assert.equal(front.name, name);
     assert.match(front.description, new RegExp(`explicitly invokes \\$${name}\\.$`));
-    assert.doesNotMatch(skill, /\$ARGUMENTS|[\s`(]\/ux-(?:test|report|fix|persona|task)\b/);
+    assert.doesNotMatch(skill, /\$ARGUMENTS|[\s`(]\/ux-(?:test|report|fix|persona|task|audit)\b/);
 
     const openai = YAML.parse(read(dir, `.agents/skills/${name}/agents/openai.yaml`));
     assert.equal(openai.policy.allow_implicit_invocation, false);
@@ -90,7 +90,7 @@ test('Codex CLI: skills em .agents/skills, só chamadas explicitamente, e MCP no
   assert.match(read(dir, '.agents/skills/ux-test/SKILL.md'), /^# \$ux-test$/m);
 
   const config = read(dir, '.codex/config.toml');
-  assert.match(config, /^model = "x"\n\n\[mcp_servers\.playwright\]\ncommand = "npx"\nargs = \["@playwright\/mcp@0\.0\.83"\]\n$/);
+  assert.match(config, /^model = "x"\n\n\[mcp_servers\.playwright\]\ncommand = "npx"\nargs = \["@playwright\/mcp@0\.0\.83", "--console-level", "error"\]\n$/);
   codex.install({ cwd: dir, commands: loadCommands('en'), force: true });
   assert.equal(read(dir, '.codex/config.toml'), config, 'rodar de novo não duplica o servidor');
 });

@@ -13,7 +13,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 import { loadCommands, parseCommand, commandVars } from '../src/adapters/index.js';
-import { PLAYWRIGHT_MCP_VERSION } from '../src/adapters/shared.js';
+import { PLAYWRIGHT_MCP_ARGS, PLAYWRIGHT_MCP_VERSION } from '../src/adapters/shared.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const PLUGIN_DIR = path.join(ROOT, 'plugin');
@@ -28,6 +28,7 @@ export function pluginVars(version = pkg.version) {
     REFERENCES_DIR: '${CLAUDE_PLUGIN_ROOT}/references',
     DICTIONARY: commandVars('en').DICTIONARY,
     CHECK_CMD: `${cli} check`,
+    AUDIT_CMD: `${cli} audit`,
     REPORT_CMD: `${cli} report`,
     FIX_CMD: `${cli} fix`,
     PERSONA_VALIDATE_CMD: `${cli} persona validate`,
@@ -45,7 +46,7 @@ const SETUP_NOTE = `> **Setup:** if \`ux-validate.config.yml\` doesn't exist in 
 
 /** /ux-test → /ux-validate:ux-test (skills de plugin têm o nome do plugin como prefixo). */
 function namespaced(body) {
-  return body.replace(/(^|[\s`(])\/(ux-(?:test|report|fix|persona|task|setup))\b/g, (_, before, name) => `${before}/${PLUGIN_NAME}:${name}`);
+  return body.replace(/(^|[\s`(])\/(ux-(?:test|report|fix|persona|task|audit|setup))\b/g, (_, before, name) => `${before}/${PLUGIN_NAME}:${name}`);
 }
 
 function skill(cmd, version) {
@@ -58,7 +59,8 @@ function skill(cmd, version) {
     // A CLI do ux-validate, na versão do plugin, roda sem pedir permissão a cada chamada.
     'allowed-tools': `Bash(npx -y ux-validate@${version} *)`,
   }).trim();
-  const notes = cmd.name === 'ux-setup' ? LANGUAGE_NOTE : `${LANGUAGE_NOTE}\n>\n${SETUP_NOTE}`;
+  // ux-setup é o próprio setup; ux-audit testa um site publicado e não precisa de projeto configurado.
+  const notes = ['ux-setup', 'ux-audit'].includes(cmd.name) ? LANGUAGE_NOTE : `${LANGUAGE_NOTE}\n>\n${SETUP_NOTE}`;
   const body = namespaced(cmd.body).replace(/^(# .+\n)/, `$1\n${notes}\n`);
   return `---\n${frontmatter}\n---\n\n${body}`;
 }
@@ -88,7 +90,7 @@ export function buildPlugin(version = pkg.version) {
 
   // O navegador que o agente usa para navegar como cada persona.
   files['.mcp.json'] =
-    JSON.stringify({ mcpServers: { playwright: { command: 'npx', args: ['-y', `@playwright/mcp@${PLAYWRIGHT_MCP_VERSION}`] } } }, null, 2) + '\n';
+    JSON.stringify({ mcpServers: { playwright: { command: 'npx', args: ['-y', `@playwright/mcp@${PLAYWRIGHT_MCP_VERSION}`, ...PLAYWRIGHT_MCP_ARGS] } } }, null, 2) + '\n';
 
   for (const cmd of [...commands, setup]) files[`skills/${cmd.name}/SKILL.md`] = skill(cmd, version);
 
@@ -108,7 +110,7 @@ Install:
 /plugin install ux-validate@ux-validate
 \`\`\`
 
-Then, in your project: \`/ux-validate:ux-setup\` once, and \`/ux-validate:ux-test\` whenever you want to test. Other skills: \`/ux-validate:ux-report\`, \`/ux-validate:ux-fix\` and \`/ux-validate:ux-persona\`. Requires Node.js 20 or later.
+Then, in your project: \`/ux-validate:ux-setup\` once, and \`/ux-validate:ux-test\` whenever you want to test. To audit a site that is already published, from its URL and without its code: \`/ux-validate:ux-audit https://www.example.com\` (only sites you are responsible for or authorized to test). Other skills: \`/ux-validate:ux-report\`, \`/ux-validate:ux-fix\`, \`/ux-validate:ux-persona\` and \`/ux-validate:ux-task\`. Requires Node.js 20 or later.
 
 These files are generated from the ux-validate repository by \`npm run build:plugin\`; don't edit them by hand. Docs: https://github.com/fabiofigueredo/ux-validate#readme
 `;

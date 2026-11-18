@@ -8,7 +8,7 @@ Instead of just saying "contrast is below 4.5:1", ux-validate asks, through a si
 
 ![ux-validate report: scores by persona, goals and issues](docs/ux-validate-demo-crop.gif)
 
-> **Status:** version 1.0. Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
+> **Status:** version 1.1. Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
 
 ## Complete validation, step by step
 
@@ -20,6 +20,8 @@ The complete validation has two parts, and the report brings them together:
 | **2. Persona and task test** | `/ux-test` in your AI tool | Yes | Runs part 1, browses as each persona trying the tasks, and builds the report |
 
 The result is in `.ux-validate/runs/<date-time>/report.html` (and `report.md`). Before validating, the app must be running, or have its start command in `app.start`: ux-validate starts and stops the app itself.
+
+> **Important: the persona and task test requires AI.** It only runs inside an AI tool with an agent (Claude Code, Cursor, Codex CLI or Gemini CLI), using that tool's model and account. **Without one, ux-validate runs only the automated validation** (`npx ux-validate check`): accessibility, keyboard, color blindness, links, errors, layout and spelling. Personas and tasks are not tested, and the report says so at the top.
 
 ### Path 1: npm package (Claude Code, Cursor, Codex CLI or Gemini CLI)
 
@@ -80,6 +82,27 @@ To use your clone in a project, run `npm install -D /path/to/ux-validate` in tha
 
 The [GitHub Action](#github-action) runs part 1 only (no AI) on every pull request, with a PR comment and SARIF.
 
+## Auditing a published site
+
+The same validation also works on a site that is **already online**, from its URL, without its source code. Only audit sites you are responsible for or are authorized to test.
+
+| Part | Command | Needs AI? |
+|---|---|---|
+| **1. Automated audit** | `npx ux-validate audit https://www.example.com` | No |
+| **2. Personas and tasks** | `/ux-audit https://www.example.com` in your AI tool (`$ux-audit` in Codex, `/ux-validate:ux-audit` with the plugin) | Yes |
+
+```bash
+npx ux-validate audit https://www.example.com
+```
+
+- **No project and no setup:** it runs in any folder. Each site gets its own folder, `ux-validate-audits/<domain>/`, with its personas, its tasks and one folder per run with `report.html`. The next audit of the same site reuses the personas and tasks, and `/ux-audit` compares with the previous run. Inside a Git repository, `ux-validate-audits/` is added to `.gitignore`.
+- **Safe for a live site:** it asks whether you are responsible for the site or authorized to test it (`--yes` confirms it, e.g. in CI), respects `robots.txt`, visits at most one page per second, identifies itself as `ux-validate` in the browser's user agent, doesn't follow sign out, delete or cancel links, and never submits forms. The personas go as far as the final button of a form, a login or a purchase, and stop there.
+- **The report** has the same scores, tasks and issues, plus "Limits of this audit" (pages not visited and what couldn't be tested) and a "Plan for whoever maintains the site": first what stops people from finishing their tasks, then critical and high issues, then the rest grouped by kind. Instead of the file and line, each issue shows the page, the element and a screenshot. Share `report.html` with whoever maintains the site.
+- **Options:** `--personas margaret,lucas-screen-reader` or `all`, `--task "<task>"` (repeatable), `--max-pages 20`, `--viewports mobile,desktop`, `--fail-on high`. Other commands work in the site's folder with `--dir`, e.g. `npx ux-validate report --dir ux-validate-audits/www.example.com`.
+- **What doesn't apply:** "where to fix" (file and line), React component names, `fix` and `sarif`, which work on the project's code. Pages behind a login aren't audited yet.
+
+To use `/ux-audit` without the plugin, install the commands once in any folder: `npx ux-validate init --tools claude-code` (or `cursor`, `codex`, `gemini`).
+
 ## How it works
 
 ```
@@ -131,8 +154,9 @@ Setup installs the same commands (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`
 Notes:
 
 - The commands only run when you call them: the tests open a browser and use tokens. In Claude Code this is `disable-model-invocation`; in Codex, `allow_implicit_invocation: false`.
+- **Fewer tokens, same test:** the agent reads a short summary of the automated checks (`checks-brief.md`) instead of the full `checks.json`, tests each persona in a clean context when the tool has subagents (Claude Code), opens color-blindness images and accessibility trees only where needed, and the browser doesn't repeat console logs at every step. To spend even less, test one persona (`/ux-test margaret`) or one category (`--only accessibility`).
 - Codex reads `.codex/config.toml` and Gemini reads `.gemini/settings.json` only in folders you **trust**; accept the prompt the first time you open the project.
-- Existing config files are preserved: setup only adds the `playwright` server if it isn't there.
+- Existing config files are preserved: setup only adds the `playwright` server if it isn't there (or updates the one an earlier ux-validate version wrote).
 - The Playwright MCP server is installed at a **pinned version** (`@playwright/mcp@0.0.83`), not `@latest`, so no new, unreviewed version is downloaded and run without you knowing. If you installed an earlier ux-validate version, replace `@latest` with the pinned version in your tool's MCP file.
 - Gemini CLI also reads `.agents/skills/`. If you install both Codex and Gemini, Gemini may list the Codex skills too; use the `/ux-…` commands, and Gemini asks for confirmation before activating any skill.
 - Arguments go after the command name in every tool, e.g. `/ux-test margaret` or `$ux-test margaret`.
@@ -335,12 +359,13 @@ Then, in the project you want to test:
 
 ## Usage
 
-In your AI tool, inside your project (in Codex, use `$` instead of `/`):
+The persona and task test runs **only inside your AI tool**, in your project (in Codex, use `$` instead of `/`):
 
 | Command | What it does |
 |---|---|
 | `/ux-persona` | Creates a persona by talking with you about who uses the app |
 | `/ux-task` | Creates tasks for the personas to try (goals without step-by-step) |
+| `/ux-audit https://www.example.com` | Audits a published site, without its code (see [Auditing a published site](#auditing-a-published-site)) |
 | `/ux-test` | Tests with every persona and builds the report |
 | `/ux-test margaret` | Tests with a single persona |
 | `/ux-test --only accessibility` | Evaluates a single category (`content`, `navigation`, `ui`, `accessibility`) |
@@ -349,7 +374,7 @@ In your AI tool, inside your project (in Codex, use `$` instead of `/`):
 | `/ux-fix` | Applies the report's fixes (critical, high and medium) |
 | `/ux-fix A001,C003` | Applies only the fixes for these issues |
 
-From the terminal (useful in CI):
+From the terminal, **without AI** (automated validation only; personas and tasks are not tested; useful in CI):
 
 ```bash
 npx ux-validate persona examples # show the predefined personas and their characteristics
@@ -359,6 +384,7 @@ npx ux-validate persona validate # check the persona files
 npx ux-validate task new         # create tasks for the personas to try
 npx ux-validate task validate    # check the tasks file
 npx ux-validate check            # automated checks only
+npx ux-validate audit <url>      # automated audit of a published site (no code needed)
 npx ux-validate report           # report for the latest run
 npx ux-validate fix              # apply the fixes with the model set up in init
 ```
@@ -600,6 +626,8 @@ The commands in `source/<lang>/commands/` use placeholders (`{{WORK_DIR}}`, `{{C
 - [x] Color vision: color blindness simulation, contrast, indicator and color-only state checks
 - [x] Claude Code plugin (`/plugin install ux-validate@ux-validate`)
 - [x] Tasks: goals without step-by-step, first click, backtracks and a task × persona table
+- [x] Audit of a published site from its URL (`audit` and `/ux-audit`)
+- [ ] Audit pages behind a login (saved session)
 - [ ] Persona browsing from the terminal (no AI tool), with the model chosen in setup
 - [ ] Repeat the browsing and only confirm issues that show up in more than one run
 

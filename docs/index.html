@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ux-validate</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Primeira checagem de projetos web: acessibilidade, usabilidade e conteúdo, com checagens automáticas e personas simuladas por IA. CLI de código aberto (MIT); os testes com personas usam Claude Code, Cursor, Codex CLI ou Gemini CLI.">
+<meta name="description" content="Primeira checagem de projetos web, em construção ou já publicados: acessibilidade, usabilidade e conteúdo, com checagens automáticas e personas simuladas por IA. CLI de código aberto (MIT); os testes com personas usam Claude Code, Cursor, Codex CLI ou Gemini CLI.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,500;9..40,700;9..40,800&family=Pixelify+Sans:wght@600;700&display=swap">
@@ -71,14 +71,14 @@ h2 { font: 800 clamp(25px, 3.3vw, 30px)/1.15 var(--head); letter-spacing: -0.015
 .logo { display: inline-flex; align-items: center; gap: 12px; font: 700 16px/1 var(--head); text-decoration: none; flex: none; }
 .dots { display: inline-flex; gap: 5px; }
 .dots i { width: 10px; height: 10px; border-radius: 50%; display: block; }
-.nav-links { display: flex; gap: 30px; margin-left: auto; font: 500 13px/1 var(--head); }
+.nav-links { display: flex; gap: 24px; margin-left: auto; font: 500 13px/1 var(--head); white-space: nowrap; }
 .nav-links a { text-decoration: none; }
 .nav-links a:hover { text-decoration: underline; text-decoration-color: var(--lime-deep); text-decoration-thickness: 3px; text-underline-offset: 5px; }
 .nav-actions { display: flex; align-items: center; gap: 8px; margin-left: 18px; }
 .nav .btn { padding: 9px 16px; font-size: 13.5px; border-width: 1.5px; }
 .nav .btn.light { border-color: var(--ink-2); }
 .lang { font: 500 12px/1 var(--mono); border: 1.5px solid var(--line); background: var(--white); color: var(--ink); border-radius: 8px; padding: 9px; cursor: pointer; }
-@media (max-width: 900px) { .nav-links { display: none; } .nav-actions { margin-left: auto; } }
+@media (max-width: 960px) { .nav-links { display: none; } .nav-actions { margin-left: auto; } }
 @media (max-width: 520px) { .nav .gh-label { display: none; } .nav-bar { gap: 8px; padding-left: 12px; } .nav .btn { padding-inline: 12px; } }
 /* Celular: logo, idioma, GitHub e Começar precisam caber numa linha só. */
 @media (max-width: 440px) {
@@ -162,6 +162,15 @@ h1 { font: 700 clamp(44px, 8vw, 76px)/1.05 var(--display); white-space: nowrap; 
 .nowrap { white-space: nowrap; }
 @media (max-width: 860px) { .limits { grid-template-columns: 1fr; gap: 16px; } .limits .rule { display: none; } }
 
+/* ---------- Auditoria de site publicado ---------- */
+.audit { background: var(--lime-soft); border-radius: 22px; padding: 28px 30px; display: grid; grid-template-columns: minmax(0, 1.1fr) 1.5px minmax(0, 1fr); gap: 30px; align-items: center; }
+.audit .rule { align-self: stretch; background: rgba(17,17,17,.18); }
+.audit .term { margin-top: 18px; font-size: 13.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.audit .term .c { color: #a9a9a0; }
+.audit .tag { display: inline-block; font: 500 11.5px/1 var(--mono); border: 1.5px solid var(--ink); border-radius: 999px; padding: 4px 9px; background: var(--white); margin-right: 6px; }
+.audit .modes { display: grid; gap: 10px; margin-top: 16px; font-size: 13.5px; }
+@media (max-width: 900px) { .audit { grid-template-columns: 1fr; padding: 24px 18px; } .audit .rule { display: none; } }
+
 /* ---------- Relatórios ---------- */
 .band { background: var(--lilac-soft); border-radius: 22px; padding: 28px 30px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 1.5px minmax(0, .95fr); gap: 30px; align-items: center; }
 .band .rule { align-self: stretch; background: rgba(17,17,17,.18); }
@@ -213,6 +222,9 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
 .dlg .row { display: flex; flex-wrap: wrap; gap: 10px; }
 .dlg .btn { padding: 10px 16px; font-size: 14px; }
 .dlg small { color: var(--ink-2); font-size: 12.5px; }
+.dlg h3 { font: 700 16px/1.2 var(--head); }
+#cmds-audit { white-space: pre-wrap; overflow-wrap: anywhere; }
+.dlg hr { border: 0; border-top: 1.5px solid var(--line); margin: 4px 0; width: 100%; }
 
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
 </style>
@@ -237,6 +249,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
       <div class="nav-links">
         <a href="#recursos" data-i18n="nav.features">Recursos</a>
         <a href="#como-funciona" data-i18n="nav.how">Como funciona</a>
+        <a href="#auditoria" data-i18n="nav.audit">Auditoria</a>
         <a href="#relatorios" data-i18n="nav.reports">Relatórios</a>
         <a href="#integracoes" data-i18n="nav.integrations">Integrações</a>
       </div>
@@ -261,7 +274,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
         <span class="h tl"></span><span class="h tr"></span><span class="h bl"></span><span class="h br"></span>
         <h1 id="titulo">ux-validate</h1>
       </div>
-      <p class="tagline" data-i18n="hero.tagline">Primeira checagem de projetos web: acessibilidade, usabilidade e conteúdo, com checagens automáticas e personas simuladas por IA.</p>
+      <p class="tagline" data-i18n="hero.tagline">Primeira checagem de projetos web, em construção ou já no ar: acessibilidade, usabilidade e conteúdo, com checagens automáticas e personas simuladas por IA.</p>
       <div class="hero-ctas">
         <a class="btn dark" href="#comecar" data-start><span data-i18n="cta.start">Começar agora</span><svg aria-hidden="true"><use href="#arrow"/></svg></a>
         <a class="btn light" href="https://github.com/fabiofigueredo/ux-validate" target="_blank" rel="noopener"><svg aria-hidden="true"><use href="#branch"/></svg><span data-i18n="cta.github">Ver no GitHub</span></a>
@@ -352,6 +365,30 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
     </ul>
   </section>
 
+  <!-- ===== Auditoria de site publicado ===== -->
+  <div class="wrap" id="auditoria" style="margin-bottom:26px">
+    <section class="audit" aria-labelledby="aud-t">
+      <div>
+        <span class="hand sm" data-i18n="aud.hand">seu site já está no ar?</span>
+        <h2 id="aud-t" data-i18n="aud.title">Audite um site publicado, só com a URL.</h2>
+        <p class="body" data-i18n="aud.text">Sem o código e sem configurar nada: as mesmas checagens e personas, num site que já está no ar. Só para sites seus ou que você tem autorização para testar.</p>
+        <pre class="term"><span class="p">$</span> npx ux-validate audit https://www.exemplo.com.br</pre>
+        <div class="modes">
+          <p><span class="tag" data-i18n="aud.noAi">sem IA</span><span data-i18n="aud.m1">o comando acima roda a auditoria automática e gera o relatório.</span></p>
+          <p><span class="tag" data-i18n="aud.ai">com IA</span><span data-i18n="aud.m2">/ux-audit &lt;url&gt; na sua ferramenta de IA acrescenta as personas e as tarefas.</span></p>
+        </div>
+      </div>
+      <span class="rule" aria-hidden="true"></span>
+      <ul class="check-list">
+        <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="aud.l1">Pede a confirmação de que você responde pelo site ou tem autorização</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="aud.l2">Respeita o robots.txt e visita no máximo uma página por segundo</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="aud.l3">Nunca envia formulários, não faz login e não segue links de sair ou excluir</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="aud.l4">Relatório com os limites da auditoria e um plano para quem mantém o site</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#tick"/></svg><span data-i18n="aud.l5">Cada site ganha uma pasta própria: a próxima auditoria compara com a anterior</span></li>
+      </ul>
+    </section>
+  </div>
+
   <!-- ===== Relatórios ===== -->
   <div class="wrap" id="relatorios">
     <section class="band" aria-labelledby="rep-t">
@@ -381,7 +418,8 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
         <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="rep.l1">Pontuação por persona e categoria</span></li>
         <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="rep.l2">Evidências (prints e trechos)</span></li>
         <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="rep.l3">Objetivos não concluídos e onde a pessoa travou</span></li>
-        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="rep.l4">Arquivos e linhas para correção</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="rep.l4">Arquivos e linhas para correção, no seu projeto</span></li>
+        <li><svg class="tick" aria-hidden="true"><use href="#check"/></svg><span data-i18n="rep.l5">Plano para quem mantém o site, na auditoria</span></li>
       </ul>
     </section>
   </div>
@@ -429,6 +467,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
       <li><svg class="tick" aria-hidden="true"><use href="#warn"/></svg><span data-i18n="lim.l1">Não substitui testes com pessoas reais, inclusive pessoas com deficiência.</span></li>
       <li><svg class="tick" aria-hidden="true"><use href="#warn"/></svg><span data-i18n="lim.l2">A automação cobre só parte dos critérios das WCAG. O resto exige teste manual.</span></li>
       <li><svg class="tick" aria-hidden="true"><use href="#warn"/></svg><span data-i18n="lim.l3">As personas são simuladas por IA e podem repetir vieses dos modelos. Ainda estão em validação.</span></li>
+      <li><svg class="tick" aria-hidden="true"><use href="#warn"/></svg><span data-i18n="lim.l4">A auditoria de um site publicado vê só as páginas públicas: formulários, login e pagamento ficam de fora.</span></li>
     </ul>
   </section>
 
@@ -460,10 +499,17 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
     <pre class="term" id="cmds"><span class="p">$</span> npm install -D ux-validate
 <span class="p">$</span> npx ux-validate install-browser
 <span class="p">$</span> npx ux-validate init</pre>
-    <small data-i18n="dlg.note">O setup pede as personas e as tarefas que elas vão tentar. Depois, com a aplicação no ar, rode /ux-test no Claude Code, Cursor ou Gemini CLI (no Codex, $ux-test). No Claude Code, também dá para usar o plugin: /plugin marketplace add fabiofigueredo/ux-validate.</small>
+    <small data-i18n="dlg.note">O setup pede as personas e as tarefas que elas vão tentar. Depois, com a aplicação no ar, rode /ux-test no Claude Code, Cursor ou Gemini CLI (no Codex, $ux-test). No Claude Code, também dá para usar o plugin: /plugin marketplace add fabiofigueredo/ux-validate. Sem uma ferramenta de IA, só roda a validação automática (npx ux-validate check).</small>
     <div class="row">
-      <button class="btn dark" type="button" id="copy" data-i18n="dlg.copy">Copiar comandos</button>
+      <button class="btn dark" type="button" data-copy="cmds" data-i18n="dlg.copy">Copiar comandos</button>
       <a class="btn light" href="https://github.com/fabiofigueredo/ux-validate#readme" target="_blank" rel="noopener" data-i18n="dlg.docs">Ler a documentação</a>
+    </div>
+    <hr>
+    <h3 data-i18n="dlg.auditTitle">Ou audite um site que já está no ar</h3>
+    <pre class="term" id="cmds-audit"><span class="p">$</span> npx ux-validate audit https://www.exemplo.com.br</pre>
+    <small data-i18n="dlg.auditNote">Sem código e sem setup, só para sites seus ou com autorização. Com personas e tarefas: /ux-audit &lt;url&gt; na sua ferramenta de IA (no plugin, /ux-validate:ux-audit).</small>
+    <div class="row">
+      <button class="btn light" type="button" data-copy="cmds-audit" data-i18n="dlg.copyAudit">Copiar comando</button>
     </div>
   </div>
 </dialog>
@@ -472,9 +518,9 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
 (() => {
   /* ---------- Idioma: português por padrão, inglês opcional ---------- */
   const EN = {
-    'nav.features': 'Features', 'nav.how': 'How it works', 'nav.reports': 'Reports', 'nav.integrations': 'Integrations', 'nav.start': 'Get started',
+    'nav.features': 'Features', 'nav.how': 'How it works', 'nav.audit': 'Audit', 'nav.reports': 'Reports', 'nav.integrations': 'Integrations', 'nav.start': 'Get started',
     'hero.hand': 'check before you test with people',
-    'hero.tagline': 'A first-pass check for web projects: accessibility, usability and content, with automated checks and AI-simulated personas.',
+    'hero.tagline': 'A first-pass check for web projects, in development or already live: accessibility, usability and content, with automated checks and AI-simulated personas.',
     'cta.start': 'Get started', 'cta.github': 'View on GitHub', 'hero.b1': 'Open source (MIT)', 'hero.b3': 'AI + Personas',
     'strip.pill': 'Test with<br>simulated personas',
     'strip.text': 'Simulate how different people use your app, like an older adult, someone with a visual impairment and other contexts of use. It\'s a simulation: it does not replace testing with real people.',
@@ -486,10 +532,19 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
     'per.hand': 'personas that matter', 'per.title': 'From students to older adults, every experience counts.',
     'per.text': 'Use personas as a support, never as a substitute for research with people. Validate your app with different usage profiles, such as older adults, people with visual impairments, low familiarity with technology and more. Each persona has its own device, limits and goals.',
     'per.l1': 'Older adults', 'per.l2': 'Visual impairment and screen readers', 'per.l3': 'Low familiarity with technology', 'per.l4': 'Phone, tablet or computer', 'per.l5': 'Other contexts of use, written by you',
+    'aud.hand': 'is your site already live?', 'aud.title': 'Audit a published site, with just its URL.',
+    'aud.text': 'No source code and no setup: the same checks and personas, on a site that is already online. Only for sites you own or are authorized to test.',
+    'aud.noAi': 'no AI', 'aud.m1': 'the command above runs the automated audit and builds the report.',
+    'aud.ai': 'with AI', 'aud.m2': '/ux-audit &lt;url&gt; in your AI tool adds the personas and tasks.',
+    'aud.l1': 'Asks you to confirm you are responsible for the site or authorized to test it',
+    'aud.l2': 'Respects robots.txt and visits at most one page per second',
+    'aud.l3': 'Never submits forms, never logs in and doesn\'t follow sign out or delete links',
+    'aud.l4': 'Report with the limits of the audit and a plan for whoever maintains the site',
+    'aud.l5': 'Each site gets its own folder: the next audit compares with the previous one',
     'rep.hand': 'what you get', 'rep.title': 'Clear, actionable reports.',
     'rep.text': 'See what works, what needs fixing and where to change it, with evidence, scores and objective suggestions.',
     'rep.ring': 'score · example', 'cat.content': 'Content', 'cat.nav': 'Navigation', 'cat.ui': 'Interface', 'cat.a11y': 'Accessibility',
-    'rep.l1': 'Scores by persona and category', 'rep.l2': 'Evidence (screenshots and snippets)', 'rep.l3': 'Goals not achieved and where people got stuck', 'rep.l4': 'Files and lines to fix',
+    'rep.l1': 'Scores by persona and category', 'rep.l2': 'Evidence (screenshots and snippets)', 'rep.l3': 'Goals not achieved and where people got stuck', 'rep.l4': 'Files and lines to fix, in your project', 'rep.l5': 'A plan for whoever maintains the site, in an audit',
     'int.hand': 'integrations', 'int.title': 'Works with your development workflow.',
     'int.text': 'Run ux-validate with the tools you already use, in the terminal and in GitHub CI.',
     'int.note': 'Open-source CLI (MIT). Persona tests use an external AI tool (Claude Code, Cursor, Codex CLI or Gemini CLI).',
@@ -500,10 +555,14 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
     'lim.l1': "It doesn't replace testing with real people, including people with disabilities.",
     'lim.l2': 'Automation covers only part of the WCAG success criteria. The rest needs manual testing.',
     'lim.l3': 'Personas are simulated by AI and may repeat model biases. They are still being validated.',
+    'lim.l4': 'Auditing a published site only covers public pages: forms, login and payment are left out.',
     'bar.title': 'Validate your app now', 'bar.text': 'Start with a first-pass check, then test with real people.',
     'dlg.hand': 'in 3 commands', 'dlg.title': 'Start in your project',
-    'dlg.note': 'Setup asks for the personas and the tasks they will try. Then, with the app running, run /ux-test in Claude Code, Cursor or Gemini CLI (in Codex, $ux-test). In Claude Code you can also use the plugin: /plugin marketplace add fabiofigueredo/ux-validate.',
-    'dlg.copy': 'Copy commands', 'dlg.copied': 'Copied', 'dlg.docs': 'Read the docs'
+    'dlg.note': 'Setup asks for the personas and the tasks they will try. Then, with the app running, run /ux-test in Claude Code, Cursor or Gemini CLI (in Codex, $ux-test). In Claude Code you can also use the plugin: /plugin marketplace add fabiofigueredo/ux-validate. Without an AI tool, only the automated validation runs (npx ux-validate check).',
+    'dlg.copy': 'Copy commands', 'dlg.copied': 'Copied', 'dlg.docs': 'Read the docs',
+    'dlg.auditTitle': 'Or audit a site that is already live',
+    'dlg.auditNote': 'No code and no setup, only for sites you own or are authorized to test. With personas and tasks: /ux-audit &lt;url&gt; in your AI tool (with the plugin, /ux-validate:ux-audit).',
+    'dlg.copyAudit': 'Copy command'
   };
   const nodes = [...document.querySelectorAll('[data-i18n]')];
   const PT = new Map(nodes.map((n) => [n, n.innerHTML]));
@@ -532,20 +591,21 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
   dlg.querySelector('[data-close]').addEventListener('click', () => dlg.close());
   dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
 
-  const copy = document.getElementById('copy');
-  copy.addEventListener('click', () => {
-    const text = 'npm install -D ux-validate\nnpx ux-validate install-browser\nnpx ux-validate init';
+  // Copia os comandos de um bloco (sem o "$" do começo de cada linha).
+  document.querySelectorAll('[data-copy]').forEach((copy) => copy.addEventListener('click', () => {
+    const block = document.getElementById(copy.dataset.copy);
+    const text = block.textContent.split('\n').map((l) => l.replace(/^\$\s*/, '')).join('\n');
     const done = () => {
       const old = copy.textContent;
       copy.textContent = lang === 'en' ? EN['dlg.copied'] : 'Copiado';
       setTimeout(() => { copy.textContent = old; }, 1400);
     };
     const select = () => {
-      const r = document.createRange(); r.selectNodeContents(document.getElementById('cmds'));
+      const r = document.createRange(); r.selectNodeContents(block);
       const s = getSelection(); s.removeAllRanges(); s.addRange(r);
     };
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, select); else select();
-  });
+  }));
 })();
 </script>
 </body>

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { latestRunDir } from './config.js';
+import { isAuditRun, latestRunDir } from './config.js';
 import { analyze } from './report.js';
 import { listSourceFiles, locateAll, searchTerms } from './fix.js';
 import { t } from './i18n.js';
@@ -90,6 +90,8 @@ export function buildSarif({ cwd, runDir }) {
 }
 
 export async function writeSarif({ cwd, run, out }) {
+  // SARIF aponta arquivos do repositório; uma auditoria de site publicado não tem código.
+  if (isAuditRun(cwd, run)) throw new Error(t('audit.notForAudit'));
   const runDir = run ? path.resolve(cwd, run) : latestRunDir(cwd);
   if (!runDir || !fs.existsSync(runDir)) throw new Error(t('report.noRun'));
   const sarif = buildSarif({ cwd, runDir });
