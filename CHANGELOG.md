@@ -11,6 +11,7 @@ All notable changes to ux-validate. The npm package, the GitHub Action (`@v1`) a
   - "Fix first" (or, in an audit, the plan for whoever maintains the site) as a numbered list that links to each issue.
   - Issue cards with severity, the snippet, "How to fix" and the screenshot. Category filters, print styles, no horizontal scroll on phones.
   - The report is light only, like the website. Fonts load from Google Fonts; offline, system fonts are used. `report.md` is unchanged.
+- **READMEs rewritten** (English and Portuguese) and reorganized: what it does (project or published site, with or without AI), quick start, installation, usage, personas, tasks, audit, the report, what is checked, fixes, CI, limitations and development, with a table of contents.
 
 ## 1.1.1 — 2026-11-18
 

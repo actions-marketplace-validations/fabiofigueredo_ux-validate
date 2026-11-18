@@ -2,30 +2,58 @@
 
 [English](README.md) · **Português**
 
-Testes de **conteúdo**, **navegação**, **interface** e **acessibilidade** de aplicações web, feitos do ponto de vista de **personas**, geradas por IA ou não, e executados pelo agente de IA que você já usa.
+Testes de **conteúdo**, **navegação**, **interface** e **acessibilidade** de aplicações web, geradas por IA ou não, guiados por personas e executados pelo agente de IA que você já usa.
 
-Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate pergunta, por meio de uma persona simulada: *a Dona Maria, de 68 anos, no celular, consegue descobrir quanto custa o seu produto?* E se não consegue, mostra onde ela travou, por quê e em qual arquivo corrigir.
+Em vez de dizer só "o contraste está abaixo de 4,5:1", o ux-validate pergunta, por meio de uma persona simulada: *a Dona Maria, de 68 anos, no celular, consegue descobrir quanto custa o seu produto?* E, se não conseguir, mostra onde ela travou, por quê e o que corrigir.
 
 ![Relatório do ux-validate: notas por persona, objetivos e problemas](docs/ux-validate-demo-crop.gif)
 
-> **Status:** versão 1.1. Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**.
+> **Status:** versão 1.2. Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**. Site: [fabiofigueredo.github.io/ux-validate](https://fabiofigueredo.github.io/ux-validate/)
 
-## Validação completa, passo a passo
+## Conteúdo
 
-A validação completa tem duas partes, e o relatório junta as duas:
+- [O que ele faz](#o-que-ele-faz)
+- [Comece rápido](#comece-rápido)
+- [Como funciona](#como-funciona)
+- [Instalação e configuração](#instalação-e-configuração)
+- [Uso](#uso)
+- [Personas](#personas)
+- [Tarefas](#tarefas)
+- [Auditar um site publicado](#auditar-um-site-publicado)
+- [O relatório](#o-relatório)
+- [O que é verificado](#o-que-é-verificado)
+- [Aplicar as correções](#aplicar-as-correções)
+- [GitHub Action e CI](#github-action-e-ci)
+- [Limitações](#limitações)
+- [Experimente com o site de demonstração](#experimente-com-o-site-de-demonstração)
+- [Solução de problemas](#solução-de-problemas)
+- [Desenvolvimento](#desenvolvimento)
+- [Roadmap](#roadmap)
 
-| Parte | Comando | Precisa de IA? | O que faz |
-|---|---|---|---|
-| **1. Checagens automáticas** | `npx ux-validate check` | Não | Acessibilidade (axe-core, WAI-ARIA, teclado, daltonismo), links, erros, layout, ortografia |
-| **2. Teste com personas e tarefas** | `/ux-test` na sua ferramenta de IA | Sim | Roda a parte 1, navega como cada persona tentando as tarefas e gera o relatório |
+## O que ele faz
 
-O resultado fica em `.ux-validate/runs/<data-hora>/report.html` (e `report.md`). Antes de validar, a aplicação precisa estar no ar, ou ter o comando para subi-la em `app.start`: o ux-validate inicia e encerra a aplicação sozinho.
+O ux-validate testa aplicações web em duas situações, em duas camadas:
 
-> **Importante: o teste com personas e tarefas precisa de IA.** Ele só roda dentro de uma ferramenta de IA com agente (Claude Code, Cursor, Codex CLI ou Gemini CLI), com o modelo e a conta dessa ferramenta. **Sem uma delas, o ux-validate executa apenas a validação automática** (`npx ux-validate check`): acessibilidade, teclado, daltonismo, links, erros, layout e ortografia. As personas e as tarefas não são testadas, e o relatório avisa isso no topo.
+| | **Seu projeto** (em construção, com o código) | **Um site publicado** (só a URL) |
+|---|---|---|
+| **Checagens automáticas** · sem IA | `npx ux-validate check` | `npx ux-validate audit <url>` |
+| **Teste com personas e tarefas** · precisa de uma ferramenta de IA | `/ux-test` | `/ux-audit <url>` |
 
-### Caminho 1: pacote do npm (Claude Code, Cursor, Codex CLI ou Gemini CLI)
+- **As checagens automáticas** rodam no terminal, sem modelo de linguagem, e dão sempre o mesmo resultado: acessibilidade (axe-core, WAI-ARIA, teclado, daltonismo), links quebrados, erros de console, layout no celular, ortografia e textos provisórios esquecidos (lorem ipsum, `NaN`, `TODO`).
+- **O teste com personas e tarefas** roda dentro da sua ferramenta de IA. O agente roda as checagens automáticas, abre a aplicação num navegador e tenta as [tarefas](#tarefas) como cada [persona](#personas) faria, com o aparelho e as limitações dela. Ele registra onde ela se perdeu e por quê e, no seu projeto, qual arquivo corrigir.
+- **O resultado** é um relatório (`report.html` e `report.md`) com notas por persona, as tarefas que cada uma concluiu, os problemas com evidências e como corrigi-los. Veja [O relatório](#o-relatório).
 
-Uma vez por projeto, no terminal, na pasta do projeto:
+> **Importante: o teste com personas e tarefas precisa de IA.** Ele só roda dentro de uma ferramenta de IA com agente (Claude Code, Cursor, Codex CLI ou Gemini CLI), com o modelo e a conta dessa ferramenta. **Sem uma delas, o ux-validate executa apenas as checagens automáticas**, e o relatório avisa isso no topo.
+
+O ux-validate é uma **primeira checagem**: aponta barreiras prováveis antes de você testar com pessoas, não no lugar disso. Veja [Limitações](#limitações).
+
+## Comece rápido
+
+Requisitos: **Node.js 20+** e, para o teste com personas, uma das ferramentas de IA acima.
+
+### No seu projeto
+
+Uma vez, num terminal, na pasta do projeto:
 
 ```bash
 npm install -D ux-validate
@@ -39,18 +67,27 @@ npx ux-validate install-browser
 npx ux-validate init
 ```
 
-O `init` pergunta o idioma, as ferramentas de IA, a URL e o comando da aplicação, as **personas** e as **tarefas** que elas vão tentar.
+O `init` pergunta o idioma, as suas ferramentas de IA, a URL e o comando de início da aplicação, as **personas** e as **tarefas** que elas vão tentar. Depois, a cada validação:
 
-A cada validação:
+1. Abra a sua ferramenta de IA **na pasta do projeto** e rode **`/ux-test`** (no Codex, `$ux-test`). Na primeira vez, aprove o servidor MCP `playwright`: é o navegador do agente.
+2. Abra o `report.html` da pasta mais recente em `.ux-validate/runs/`.
+3. Para corrigir: `/ux-fix` na ferramenta de IA, ou `npx ux-validate fix` no terminal.
 
-1. *(Opcional, rápido, sem IA)* `npx ux-validate check` e depois `npx ux-validate report`: só a parte automática.
-2. Abra a ferramenta de IA **na pasta do projeto** e rode **`/ux-test`** (no Codex, `$ux-test`). Na primeira vez, aprove o servidor MCP `playwright`: é o navegador do agente.
-3. Abra o `report.html` da execução mais recente, em `.ux-validate/runs/`.
-4. Para corrigir: `/ux-fix` na ferramenta de IA, ou `npx ux-validate fix` no terminal (com o modelo configurado no `init`).
+Sem IA: `npx ux-validate check` e depois `npx ux-validate report` (só a parte automática).
 
-### Caminho 2: plugin do Claude Code
+### Um site publicado
 
-No Claude Code (uma vez):
+Em qualquer pasta, para um site pelo qual você responde ou que tem autorização para testar:
+
+```bash
+npx ux-validate audit https://www.exemplo.com.br
+```
+
+Com personas e tarefas: `/ux-audit https://www.exemplo.com.br` na sua ferramenta de IA. Detalhes em [Auditar um site publicado](#auditar-um-site-publicado).
+
+### Plugin do Claude Code
+
+Uma alternativa ao pacote do npm para quem usa o Claude Code. No Claude Code, uma vez:
 
 ```
 /plugin marketplace add fabiofigueredo/ux-validate
@@ -60,234 +97,44 @@ No Claude Code (uma vez):
 /plugin install ux-validate@ux-validate
 ```
 
-Depois, em cada projeto: `/ux-validate:ux-setup` (uma vez), `/ux-validate:ux-test` a cada validação, o `report.html` em `.ux-validate/runs/` e `/ux-validate:ux-fix` para corrigir. Não é preciso instalar o pacote do npm. Use o plugin **ou** o `init` com o Claude Code no mesmo projeto, não os dois.
-
-### Caminho 3: a partir do código (Git), para contribuir ou testar mudanças
-
-```bash
-git clone https://github.com/fabiofigueredo/ux-validate.git
-```
-
-```bash
-cd ux-validate && npm install && node bin/ux-validate.js install-browser
-```
-
-```bash
-npm test
-```
-
-Para usar o seu clone num projeto, rode `npm install -D /caminho/para/ux-validate` nesse projeto e siga o Caminho 1 a partir do `init`. Para testar o plugin local: `npm run build:plugin` no clone e `claude --plugin-dir /caminho/para/ux-validate/plugin` no projeto. As skills do plugin chamam a CLI publicada no npm na versão do plugin.
+Depois, em cada projeto: `/ux-validate:ux-setup` uma vez e `/ux-validate:ux-test` a cada validação. Veja [Plugin do Claude Code](#plugin-do-claude-code).
 
 ### No CI
 
-A [GitHub Action](#github-action) roda só a parte 1 (sem IA) a cada pull request, com comentário no PR e SARIF.
-
-## Auditar um site publicado
-
-A mesma validação também funciona num site **já no ar**, a partir da URL, sem o código. Audite só sites pelos quais você responde ou que tem autorização para testar.
-
-| Parte | Comando | Precisa de IA? |
-|---|---|---|
-| **1. Auditoria automática** | `npx ux-validate audit https://www.exemplo.com.br` | Não |
-| **2. Personas e tarefas** | `/ux-audit https://www.exemplo.com.br` na sua ferramenta de IA (`$ux-audit` no Codex, `/ux-validate:ux-audit` com o plugin) | Sim |
-
-```bash
-npx ux-validate audit https://www.exemplo.com.br
-```
-
-- **Sem projeto e sem setup:** roda em qualquer pasta. Cada site ganha uma pasta própria, `ux-validate-audits/<domínio>/`, com as personas, as tarefas e uma pasta por execução com o `report.html`. A próxima auditoria do mesmo site reaproveita as personas e as tarefas, e o `/ux-audit` compara com a execução anterior. Dentro de um repositório Git, `ux-validate-audits/` é adicionada ao `.gitignore`.
-- **Seguro para um site no ar:** pergunta se você responde pelo site ou tem autorização para testá-lo (`--yes` confirma, ex.: no CI), respeita o `robots.txt`, visita no máximo uma página por segundo, se identifica como `ux-validate` no user agent do navegador, não segue links de sair, excluir ou cancelar e nunca envia formulários. As personas vão até o botão final de um formulário, login ou compra e param ali.
-- **O relatório** tem as mesmas notas, tarefas e problemas, mais "Limites desta auditoria" (páginas não visitadas e o que não pôde ser testado) e um "Plano para quem mantém o site": primeiro o que impede as pessoas de concluir as tarefas, depois os problemas críticos e altos, depois o resto agrupado por tipo. No lugar do arquivo e da linha, cada problema mostra a página, o elemento e um screenshot. Compartilhe o `report.html` com quem mantém o site.
-- **Opções:** `--personas dona-maria,lucas-leitor-de-tela` ou `all`, `--task "<tarefa>"` (pode repetir), `--max-pages 20`, `--viewports mobile,desktop`, `--fail-on high`. Os outros comandos funcionam na pasta do site com `--dir`, ex.: `npx ux-validate report --dir ux-validate-audits/www.exemplo.com.br`.
-- **O que não se aplica:** "onde corrigir" (arquivo e linha), nomes de componentes React, `fix` e `sarif`, que trabalham no código do projeto. Páginas atrás de login ainda não são auditadas.
-
-Para usar o `/ux-audit` sem o plugin, instale os comandos uma vez em qualquer pasta: `npx ux-validate init --tools claude-code` (ou `cursor`, `codex`, `gemini`).
+A [GitHub Action](#github-action-e-ci) roda as checagens automáticas (sem IA) a cada pull request, com comentário no PR e SARIF.
 
 ## Como funciona
 
 ```
-/ux-test
+/ux-test  (ou /ux-audit <url> para um site publicado)
    │
-   ├─ 1. Checagens fixas  (npx ux-validate check)
-   │     axe-core, WAI-ARIA e teclado, links quebrados, erros de console,
-   │     rolagem horizontal, ortografia, textos provisórios (lorem ipsum, NaN)…
-   │     → mesmo resultado com qualquer modelo de linguagem
+   ├─ 1. Checagens automáticas       npx ux-validate check  (ou audit)
+   │     axe-core, WAI-ARIA e teclado, daltonismo, links, erros de console,
+   │     rolagem horizontal, ortografia, textos provisórios
+   │     → mesmo resultado com qualquer modelo; um resumo curto para o agente
    │
-   ├─ 2. Navegação como cada persona  (agente + Playwright MCP)
-   │     tenta as tarefas do projeto e os objetivos dela, com as limitações dela,
-   │     e avalia conteúdo, navegação, interface e acessibilidade
-   │     pelo olhar dela; testa os widgets pelo teclado (padrões do APG)
-   │     e revisa ortografia e gramática
+   ├─ 2. Navegação como cada persona       agente + Playwright MCP
+   │     tenta as tarefas e os objetivos dela, com as limitações dela;
+   │     registra o primeiro clique, as voltas e onde ela se perdeu;
+   │     testa os widgets pelo teclado e revisa ortografia e gramática
    │
-   ├─ 3. Aponta o arquivo provável de cada problema no seu código
+   ├─ 3. Aponta o arquivo provável de cada problema  (só no seu projeto)
    │
-   └─ 4. Relatório  (npx ux-validate report)
-         notas por persona, objetivos cumpridos, problemas com evidência
-         e sugestão de correção → report.md + report.html
+   └─ 4. Relatório       npx ux-validate report
+         notas por persona, tarefas, problemas com evidências e correções
+         → report.html + report.md
 
 /ux-fix  ou  npx ux-validate fix
    └─ aplica as correções no código, mostrando cada mudança antes de gravar
 ```
 
-O ux-validate roda **dentro da sua ferramenta de IA**: o modelo usado é o que ela estiver usando.
+O ux-validate roda **dentro da sua ferramenta de IA**: o modelo é o que essa ferramenta estiver usando.
 
-## Limitações
+## Instalação e configuração
 
-O ux-validate é uma **primeira checagem**. Ele não substitui testes manuais de acessibilidade nem testes com pessoas reais, inclusive pessoas com deficiência.
-
-- **O que roda sem IA.** O `npx ux-validate check` não usa modelo de linguagem: axe-core (WCAG 2.2 AA), sintaxe ARIA, comportamento de teclado e WAI-ARIA (armadilha de foco, foco invisível, elementos clicáveis sem acesso pelo teclado), links quebrados, erros de console, rolagem horizontal, ortografia offline (Hunspell), texto de preenchimento (lorem ipsum, `NaN`…), checagens de daltonismo e checagens específicas de React.
-- **O que precisa de uma ferramenta de IA externa.** Os testes com personas (`/ux-test`) rodam dentro do Claude Code, Cursor, Codex CLI ou Gemini CLI, que são ferramentas proprietárias. A CLI do ux-validate é de código aberto (MIT); essas ferramentas, não.
-- **A automação cobre só parte das WCAG.** Num teste informal do autor (17/11/2026), o `check` rodou nas 142 páginas de teste do [alphagov/accessibility-tool-audit](https://github.com/alphagov/accessibility-tool-audit), que têm defeitos propositais e resultados de 13 ferramentas como referência. Ele detectou cerca de um terço dos casos, na mesma faixa do axe sozinho (40 de 141) e abaixo da melhor ferramenta paga (56 de 141). Na página de controle, sem defeitos, não houve falso positivo de acessibilidade. É um teste informal, não um estudo.
-- **As personas são simuladas por IA.** Elas podem repetir vieses dos modelos e ainda não foram validadas com pessoas reais. Use-as como apoio, nunca como substituto de pesquisa com pessoas.
-
-## Ferramentas de IA suportadas
-
-O setup instala os mesmos comandos (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`) no formato de cada ferramenta, além do servidor MCP do Playwright, que o agente usa como navegador. Dá para escolher várias ferramentas de uma vez. Para o Claude Code existe também um [plugin](#plugin-do-claude-code-alternativa) com as mesmas funcionalidades, como alternativa ao `init`.
-
-| Ferramenta | Comandos instalados em | Como chamar | Navegador (MCP) registrado em |
-|---|---|---|---|
-| **Claude Code** | `.claude/skills/<nome>/SKILL.md` | `/ux-test` | `.mcp.json` |
-| **Cursor** | `.cursor/commands/<nome>.md` | `/ux-test` no chat do agente | `.cursor/mcp.json` |
-| **Codex CLI** | `.agents/skills/<nome>/SKILL.md` (com `agents/openai.yaml`) | `$ux-test` | `.codex/config.toml` |
-| **Gemini CLI** | `.gemini/commands/<nome>.toml` | `/ux-test` | `.gemini/settings.json` |
-
-Observações:
-
-- Os comandos só rodam quando você os chama: os testes abrem navegador e gastam tokens. No Claude Code isso é o `disable-model-invocation`; no Codex, `allow_implicit_invocation: false`.
-- **Menos tokens, o mesmo teste:** o agente lê um resumo curto das checagens automáticas (`checks-brief.md`) em vez do `checks.json` inteiro, testa cada persona num contexto limpo quando a ferramenta tem subagentes (Claude Code), abre as imagens de daltonismo e as árvores de acessibilidade só onde precisa, e o navegador não repete os logs do console a cada passo. Para gastar ainda menos, teste uma persona (`/ux-test dona-maria`) ou uma categoria (`--only accessibility`).
-- O Codex lê o `.codex/config.toml` e o Gemini lê o `.gemini/settings.json` só em pastas **confiáveis**; aceite a pergunta na primeira vez que abrir o projeto.
-- Arquivos de configuração existentes são preservados: o setup só adiciona o servidor `playwright` se ele não estiver lá (ou atualiza o que uma versão anterior do ux-validate gravou).
-- O servidor MCP do Playwright é instalado numa **versão fixa** (`@playwright/mcp@0.0.83`), não em `@latest`: assim nenhuma versão nova e não revisada é baixada e executada sem você saber. Se você instalou uma versão anterior do ux-validate, troque `@latest` pela versão fixa no arquivo de MCP da sua ferramenta.
-- O Gemini CLI também lê `.agents/skills/`. Se você instalar Codex e Gemini juntos, o Gemini pode listar as skills do Codex; use os comandos `/ux-…`, e o Gemini pede confirmação antes de ativar qualquer skill.
-- Os argumentos vão depois do nome do comando em todas as ferramentas, ex.: `/ux-test dona-maria` ou `$ux-test dona-maria`.
-
-## Idiomas
-
-O ux-validate fala **português** e **inglês**: mensagens do terminal, setup, relatório, achados das checagens e instruções do agente.
-
-- O setup detecta o idioma do sistema e pergunta qual usar. A escolha fica em `locale` no `ux-validate.config.yml`.
-- Para trocar só num comando: `npx ux-validate check --lang en`.
-- O **idioma da ferramenta** (`locale`) é separado do **idioma do conteúdo** da aplicação (`language`), usado pela ortografia. Dá para usar a ferramenta em português testando um site em inglês, e vice-versa.
-
-## Acessibilidade e WAI-ARIA
-
-A categoria **Acessibilidade** combina três camadas:
-
-| Camada | O que verifica |
-|---|---|
-| **axe-core** | Sintaxe do ARIA (papéis, atributos e valores válidos), nomes acessíveis, contraste, textos alternativos e demais regras WCAG 2.2 AA |
-| **Checagens ARIA de comportamento** | Percorre cada página com `Tab` e encontra: armadilha de teclado, foco invisível, foco em elemento escondido, widgets com `role` que não recebem foco, elementos clicáveis sem acesso pelo teclado (`<div onclick>`), `aria-expanded` que não muda ao abrir e fechar, campos identificados só pelo placeholder |
-| **Agente** | Testa cada widget pelo teclado seguindo o [ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/) (diálogos, abas, acordeões, menus, combobox…), verifica se mensagens dinâmicas são anunciadas (`role="status"`/`alert`) e navega como uma pessoa que usa leitor de tela |
-
-Cada execução salva também a **árvore de acessibilidade** de cada página em `.ux-validate/runs/<data-hora>/aria/`: papéis, nomes e estados, ou seja, o que um leitor de tela anuncia. O relatório liga cada problema de acessibilidade à árvore da página.
-
-## Visão de cores (daltonismo)
-
-Cerca de 1 em cada 12 homens e 1 em cada 200 mulheres têm algum tipo de daltonismo. O ux-validate simula como cada página aparece para essas pessoas e aponta a informação que elas perdem:
-
-| Checagem | O que encontra |
-|---|---|
-| **Contraste com daltonismo** (`cvd-contrast`) | Texto que passa no contraste do WCAG para quem enxerga todas as cores, mas fica abaixo do mínimo com daltonismo (ex.: vermelho sobre fundo escuro com protanopia) |
-| **Indicadores iguais** (`cvd-indicators`) | Bolinhas de status, marcadores de legenda e outros indicadores sem texto cujas cores ficam iguais (ex.: verde × vermelho com deuteranopia) |
-| **Estado só pela cor** (`cvd-state`) | Aba, filtro ou item de menu selecionado que se diferencia dos vizinhos só pela cor e deixa de se destacar |
-
-- A simulação cobre **protanopia**, **deuteranopia** e **tritanopia** (e, se você quiser, **acromatopsia**), com as matrizes de Machado, Oliveira e Fernandes (2009). As cores são comparadas com a diferença perceptual CIEDE2000.
-- O relatório ganha a seção **Visão de cores**, com cada página como ela é vista com cada tipo de daltonismo. A evidência de cada problema é a imagem simulada.
-- Esses problemas contam só para as personas com `vision: daltonismo` (ou `color-blind`), como a persona pré-definida **Carlos**. Quem enxerga todas as cores não perde nota por eles.
-- No `/ux-test`, o agente compara as imagens e navega com o daltonismo simulado no navegador, procurando o que a checagem automática não pega: gráficos, erros de formulário só em vermelho, links destacados só pela cor.
-
-Para escolher os tipos, ou desligar a etapa, use o `ux-validate.config.yml`:
-
-```yaml
-colorVision:
-  enabled: true
-  types: [protanopia, deuteranopia, tritanopia]   # também: achromatopsia
-```
-
-## Aplicações React
-
-O ux-validate testa a aplicação no navegador, então funciona com qualquer React: Vite, Next.js, Create React App, React Router, Remix ou Gatsby. Para aplicações React e outras SPAs (que trocam de tela sem recarregar), ele faz mais:
-
-- **Setup:** detecta o framework no `package.json` e sugere a URL e o comando do servidor de desenvolvimento (ex.: Vite → `http://localhost:5173` e `npm run dev`).
-- **Onde corrigir:** no servidor de desenvolvimento, cada problema vem com o **componente** que desenhou o elemento (`Home › App`) e o **arquivo e a linha do JSX** (ex.: `src/App.jsx:9`), lidos das informações de debug do React e do source map do servidor. Isso vale para o relatório, o SARIF (anotação na linha certa do PR) e o `fix`.
-- **Rotas:** espera o React desenhar a tela antes de analisar, segue rotas com History API e de hash (`#/planos`) e reconhece a tela de "página não encontrada" da aplicação, mesmo quando o servidor responde 200 (link quebrado em SPA).
-- **Checagens próprias:**
-
-| Checagem | O que encontra |
-|---|---|
-| Página em branco | Erro de renderização sem Error Boundary, que desmonta a árvore inteira |
-| Avisos do React | Lista sem `key`, erro de hidratação, HTML aninhado de forma inválida, renderização em laço, campo controlado/não controlado |
-| Troca de rota | Foco que não muda e nada anunciado ao leitor de tela; título da aba que não muda |
-| Elementos clicáveis | `<div onClick>` do React, que não aparece como `onclick` no HTML |
-
-Telas que não têm link (abertas por botão, por exemplo) entram pela configuração:
-
-```yaml
-crawl:
-  routes: [/checkout, /conta/pedidos]
-```
-
-> Use o servidor de desenvolvimento para ter componentes, arquivos e linhas. Com o build de produção as checagens funcionam, mas os nomes vêm minificados e não há arquivo de origem.
-
-Para ver funcionando, há um app de exemplo com problemas de propósito em `examples/react-demo`:
-
-```bash
-npm run demo:react
-```
-
-```bash
-npx ux-validate check --url http://localhost:5173
-```
-
-## Verificação ortográfica
-
-A ortografia é verificada **offline**, com o Hunspell e os dicionários do LibreOffice (em português, o VERO). Nenhum texto sai da sua máquina. Idiomas: português do Brasil, inglês e espanhol (`language` no `ux-validate.config.yml`).
-
-- Aponta palavras desconhecidas com sugestões de correção (`excessão` → `exceção`) e palavras em inglês no meio de um texto em português.
-- Ignora nomes próprios, marcas (`WhatsApp`), siglas, URLs, e-mails e variáveis de template.
-- Palavras corretas que o dicionário não conhece (nome da empresa, termos técnicos) vão em `.ux-validate/dicionario.txt` (ou `dictionary.txt`, se a ferramenta estiver em inglês; os dois são lidos), uma por linha, ou em `spelling.ignore` na configuração.
-- No `/ux-test`, o agente revisa esses achados, descarta os falsos positivos e revisa a **gramática** (concordância, crase, "mas" × "mais"…), que o dicionário não pega.
-
-## Aplicando as correções
-
-Depois do relatório, o ux-validate pode corrigir o código para você, de dois jeitos:
-
-| | `/ux-fix` (no Claude Code) | `npx ux-validate fix` (no terminal) |
-|---|---|---|
-| **Modelo** | O que o Claude Code estiver usando | O provedor e o modelo escolhidos no setup: Anthropic, OpenAI, Google ou Ollama (local) |
-| **Custo** | Consumo da sua conta no Claude Code | Tokens cobrados na **sua** conta do provedor, com a **sua** API key |
-| **Como funciona** | O agente corrige um problema de cada vez e roda as checagens de novo para confirmar | Envia cada arquivo com os problemas dele ao modelo, recebe as trocas de texto propostas e mostra o diff antes de gravar |
-
-Os dois corrigem só o que está no relatório, preferem HTML semântico a ARIA e **nunca inventam dados** (telefone, preço, depoimento): quando falta informação, avisam o que é preciso.
-
-```bash
-npx ux-validate fix                       # problemas críticos, altos e médios da última execução
-npx ux-validate fix --ids A001,C003       # só esses problemas
-npx ux-validate fix --severity high       # só críticos e altos
-npx ux-validate fix --dry-run             # mostra as correções sem gravar
-```
-
-Antes de chamar o modelo, o `fix` mostra quais arquivos vai enviar e uma estimativa de tokens, e pede confirmação. Cada troca proposta precisa bater exatamente com um trecho único do arquivo; as que não batem são descartadas. Os arquivos originais ficam salvos em `.ux-validate/runs/<data-hora>/fixes/backup/`, e o resultado de cada problema (com os tokens usados) em `fixes/fixes.json`.
-
-> **Privacidade:** no `fix` pelo terminal, o conteúdo dos arquivos corrigidos é enviado ao provedor escolhido. Com o Ollama, tudo roda na sua máquina.
-
-A API key nunca fica no `ux-validate.config.yml`, que guarda só o nome da variável de ambiente. Defina a chave antes de rodar:
-
-```powershell
-$env:ANTHROPIC_API_KEY="sua-chave"
-```
-
-```bash
-export ANTHROPIC_API_KEY=sua-chave
-```
-
-## Instalação
-
-Há duas formas de instalar o ux-validate, com as mesmas funcionalidades: o **pacote do npm**, que funciona com todas as ferramentas de IA suportadas (inclusive o Claude Code) e no CI, e o **plugin do Claude Code**, uma alternativa para quem prefere instalar uma vez no Claude Code.
+Há duas formas de instalar, com os mesmos recursos: o **pacote do npm**, que funciona com todas as ferramentas de IA suportadas e no CI, e o **plugin do Claude Code**, uma alternativa para quem prefere instalar uma vez no Claude Code. Use uma ou outra no mesmo projeto.
 
 ### Pacote do npm
-
-Pré-requisitos: **Node.js 20+** e uma das ferramentas de IA suportadas: **Claude Code**, **Cursor**, **Codex CLI** ou **Gemini CLI**.
 
 No projeto que você quer testar:
 
@@ -303,34 +150,34 @@ npx ux-validate install-browser
 npx ux-validate init
 ```
 
-O setup pergunta:
+O `install-browser` instala o Chromium da versão do Playwright que o ux-validate usa. O `init` pergunta:
 
 - o **idioma da ferramenta** (português ou inglês);
 - **em quais ferramentas de IA** você vai usar os comandos (Claude Code, Cursor, Codex CLI, Gemini CLI; uma ou mais);
-- a **URL** da aplicação e o **comando para subi-la** (`app.start`). Com ele, o `npx ux-validate check` inicia a aplicação quando ela não está no ar e a encerra no fim. O setup sugere o comando para projetos React e para sites só com HTML (um `index.html` na raiz ou numa subpasta: `npx -y http-server <pasta> -p 3000 -c-1`);
-- os **tamanhos de tela** (mobile, tablet, desktop);
-- o **idioma do conteúdo**, para a verificação ortográfica;
-- se quer configurar um **modelo para aplicar correções pelo terminal** (`npx ux-validate fix`), escolhendo **provedor** (Anthropic, OpenAI, Google, Ollama), **modelo** e o nome da variável de ambiente com a sua API key;
-- **quais personas usar** (passo obrigatório): o setup mostra as personas pré-definidas com as características de cada uma e você escolhe entre usá-las (todas ou só algumas), criar as suas ali mesmo ou as duas coisas. Veja [Personas](#personas).
-- **quais tarefas as personas devem tentar** (passo obrigatório): objetivos sem passo a passo, como "Você quer saber quanto custa o plano mais barato". Veja [Tarefas](#tarefas).
+- a **URL** da aplicação e o **comando para iniciá-la** (`app.start`). Com ele, o `check` sobe a aplicação quando ela não está no ar e a encerra no fim. O setup sugere o comando para projetos React e para sites só com HTML (`npx -y http-server <pasta> -p 3000 -c-1`);
+- os **tamanhos de tela** (celular, tablet, computador) e o **idioma do conteúdo**, para a ortografia;
+- opcionalmente, um **modelo para aplicar correções pelo terminal** (`npx ux-validate fix`): provedor, modelo e o nome da variável de ambiente com a sua API key;
+- **quais personas usar** (obrigatório): mostra as pré-definidas com as características de cada uma, e você escolhe usá-las (todas ou algumas), criar as suas ou as duas coisas;
+- **quais tarefas as personas devem tentar** (obrigatório): objetivos sem passo a passo.
 
 E cria:
 
 | Arquivo | Para quê |
 |---|---|
 | `ux-validate.config.yml` | Configuração |
-| `.ux-validate/personas/*.yml` | Suas personas |
+| `.ux-validate/personas/*.yml` | As suas personas |
+| `.ux-validate/tasks.yml` | As tarefas que as personas tentam |
 | `.ux-validate/references/` | Heurísticas e formatos que o agente consulta |
 | `.ux-validate/dicionario.txt` | Palavras corretas que o dicionário não conhece |
-| Os comandos e o MCP de cada ferramenta escolhida | Veja [Ferramentas de IA suportadas](#ferramentas-de-ia-suportadas) |
+| Os comandos e o arquivo de MCP de cada ferramenta | Veja [Ferramentas de IA suportadas](#ferramentas-de-ia-suportadas) |
 
-Use `--yes` para aceitar os padrões sem perguntas, `--tools claude-code,cursor,codex,gemini` para escolher as ferramentas sem perguntas, `--personas all|none|dona-maria,rafael-dev` para escolher as personas pré-definidas sem perguntas (padrão: `all`) e `--force` para sobrescrever arquivos existentes.
+Sem perguntas: `--yes` aceita os padrões, `--tools claude-code,cursor,codex,gemini` escolhe as ferramentas, `--personas all|none|dona-maria,rafael-dev` escolhe as personas pré-definidas, `--task "…"` acrescenta uma tarefa (pode repetir), `--url` e `--start` definem a aplicação. `--force` sobrescreve arquivos existentes.
 
-> **Atualizando de uma versão anterior?** Os comandos de agente mudaram de nome: `/persona-test` → `/ux-test`, `/persona-report` → `/ux-report`, `/persona-fix` → `/ux-fix` e `/persona-new` → `/ux-persona`. Rode `npx ux-validate init` de novo: ele instala os novos e remove os antigos que ele mesmo tinha criado.
+> **Vindo de uma versão anterior à 0.3?** Os comandos do agente mudaram de nome (`/persona-test` → `/ux-test`, `/persona-report` → `/ux-report`, `/persona-fix` → `/ux-fix`, `/persona-new` → `/ux-persona`). Rode `npx ux-validate init` de novo: ele instala os novos e remove os antigos.
 
-### Plugin do Claude Code (alternativa)
+### Plugin do Claude Code
 
-Instale uma vez e use em qualquer projeto. No Claude Code:
+Instale uma vez e use em qualquer projeto:
 
 ```
 /plugin marketplace add fabiofigueredo/ux-validate
@@ -340,121 +187,102 @@ Instale uma vez e use em qualquer projeto. No Claude Code:
 /plugin install ux-validate@ux-validate
 ```
 
-Depois, no projeto que você quer testar:
-
 | Skill | O que faz |
 |---|---|
-| `/ux-validate:ux-setup` | Configura o projeto: idioma, URL da aplicação, comando para subi-la e personas (uma vez) |
+| `/ux-validate:ux-setup` | Configura o projeto: idioma, URL, comando de início, personas e tarefas (uma vez) |
 | `/ux-validate:ux-test` | Testa com todas as personas e gera o relatório |
-| `/ux-validate:ux-report` | Refaz o relatório e monta um plano de correção |
+| `/ux-validate:ux-audit <url>` | Audita um site publicado, sem o código |
+| `/ux-validate:ux-report` | Regera o relatório e um plano de correção |
 | `/ux-validate:ux-fix` | Aplica as correções do relatório |
 | `/ux-validate:ux-persona` | Cria uma persona conversando com você |
 | `/ux-validate:ux-task` | Cria tarefas para as personas tentarem |
 
-- O plugin traz o navegador que o agente usa (Playwright MCP) e os guias de referência; nada é copiado para o projeto.
-- As instruções do plugin são em inglês, mas o agente conversa com você e escreve o relatório no idioma definido no projeto (`locale`: `pt-BR` ou `en`), escolhido no `/ux-validate:ux-setup`.
-- As skills chamam a CLI fixada na versão do plugin (`npx -y ux-validate@<versão>`), então não é preciso instalar o pacote do npm. Requer **Node.js 20+**.
-- Atualizações: `/plugin marketplace update ux-validate` e depois atualize o plugin em `/plugin` (ou ative a atualização automática do marketplace ali).
-- Use um ou outro no mesmo projeto. Se o projeto já tem os comandos do `npx ux-validate init` para o Claude Code (`.claude/skills/ux-*` e a entrada `playwright` do `.mcp.json`), apague-os antes de usar o plugin, para não ficar com comandos duplicados.
+- O plugin traz o navegador do agente (Playwright MCP) e os guias de referência; não há nada para copiar para o projeto, e você não precisa do pacote do npm.
+- As skills chamam a CLI fixada na versão do plugin (`npx -y ux-validate@<versão>`). Requer **Node.js 20+**.
+- As instruções estão em inglês, mas o agente conversa com você e escreve o relatório no idioma do projeto (`locale`: `en` ou `pt-BR`).
+- **Para atualizar:** `claude plugin marketplace update ux-validate`, depois `claude plugin update ux-validate@ux-validate`, e reinicie o Claude Code (ou use o `/plugin` dentro do Claude Code).
+- Se o projeto já tem os comandos do `npx ux-validate init` para o Claude Code (`.claude/skills/ux-*` e a entrada `playwright` no `.mcp.json`), remova-os antes de usar o plugin, para não duplicar os comandos.
+
+### Ferramentas de IA suportadas
+
+O `init` instala os mesmos comandos no formato de cada ferramenta, mais o servidor MCP do Playwright que o agente usa como navegador:
+
+| Ferramenta | Comandos instalados em | Como chamar | Navegador (MCP) registrado em |
+|---|---|---|---|
+| **Claude Code** | `.claude/skills/<nome>/SKILL.md` | `/ux-test` | `.mcp.json` |
+| **Cursor** | `.cursor/commands/<nome>.md` | `/ux-test` no chat do agente | `.cursor/mcp.json` |
+| **Codex CLI** | `.agents/skills/<nome>/SKILL.md` (com `agents/openai.yaml`) | `$ux-test` | `.codex/config.toml` |
+| **Gemini CLI** | `.gemini/commands/<nome>.toml` | `/ux-test` | `.gemini/settings.json` |
+
+- Os comandos só rodam quando você os chama, porque os testes abrem navegador e gastam tokens (no Claude Code, `disable-model-invocation`; no Codex, `allow_implicit_invocation: false`).
+- O Codex e o Gemini só leem os arquivos de configuração em pastas **confiáveis**; aceite a pergunta na primeira vez que abrir o projeto.
+- Arquivos de configuração existentes são preservados: o `init` só adiciona o servidor `playwright` se ele não estiver lá, ou atualiza o que uma versão anterior do ux-validate gravou.
+- O servidor MCP do Playwright é instalado numa **versão fixa** (`@playwright/mcp@0.0.83`, com `--console-level error`), não em `@latest`: nenhuma versão nova e não revisada roda sem você saber.
+- O Gemini CLI também lê `.agents/skills/`. Com Codex e Gemini no mesmo projeto, o Gemini pode listar as skills do Codex; use os comandos `/ux-…`.
+
+### Idiomas
+
+O ux-validate fala **português** e **inglês**: mensagens do terminal, setup, relatório, achados e instruções do agente.
+
+- O `init` detecta o idioma do sistema e grava a escolha como `locale` no `ux-validate.config.yml`. Para um comando só: `--lang en`.
+- O **idioma da ferramenta** (`locale`) é separado do **idioma do conteúdo** da aplicação (`language`), usado pela ortografia: dá para rodar a ferramenta em português num site escrito em inglês. Numa auditoria, o idioma do conteúdo vem do `<html lang>` do site.
 
 ## Uso
 
-O teste com personas e tarefas roda **só dentro da sua ferramenta de IA**, no seu projeto (no Codex, use `$` no lugar de `/`):
+### Na sua ferramenta de IA
+
+O teste com personas e tarefas roda **só dentro da sua ferramenta de IA**, na pasta do projeto (no Codex, use `$` no lugar de `/`; com o plugin, `/ux-validate:` antes do nome):
 
 | Comando | O que faz |
 |---|---|
-| `/ux-persona` | Cria uma persona conversando com você sobre quem usa a aplicação |
-| `/ux-task` | Cria tarefas para as personas tentarem (objetivos sem passo a passo) |
-| `/ux-audit https://www.exemplo.com.br` | Audita um site publicado, sem o código (veja [Auditar um site publicado](#auditar-um-site-publicado)) |
 | `/ux-test` | Testa com todas as personas e gera o relatório |
 | `/ux-test dona-maria` | Testa com uma persona só |
-| `/ux-test --only accessibility` | Avalia só uma categoria (`content`, `navigation`, `ui`, `accessibility`) |
-| `/ux-report` | Refaz o relatório da última execução e monta um plano de correção |
+| `/ux-test --only accessibility` | Avalia uma categoria só (`content`, `navigation`, `ui`, `accessibility`) |
+| `/ux-audit https://www.exemplo.com.br` | Audita um site publicado, sem o código |
+| `/ux-report` | Regera o relatório da última execução e monta um plano de correção |
 | `/ux-report --compare` | Mostra o que foi resolvido, o que continua e o que é novo |
-| `/ux-fix` | Aplica as correções do relatório (críticos, altos e médios) |
+| `/ux-fix` | Aplica as correções do relatório (crítico, alto e médio) |
 | `/ux-fix A001,C003` | Aplica só as correções desses problemas |
+| `/ux-persona` | Cria uma persona conversando com você sobre quem usa a aplicação |
+| `/ux-task` | Cria tarefas para as personas tentarem |
 
-Pelo terminal, **sem IA** (só a validação automática; personas e tarefas não são testadas; útil no CI):
+**Economia de tokens.** O agente lê um resumo curto das checagens automáticas (`checks-brief.md`) em vez do `checks.json` inteiro, testa cada persona num contexto limpo quando a ferramenta tem subagentes (Claude Code) e abre as imagens de daltonismo e as árvores de acessibilidade só onde precisa. Para gastar ainda menos, teste uma persona (`/ux-test dona-maria`) ou uma categoria (`--only accessibility`).
 
-```bash
-npx ux-validate persona examples # mostra as personas pré-definidas e suas características
-npx ux-validate persona add all  # copia as pré-definidas para o projeto (ou: add dona-maria)
-npx ux-validate persona new      # cria uma persona com um assistente passo a passo
-npx ux-validate persona validate # confere os arquivos de persona
-npx ux-validate task new         # cria tarefas para as personas tentarem
-npx ux-validate task validate    # confere o arquivo de tarefas
-npx ux-validate check            # só as checagens fixas
-npx ux-validate audit <url>      # auditoria automática de um site publicado (sem o código)
-npx ux-validate report           # relatório da execução mais recente
-npx ux-validate fix              # aplica as correções com o modelo configurado no setup
-```
-
-Os resultados ficam em `.ux-validate/runs/<data-hora>/` (já incluído no `.gitignore`).
-
-## GitHub Action
-
-Roda as checagens fixas em todo pull request, com um comentário de resumo no PR, anotações nas linhas alteradas (SARIF / code scanning) e o relatório completo como artefato para baixar.
-
-```yaml
-# .github/workflows/ux-validate.yml
-name: ux-validate
-on: pull_request
-
-permissions:
-  contents: read
-  pull-requests: write   # comentário no PR
-  security-events: write # envio do SARIF ao code scanning
-
-jobs:
-  ux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-      - run: npm ci
-      - uses: fabiofigueredo/ux-validate@v1
-        with:
-          start: npm run dev
-          url: http://localhost:3000
-          fail-on: critical
-          language: pt-BR
-```
-
-| Entrada | Padrão | O que faz |
-|---|---|---|
-| `url` | `app.url` da configuração | URL a testar (servidor local ou deploy de preview) |
-| `start` | — | Comando que sobe a aplicação em segundo plano; a Action espera a URL responder |
-| `wait-timeout` | `120` | Segundos de espera pela URL |
-| `working-directory` | `.` | Pasta da aplicação (monorepos) |
-| `fail-on` | — (nunca falha) | Falha o job com problemas dessa gravidade ou mais graves: `critical`, `high`, `medium`, `low` |
-| `comment` | `true` | Comenta o resumo no PR, atualizando o mesmo comentário a cada push |
-| `sarif` | `true` | Envia o SARIF para o code scanning |
-| `upload-sarif` | `true` | Com `false`, gera o arquivo SARIF (fica no artefato do relatório) sem enviar ao code scanning, ex.: ao testar num site de demonstração com problemas de propósito |
-| `language` | `locale` da configuração, depois inglês | `en` ou `pt-BR` para o comentário e o relatório |
-
-Saídas: `issues`, `critical`, `high`, `report-dir`, `sarif-file`. O resumo também aparece na página de resumo do job.
-
-Observações:
-
-- `@v1` aponta sempre para a última versão estável da Action. Para fixar uma versão exata, use a tag de uma release, como `@v0.3.0`.
-- A Action roda as **checagens fixas** (acessibilidade, WAI-ARIA, links, ortografia, layout). A avaliação por persona precisa de uma ferramenta de IA e roda localmente com `/ux-test`.
-- O code scanning é gratuito em repositórios públicos; nos privados, exige o GitHub Advanced Security. Sem ele, o envio do SARIF é pulado com um aviso e o resto funciona.
-- Em pull requests vindos de forks, o GitHub dá um token só de leitura: o comentário é pulado com um aviso.
-- Há um workflow de exemplo em [`examples/github-workflow.yml`](examples/github-workflow.yml).
-
-Sem a Action, em qualquer CI:
+### No terminal (sem IA)
 
 ```bash
-npx ux-validate check --url http://localhost:3000 --fail-on high   # código de saída 2 ao atingir o limite
-npx ux-validate sarif --out ux-validate.sarif
-npx ux-validate comment --out comment.md
+npx ux-validate check                # checagens automáticas do seu projeto
+npx ux-validate audit <url>          # auditoria automática de um site publicado
+npx ux-validate report               # relatório da última execução
+npx ux-validate fix                  # aplica as correções com o modelo configurado no init
+npx ux-validate persona examples     # mostra as personas pré-definidas e as características
+npx ux-validate persona add all      # copia as pré-definidas para o projeto (ou: add dona-maria)
+npx ux-validate persona new          # cria uma persona com um assistente passo a passo
+npx ux-validate persona validate     # confere os arquivos de persona
+npx ux-validate task new             # cria tarefas para as personas tentarem
+npx ux-validate task validate        # confere o arquivo de tarefas
+npx ux-validate sarif                # exporta os problemas em SARIF (code scanning)
+npx ux-validate comment              # resumo em Markdown para comentário de pull request
+npx ux-validate install-browser      # instala o navegador (Chromium)
 ```
+
+Opções gerais: `--lang pt-BR|en`, `--config <arquivo>`, `--dir <pasta>` (roda o comando em outra pasta, ex.: a de uma auditoria) e `--help`.
+
+### Onde ficam os resultados
+
+Cada execução cria `.ux-validate/runs/<data-hora>/` (já incluída no `.gitignore`):
+
+| Arquivo | Conteúdo |
+|---|---|
+| `report.html` / `report.md` | O relatório |
+| `checks.json` | Resultado completo das checagens automáticas |
+| `checks-brief.md` | Resumo curto que o agente lê |
+| `findings.json` | A avaliação do agente por persona |
+| `screenshots/`, `color-vision/`, `aria/` | Capturas de tela, páginas vistas com daltonismo, árvores de acessibilidade |
 
 ## Personas
 
-Uma persona é um tipo real de usuário da sua aplicação, escrito como um arquivo YAML em `.ux-validate/personas/`. Sem pelo menos uma persona não há teste, então **escolher as personas é um passo obrigatório**: no setup e, se a pasta estiver vazia, no início do `/ux-test`, que mostra as pré-definidas e pergunta o que você prefere antes de abrir o navegador.
+Uma persona é um tipo real de usuário da sua aplicação, escrito como um arquivo YAML em `.ux-validate/personas/`. Sem pelo menos uma persona não há teste, então **escolher as personas é obrigatório**: no setup e, se a pasta estiver vazia, no início do `/ux-test`.
 
 ### Personas pré-definidas
 
@@ -465,14 +293,12 @@ Uma persona é um tipo real de usuário da sua aplicação, escrito como um arqu
 | **Rafael** (`rafael-dev`) | 29 anos, desenvolvedor; avalia ferramentas para o time e compara com concorrentes | Computador | Alta | Normal | Média | Avançado | Comparar planos e limites; criar conta de teste; achar a documentação |
 | **Carlos** (`carlos-daltonico`) | 45 anos, gerente comercial; tem deuteranopia (daltonismo vermelho-verde) | Computador | Média | Daltonismo | Média | Intermediário | Descobrir o preço; saber qual opção está selecionada; entender os erros de um formulário |
 
-Para ver a ficha completa (com expectativas) rode `npx ux-validate persona examples`; para adicioná-las depois, `npx ux-validate persona add <id>` ou `all`. Ajuste os objetivos ao seu produto.
+`npx ux-validate persona examples` mostra as fichas completas; `npx ux-validate persona add <id>` ou `all` as adiciona. Ajuste os objetivos ao seu produto.
 
 ### Criar as suas
 
-- **`/ux-persona` no Claude Code:** o agente entrevista você sobre o usuário real (quem é, que aparelho usa, limitações, o que vem fazer), pode olhar a aplicação para sugerir objetivos, mostra o arquivo e grava depois da sua confirmação. Dá para começar com uma descrição: `/ux-persona cliente idoso que compra pelo celular`.
-- **`npx ux-validate persona new` no terminal:** um assistente passo a passo, com perguntas de múltipla escolha para cada característica. Não usa modelo de linguagem.
-
-Os dois conferem o arquivo com `npx ux-validate persona validate`, que você também pode rodar a qualquer momento para checar todas as personas do projeto (campos obrigatórios, valores válidos, ids repetidos).
+- **`/ux-persona` na sua ferramenta de IA:** o agente entrevista você sobre o usuário real (quem é, que aparelho usa, limitações, o que vem fazer), pode olhar a aplicação para sugerir objetivos e grava o arquivo depois da sua confirmação. Dá para começar com uma descrição: `/ux-persona cliente idoso que compra pelo celular`.
+- **`npx ux-validate persona new`:** um assistente passo a passo no terminal, sem modelo de linguagem.
 
 ```yaml
 id: dona-maria
@@ -490,11 +316,11 @@ goals:
   - Encontrar um telefone ou WhatsApp
 ```
 
-Formato completo e efeito de cada característica: [`source/pt-BR/references/persona-format.md`](source/pt-BR/references/persona-format.md). Os valores das características podem estar em português ou em inglês (`low`, `reduced`, `screen-reader`…).
+`npx ux-validate persona validate` confere todas as personas (campos obrigatórios, valores válidos, ids repetidos). Formato completo e efeito de cada característica: [`source/pt-BR/references/persona-format.md`](source/pt-BR/references/persona-format.md). Os valores das características podem estar em português ou em inglês (`low`, `reduced`, `screen-reader`…).
 
 ## Tarefas
 
-Tarefas são o que as personas simuladas tentam fazer na aplicação, como num teste de usabilidade por tarefas: **o objetivo, sem passo a passo**. O teste verifica se cada persona encontra o caminho sozinha. Elas ficam em `.ux-validate/tasks.yml` e valem para todas as personas, a menos que a tarefa liste só algumas.
+Tarefas são o que as personas tentam fazer na aplicação, como num teste de usabilidade por tarefas: **o objetivo, sem passo a passo**. O teste verifica se cada persona encontra o caminho sozinha. Elas ficam em `.ux-validate/tasks.yml` e valem para todas as personas, a menos que a tarefa liste só algumas.
 
 ```yaml
 - id: preco-plano-barato
@@ -505,19 +331,201 @@ Tarefas são o que as personas simuladas tentam fazer na aplicação, como num t
   personas: [dona-maria]                                    # opcional
 ```
 
-- **Obrigatórias no setup:** o `init` pede pelo menos uma tarefa depois das personas (ou use `--task "…"` sem perguntas), e o `/ux-validate:ux-setup` faz o mesmo no plugin. Se não houver nenhuma, o `/ux-test` pede antes de testar.
-- **Como escrever:** o objetivo, não o caminho ("Você quer saber quanto custa o plano mais barato", e não "Clique em Planos…"), e sem as palavras exatas de menus e botões. O `/ux-task` ajuda a escrevê-las, e o `npx ux-validate check` avisa quando uma tarefa usa o rótulo exato de um link ou botão do site, porque isso entrega a resposta.
-- **O que o agente registra** para cada persona e tarefa: o resultado (julgado pelo `success`, quando houver), os passos, o **primeiro clique** e se ele foi no caminho certo, as **voltas** e onde ela se perdeu, com captura de tela.
-- **No relatório:** a tabela **Tarefas** (tarefa × persona, ✅ ⚠️ ❌ e número de passos) e os detalhes de cada tarefa. As tarefas contam na coluna "Objetivos" junto com as metas das próprias personas.
-- É uma simulação por IA: mostra onde o caminho pode não estar claro antes do teste com pessoas, não no lugar dele. Veja [Limitações](#limitações).
+- **Obrigatórias:** o `init` pede pelo menos uma tarefa depois das personas (`--task "…"` sem perguntas). Se não houver nenhuma, o `/ux-test` pergunta antes de testar.
+- **Como escrever:** o objetivo, não o caminho ("Você quer saber quanto custa o plano mais barato", não "Clique em Planos…"), e sem as palavras exatas dos menus e botões. O `/ux-task` ajuda a escrever, e o `check` avisa quando uma tarefa usa o rótulo exato de um link ou botão, porque isso entrega a resposta.
+- **O que o agente registra** para cada persona e tarefa: o resultado (julgado pelo `success`, quando houver), os passos, o **primeiro clique** e se ele foi no caminho certo, as **voltas** e onde ela se perdeu, com screenshot.
 
-Comandos: `npx ux-validate task new` (assistente) e `npx ux-validate task validate`. Formato: `.ux-validate/references/tasks-format.md`.
+Comandos: `npx ux-validate task new` e `npx ux-validate task validate`. Formato: [`source/pt-BR/references/tasks-format.md`](source/pt-BR/references/tasks-format.md).
+
+## Auditar um site publicado
+
+A mesma validação funciona num site **já no ar**, a partir da URL, sem o código. **Audite só sites pelos quais você responde ou que tem autorização para testar.**
+
+```bash
+npx ux-validate audit https://www.exemplo.com.br
+```
+
+- **Sem projeto e sem setup.** Roda em qualquer pasta. Cada site ganha uma pasta própria, `ux-validate-audits/<domínio>/`, com as personas, as tarefas e uma pasta por execução com o `report.html`. A próxima auditoria do mesmo site reaproveita tudo, e o `/ux-audit` compara com a execução anterior. Dentro de um repositório Git, `ux-validate-audits/` é adicionada ao `.gitignore`.
+- **Seguro para um site no ar.** Pergunta se você responde pelo site ou tem autorização para testá-lo (`--yes` confirma, ex.: no CI), respeita o `robots.txt`, visita no máximo uma página por segundo, se identifica como `ux-validate` no user agent, não segue links de sair, excluir ou cancelar e nunca envia formulários. As personas vão até o botão final de um formulário, login ou compra e param ali.
+- **Com personas e tarefas:** `/ux-audit <url>` na sua ferramenta de IA pede a autorização, as personas e as tarefas, roda a auditoria e navega como cada persona. Para usar sem o plugin, instale os comandos uma vez em qualquer pasta: `npx ux-validate init --tools claude-code` (ou `cursor`, `codex`, `gemini`).
+- **O relatório** acrescenta "Limites desta auditoria" (páginas não visitadas e o que não pôde ser testado) e um "Plano para quem mantém o site": primeiro o que impede as pessoas de concluir as tarefas, depois os problemas críticos e altos, depois o resto agrupado por tipo. Cada problema mostra a página, o elemento e um screenshot no lugar do arquivo e da linha. Compartilhe o `report.html` com quem mantém o site.
+- **Opções:** `--personas dona-maria,lucas-leitor-de-tela` ou `all`, `--task "<tarefa>"` (pode repetir), `--max-pages 20`, `--viewports mobile,desktop`, `--fail-on high`. Os outros comandos funcionam na pasta do site com `--dir`, ex.: `npx ux-validate report --dir ux-validate-audits/www.exemplo.com.br`.
+- **O que não se aplica:** arquivo e linha, nomes de componentes React, `fix` e `sarif`, que trabalham no código do projeto. Páginas atrás de login ainda não são auditadas.
+
+## O relatório
+
+O `report.html` usa a identidade visual do ux-validate e traz, nesta ordem:
+
+1. **Os números principais:** nota média, tarefas concluídas, objetivos não cumpridos e problemas por gravidade, com o lembrete de que as personas são simuladas (ou de que o relatório tem só as checagens automáticas).
+2. **Notas por persona:** um cartão para cada uma, com a nota geral de 0 a 100, uma barra por categoria (conteúdo, navegação, interface, acessibilidade) e as características dela. Cada persona só perde pontos pelos problemas que a afetam.
+3. **Tarefas:** uma tabela tarefa × persona com o resultado e a quantidade de passos, e um cartão para cada vez que uma persona se perdeu (primeiro clique, voltas, observações e screenshot).
+4. **Corrigir primeiro:** os problemas críticos e altos numa lista numerada, com o arquivo a corrigir. Numa auditoria, o plano para quem mantém o site e os limites da auditoria.
+5. **Objetivos** de cada persona, **visão de cores** (cada página como aparece para cada tipo de daltonismo) e **todos os problemas**, com filtros por categoria: evidência, critério WCAG, trecho de código, como corrigir e screenshot.
+
+O `report.md` tem o mesmo conteúdo em Markdown. O relatório em HTML é só claro e carrega as fontes do Google Fonts; sem internet, usa as fontes do sistema.
+
+## O que é verificado
+
+### Acessibilidade e WAI-ARIA
+
+| Camada | O que verifica |
+|---|---|
+| **axe-core** | Sintaxe ARIA, nomes acessíveis, contraste, texto alternativo e as demais regras da WCAG 2.2 AA |
+| **Checagens de comportamento** | Percorre cada página com Tab e encontra armadilhas de teclado, foco invisível, foco em elemento escondido, widgets com `role` que não recebem foco, elementos clicáveis sem acesso pelo teclado (`<div onclick>`), `aria-expanded` que não muda, campos identificados só pelo placeholder |
+| **Agente** | Testa cada widget pelo teclado seguindo o [ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/) (diálogos, abas, acordeões, menus, combobox…), verifica se mensagens dinâmicas são anunciadas e navega como quem usa leitor de tela |
+
+Cada execução também guarda a **árvore de acessibilidade** de cada página (o que o leitor de tela anuncia) em `aria/`, com link no relatório.
+
+### Visão de cores (daltonismo)
+
+Cerca de 1 em cada 12 homens e 1 em cada 200 mulheres têm algum tipo de daltonismo. O ux-validate simula **protanopia**, **deuteranopia** e **tritanopia** (e, se você quiser, **acromatopsia**) com as matrizes de Machado, Oliveira e Fernandes (2009), compara as cores com o CIEDE2000 e encontra:
+
+| Checagem | O que encontra |
+|---|---|
+| `cvd-contrast` | Texto que passa no contraste da WCAG, mas fica abaixo do mínimo com daltonismo |
+| `cvd-indicators` | Bolinhas de status, marcadores de legenda e outros indicadores sem texto cujas cores ficam iguais |
+| `cvd-state` | Aba, filtro ou item de menu selecionado que se diferencia dos vizinhos só pela cor |
+
+Esses problemas só contam para personas com `vision: daltonismo`, como o **Carlos**. No `/ux-test`, o agente também navega com o daltonismo simulado, procurando o que a checagem não pega (gráficos, erros mostrados só em vermelho). Para escolher os tipos ou desligar:
+
+```yaml
+colorVision:
+  enabled: true
+  types: [protanopia, deuteranopia, tritanopia]   # também: achromatopsia
+```
+
+### Ortografia
+
+Conferida **offline**, com o Hunspell e os dicionários do LibreOffice: nenhum texto sai da sua máquina. Idiomas: português do Brasil, inglês e espanhol.
+
+- Aponta palavras desconhecidas com sugestões (`incrivel` → `incrível`) e, em conteúdo em português ou espanhol, palavras em inglês no meio do texto.
+- Ignora nomes próprios, marcas, siglas, URLs, e-mails e variáveis de template.
+- Palavras corretas que o dicionário não conhece vão em `.ux-validate/dicionario.txt` (uma por linha) ou em `spelling.ignore` na configuração.
+- No `/ux-test`, o agente descarta os falsos positivos e revisa a **gramática** ("mas" × "mais", "a" × "há", crase, concordância), que o dicionário não pega.
+
+### Conteúdo e layout
+
+Links quebrados (inclusive telas de "página não encontrada" em SPAs), links sem destino, erros de console e recursos que não carregam, rolagem horizontal no celular, texto pequeno demais e sobras que não deveriam chegar ao usuário: lorem ipsum, `undefined`/`NaN`, variáveis de template não renderizadas (`{{plan.limit}}`), `TODO`, dados de exemplo.
+
+### Aplicações React e SPAs
+
+Funciona com qualquer configuração de React (Vite, Next.js, Create React App, React Router, Remix, Gatsby) e faz mais para aplicações que trocam de tela sem recarregar:
+
+- **O setup** detecta o framework e sugere a URL e o comando do servidor de desenvolvimento (ex.: Vite → `http://localhost:5173` e `npm run dev`).
+- **Onde corrigir:** no servidor de desenvolvimento, cada problema vem com o **componente** (`Home › App`) e o **arquivo e a linha do JSX** (`src/App.jsx:9`), usados pelo relatório, pelo SARIF e pelo `fix`.
+- **Rotas:** espera o React desenhar a tela, segue rotas da History API e de hash e reconhece a tela de "não encontrada" da aplicação mesmo quando o servidor responde 200.
+- **Checagens:** página em branco (erro de renderização sem Error Boundary), avisos do React (`key`, hidratação, aninhamento inválido, loop de renderização, campo controlado/não controlado), troca de rota que não move o foco nem muda o título da aba e `<div onClick>` sem acesso pelo teclado.
+
+Telas sem link (abertas por um botão, por exemplo) entram na configuração:
+
+```yaml
+crawl:
+  routes: [/checkout, /conta/pedidos]
+```
+
+Com o build de produção as checagens continuam funcionando, mas sem nomes de componentes nem arquivos. Uma aplicação de exemplo com problemas de propósito está em `examples/react-demo` (`npm run demo:react`).
+
+## Aplicar as correções
+
+| | `/ux-fix` (na sua ferramenta de IA) | `npx ux-validate fix` (no terminal) |
+|---|---|---|
+| **Modelo** | O que a sua ferramenta de IA estiver usando | O provedor e o modelo escolhidos no setup: Anthropic, OpenAI, Google ou Ollama (local) |
+| **Custo** | Uso da conta da sua ferramenta de IA | Tokens cobrados na conta do **seu** provedor, com a **sua** API key |
+| **Como funciona** | O agente corrige um problema por vez e roda as checagens de novo | Envia cada arquivo com os problemas ao modelo e mostra o diff antes de gravar |
+
+Os dois corrigem só o que está no relatório, preferem HTML semântico a ARIA e **nunca inventam dados** (telefones, preços, depoimentos): quando falta informação, avisam o que é preciso.
+
+```bash
+npx ux-validate fix                       # problemas críticos, altos e médios da última execução
+npx ux-validate fix --ids A001,C003       # só esses problemas
+npx ux-validate fix --severity high       # só críticos e altos
+npx ux-validate fix --dry-run             # mostra as correções sem gravar
+```
+
+Antes de chamar o modelo, o `fix` mostra quais arquivos vai enviar e uma estimativa de tokens, e pede confirmação. Os arquivos originais ficam em `fixes/backup/`, dentro da pasta da execução. A API key nunca é gravada na configuração, só o nome da variável de ambiente:
+
+```bash
+export ANTHROPIC_API_KEY=sua-chave
+```
+
+```powershell
+$env:ANTHROPIC_API_KEY="sua-chave"
+```
+
+> **Privacidade:** com o `fix` no terminal, o conteúdo dos arquivos corrigidos é enviado ao provedor escolhido. Com o Ollama, tudo roda na sua máquina.
+
+## GitHub Action e CI
+
+Roda as checagens automáticas a cada pull request, com um comentário de resumo, anotações nas linhas alteradas (SARIF / code scanning) e o relatório completo como artefato. O teste com personas precisa de uma ferramenta de IA e roda localmente.
+
+```yaml
+# .github/workflows/ux-validate.yml
+name: ux-validate
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write   # comentário no PR
+  security-events: write # envio do SARIF para o code scanning
+
+jobs:
+  ux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: npm ci
+      - uses: fabiofigueredo/ux-validate@v1
+        with:
+          start: npm run dev
+          url: http://localhost:3000
+          fail-on: critical
+```
+
+| Entrada | Padrão | O que faz |
+|---|---|---|
+| `url` | `app.url` da configuração | URL a testar (servidor local ou deploy de preview) |
+| `start` | — | Comando que sobe a aplicação em segundo plano; a action espera a URL responder |
+| `wait-timeout` | `120` | Segundos de espera pela URL |
+| `working-directory` | `.` | Pasta da aplicação (monorepos) |
+| `fail-on` | — (nunca falha) | Falha o job com problemas dessa gravidade ou mais grave: `critical`, `high`, `medium`, `low` |
+| `comment` | `true` | Publica um resumo no PR, atualizando o mesmo comentário a cada push |
+| `sarif` | `true` | Envia o SARIF para o code scanning |
+| `upload-sarif` | `true` | Com `false`, gera o arquivo SARIF sem enviá-lo ao code scanning |
+| `language` | `locale` da configuração, depois inglês | `en` ou `pt-BR` para o comentário e o relatório |
+
+Saídas: `issues`, `critical`, `high`, `report-dir`, `sarif-file`.
+
+- O `@v1` aponta para a última versão estável; para fixar uma, use a tag dela (ex.: `@v1.2.0`).
+- O code scanning é gratuito em repositórios públicos; nos privados, exige o GitHub Advanced Security. Sem ele, o envio do SARIF é pulado com um aviso.
+- Em pull requests de forks, o GitHub dá um token só de leitura: o comentário é pulado com um aviso.
+- Há um workflow de exemplo em [`examples/github-workflow.yml`](examples/github-workflow.yml).
+
+Em qualquer outro CI:
+
+```bash
+npx ux-validate check --url http://localhost:3000 --fail-on high   # código de saída 2 ao atingir o limite
+npx ux-validate sarif --out ux-validate.sarif
+npx ux-validate comment --out comment.md
+```
+
+## Limitações
+
+O ux-validate é uma **primeira checagem**. Não substitui o teste manual de acessibilidade nem testes com pessoas reais, inclusive pessoas com deficiência.
+
+- **O que roda sem IA:** o `check` e o `audit` não usam modelo de linguagem (axe-core, comportamento de teclado e ARIA, links, erros de console, layout, ortografia offline, textos provisórios, daltonismo e checagens de React).
+- **O que precisa de uma ferramenta de IA externa:** o teste com personas roda dentro do Claude Code, Cursor, Codex CLI ou Gemini CLI, que são ferramentas proprietárias. A CLI do ux-validate é de código aberto (MIT); essas ferramentas, não.
+- **A automação cobre só parte da WCAG.** Num teste informal do autor (17/11/2026), o `check` rodou nas 142 páginas de teste do [alphagov/accessibility-tool-audit](https://github.com/alphagov/accessibility-tool-audit). Detectou cerca de um terço dos casos, na mesma faixa do axe sozinho (40 de 141) e abaixo da melhor ferramenta paga (56 de 141), sem falsos positivos na página de controle. É um teste informal, não um estudo.
+- **As personas são simuladas por IA.** Podem repetir vieses dos modelos e ainda não foram validadas com pessoas reais. Use-as como apoio, nunca como substituto de pesquisa com pessoas.
+- **As auditorias** veem só páginas públicas: formulários, login e pagamento ficam de fora.
 
 ## Experimente com o site de demonstração
 
-`examples/demo-site` é um site com problemas plantados de propósito (links quebrados, lorem ipsum, layout que estoura no celular, formulário inacessível, abas e acordeão com ARIA errado…). Ótimo para ver a ferramenta funcionando antes de usar no seu projeto.
+`examples/demo-site` é um site com problemas de propósito (links quebrados, lorem ipsum, layout que estoura no celular, formulário inacessível, abas e acordeão com ARIA quebrado, erros de ortografia…).
 
-**1. Clone e suba o site** (deixe este terminal aberto):
+**1. Clone e sirva o site** (deixe este terminal aberto):
 
 ```bash
 git clone https://github.com/fabiofigueredo/ux-validate.git
@@ -547,103 +555,110 @@ npm install -D ../ux-validate
 npx ux-validate init
 ```
 
-Quando o setup pedir a URL, informe `http://localhost:4321/index.html`.
+Informe `http://localhost:4321/index.html` como URL e escolha **português do Brasil** como idioma do conteúdo.
 
-> Também dá para testar arquivos HTML direto do disco, sem servidor, usando uma URL `file://` (ex.: `file:///C:/projetos/meu-site/index.html`). Prefira `http://` sempre que a aplicação tiver um servidor: é como o usuário real vai acessá-la.
+**3. Rode as checagens automáticas:** `npx ux-validate check` e `npx ux-validate report`, e abra o `report.html` em `.ux-validate/runs/<data-hora>/`.
 
-**3. Rode as checagens fixas:**
+**4. Rode o teste com personas:** abra o `projeto-teste` na sua ferramenta de IA, aprove o servidor MCP `playwright` e rode `/ux-test dona-maria`.
 
-```bash
-npx ux-validate check
-```
+Também dá para testar arquivos HTML direto do disco, com uma URL `file://`. Prefira `http://` sempre que a aplicação tiver servidor: é assim que as pessoas a acessam. O `examples/sample-findings.json` mostra o tipo de resultado que o agente produz.
 
-```bash
-npx ux-validate report
-```
-
-Abra o `report.html` em `.ux-validate/runs/<data-hora>/`.
-
-**4. Rode o teste com personas:** abra a pasta `projeto-teste` no VS Code, abra o Claude Code, aprove o servidor MCP `playwright` (ou ative-o com `/mcp`) e digite `/ux-test dona-maria`.
-
-`examples/sample-findings.json` mostra o tipo de resultado que o agente produz.
-
-### Problemas comuns
+## Solução de problemas
 
 | Sintoma | Solução |
 |---|---|
-| "Nada está respondendo em http://localhost:…" | A aplicação não está no ar. Inicie-a, ou configure o `app.start` no `ux-validate.config.yml` para o `check` iniciá-la (site só com HTML: `npx -y http-server <pasta> -p 3000 -c-1`) |
-| `/ux-test` não aparece | A pasta aberta precisa ser a do projeto onde você rodou o `init` (a que tem `.claude/`, `.cursor/`, `.agents/` ou `.gemini/`). No Gemini CLI, rode `/commands reload` |
-| O agente não tem as ferramentas de navegador | Aprove ou ative o servidor MCP `playwright` na sua ferramenta; no Codex e no Gemini, marque a pasta do projeto como confiável |
-| Erro dizendo que o navegador não foi encontrado | Rode `npx ux-validate install-browser` no projeto |
-| "A página inicial não abre" | Confira se a aplicação está no ar e se `app.url` está certa |
-| Quer mudar a URL depois do setup | Edite `app.url` em `ux-validate.config.yml` |
+| "Nada está respondendo em http://localhost:…" | A aplicação não está no ar. Suba-a, ou defina `app.start` no `ux-validate.config.yml` (site só com HTML: `npx -y http-server <pasta> -p 3000 -c-1`) |
+| `Cannot find package 'yaml'` ao rodar `npx ux-validate` | Você está dentro de um clone do repositório do ux-validate sem as dependências. Rode `npm install` ali, ou rode o comando em outra pasta |
+| O `/ux-test` não aparece | Abra a ferramenta de IA na pasta onde rodou o `init`. No Gemini CLI, rode `/commands reload` |
+| O agente não tem as ferramentas de navegador | Aprove ou ative o servidor MCP `playwright`; no Codex e no Gemini, marque a pasta do projeto como confiável |
+| O navegador não foi encontrado | Rode `npx ux-validate install-browser` |
+| Um comando do plugin falha com "404 Not Found" | A versão do plugin ainda não está no npm; espere a publicação ou atualize o plugin |
+| Quer mudar a URL depois do setup | Edite `app.url` no `ux-validate.config.yml` |
 
-## Estrutura do projeto
+## Desenvolvimento
 
-```
-bin/ux-validate.js       CLI (init, check, report, fix, persona)
-src/init.js              setup interativo
-src/checks.js            checagens determinísticas (Playwright + axe-core)
-src/aria.js              checagens de WAI-ARIA e teclado
-src/spelling.js          verificação ortográfica (Hunspell)
-src/fix.js               correção automática a partir do relatório
-src/llm.js               clientes dos provedores (Anthropic, OpenAI, Google, Ollama)
-src/persona.js           assistente e validação de personas
-src/report.js            notas e relatório (Markdown + HTML)
-src/sarif.js             exportação SARIF (code scanning do GitHub)
-src/comment.js           comentário de pull request
-action.yml               GitHub Action
-src/i18n.js              idioma da ferramenta
-src/locales/             mensagens em inglês (en.js) e português (pt-BR.js)
-src/adapters/            um adapter por ferramenta de IA
-source/<idioma>/commands/    comandos escritos uma vez, independentes da ferramenta
-source/<idioma>/references/  heurísticas, guia de conteúdo, guia WAI-ARIA, formatos de persona e de achados
-source/<idioma>/personas/    personas de exemplo
-examples/                site de demonstração e resultados de exemplo
-test/                    testes (npm test)
+### A partir do código
+
+```bash
+git clone https://github.com/fabiofigueredo/ux-validate.git
 ```
 
-### Adicionando uma ferramenta de IA
+```bash
+cd ux-validate && npm install && node bin/ux-validate.js install-browser
+```
 
-Os comandos em `source/<idioma>/commands/` usam placeholders (`{{WORK_DIR}}`, `{{CHECK_CMD}}`…) e não dependem de ferramenta. Para suportar uma nova, crie `src/adapters/<ferramenta>.js` com `{ id, label, available: true, invoke(name), install({ cwd, commands, force }) }`, gravando os comandos no formato que ela entende (`src/adapters/shared.js` tem funções para adaptar o marcador de argumentos e registrar o servidor MCP), registre-o em `src/adapters/index.js` e adicione a linha de próximos passos em `init.next.tools` nos catálogos de mensagens.
+```bash
+npm test
+```
+
+Para usar o seu clone num projeto, rode `npm install -D /caminho/para/ux-validate` nesse projeto e continue a partir do `init`. Para testar o plugin localmente: `npm run build:plugin` no clone e `claude --plugin-dir /caminho/para/ux-validate/plugin` no projeto (as skills do plugin chamam a CLI publicada no npm na versão do plugin).
+
+### Estrutura do projeto
+
+```
+bin/ux-validate.js           CLI
+src/init.js                  setup interativo
+src/checks.js                checagens automáticas (Playwright + axe-core)
+src/aria.js                  checagens de WAI-ARIA e teclado
+src/color.js                 simulação e checagens de daltonismo
+src/react.js                 suporte a React e SPAs
+src/spelling.js              ortografia (Hunspell)
+src/tasks.js                 tarefas
+src/persona.js               assistente e validação de personas
+src/audit.js, src/robots.js  auditoria de site publicado, robots.txt
+src/app-server.js            sobe a aplicação com app.start
+src/brief.js                 resumo curto das checagens para o agente
+src/report.js                notas e relatório (Markdown + HTML)
+src/fix.js, src/llm.js       correções automáticas e clientes dos provedores
+src/sarif.js, src/comment.js exportação SARIF e comentário de pull request
+src/i18n.js, src/locales/    mensagens em inglês e português
+src/adapters/                um adapter por ferramenta de IA
+source/<idioma>/             comandos do agente, referências e personas pré-definidas
+source/plugin/, plugin/      plugin do Claude Code (plugin/ é gerado: npm run build:plugin)
+action.yml                   GitHub Action
+docs/                        site (GitHub Pages)
+examples/                    sites de demonstração e resultados de exemplo
+test/                        testes (npm test)
+```
+
+### Adicionar uma ferramenta de IA
+
+Os comandos em `source/<idioma>/commands/` usam placeholders (`{{WORK_DIR}}`, `{{CHECK_CMD}}`…) e não dependem de nenhuma ferramenta. Crie `src/adapters/<ferramenta>.js` com `{ id, label, available: true, invoke(name), install({ cwd, commands, force }) }` (`src/adapters/shared.js` tem funções de apoio), registre-o em `src/adapters/index.js` e acrescente a linha de próximos passos em `init.next.tools` nos catálogos de mensagens.
+
+### Adicionar um idioma
+
+1. Copie `src/locales/en.js` para `src/locales/<idioma>.js`, traduza e registre em `src/i18n.js`.
+2. Copie `source/en/` para `source/<idioma>/` e traduza os comandos, as referências e as personas.
+3. Rode `npm test`: um teste confere se todos os catálogos têm as mesmas chaves.
+
+### Contribuir
+
+Sugestões e PRs são bem-vindos. Rode `npm test` antes de abrir um PR. Para mudar o comportamento do agente, edite `source/<idioma>/commands/` e `source/<idioma>/references/` (mantenha os dois idiomas iguais) e rode `npm run build:plugin`.
+
+### Variáveis de ambiente
+
+| Variável | Para quê |
+|---|---|
+| `UX_VALIDATE_LOCALE` | Idioma da ferramenta (`en` ou `pt-BR`) quando a configuração não tem `locale` |
+| `UX_VALIDATE_CHROMIUM` | Caminho de um Chromium já instalado |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` | API key do `npx ux-validate fix` (o nome da variável é configurável) |
+| `DEBUG` | Mostra o erro completo quando um comando falha |
 
 ## Roadmap
 
-- [x] Setup interativo, adapter do Claude Code, `/ux-test` e `/ux-report`
-- [x] Checagens fixas e relatório com notas por persona
-- [x] Acessibilidade com WAI-ARIA e verificação ortográfica
-- [x] `/ux-fix` e `npx ux-validate fix` (aplicar correções com o modelo do usuário)
-- [x] Inglês e português
-- [x] Adapters para Cursor, Codex CLI e Gemini CLI
-- [x] GitHub Action com comentário no PR e saída SARIF
-- [x] `/ux-persona` e `npx ux-validate persona new` (criar personas)
-- [x] Aplicações React: componente, arquivo e linha de cada problema, rotas de SPA e avisos do React
-- [x] Visão de cores: simulação de daltonismo, checagens de contraste, indicadores e estado só pela cor
-- [x] Plugin do Claude Code (`/plugin install ux-validate@ux-validate`)
-- [x] Tarefas: objetivos sem passo a passo, primeiro clique, voltas e tabela tarefa × persona
-- [x] Auditoria de site publicado pela URL (`audit` e `/ux-audit`)
+- [x] Checagens automáticas, teste com personas e relatório com notas por persona
+- [x] Acessibilidade com WAI-ARIA, ortografia e daltonismo
+- [x] Correções com `/ux-fix` e `npx ux-validate fix`
+- [x] Português e inglês; Claude Code, Cursor, Codex CLI e Gemini CLI
+- [x] GitHub Action com comentário no PR e SARIF
+- [x] Aplicações React e SPAs
+- [x] Plugin do Claude Code
+- [x] Tarefas: objetivos sem passo a passo, primeiro clique, voltas
+- [x] Auditoria de site publicado pela URL
+- [x] Relatório com a identidade visual do ux-validate
 - [ ] Auditar páginas atrás de login (sessão salva)
-- [ ] Navegação com personas pelo terminal (sem ferramenta de IA), com o modelo escolhido no setup
-- [ ] Repetir a navegação e só confirmar problemas que aparecem em mais de uma execução
-
-### Adicionando um idioma
-
-1. Copie `src/locales/en.js` para `src/locales/<idioma>.js`, traduza e registre em `src/i18n.js`.
-2. Copie `source/en/` para `source/<idioma>/` e traduza comandos, referências e personas.
-3. Rode `npm test`: um teste confere que todos os catálogos têm as mesmas chaves.
-
-## Contribuindo
-
-Sugestões e PRs são bem-vindos. Antes de abrir um PR, rode `npm test`. Para mudar o comportamento do agente, edite os comandos em `source/<idioma>/commands/` e as referências em `source/<idioma>/references/` (mantenha os dois idiomas em sincronia): eles valem para todas as ferramentas.
-
-## Variáveis de ambiente
-
-| Variável | Uso |
-|---|---|
-| `UX_VALIDATE_CHROMIUM` | Caminho de um Chromium já instalado, se não quiser usar o do Playwright |
-| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_GENERATIVE_AI_API_KEY` | API key usada pelo `npx ux-validate fix` (o nome da variável é configurável no setup) |
-| `UX_VALIDATE_LOCALE` | Idioma da ferramenta (`en` ou `pt-BR`) quando não há `locale` na configuração |
-| `DEBUG` | Mostra o erro completo quando um comando falha |
+- [ ] Navegação das personas pelo terminal (sem ferramenta de IA), com o modelo escolhido no setup
+- [ ] Repetir a navegação e só confirmar os problemas que aparecem em mais de uma execução
 
 ## Licença
 
