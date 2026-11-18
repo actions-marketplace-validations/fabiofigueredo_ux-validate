@@ -8,7 +8,77 @@ Instead of just saying "contrast is below 4.5:1", ux-validate asks, through a si
 
 ![ux-validate report: scores by persona, goals and issues](docs/ux-validate-demo-crop.gif)
 
-> **Status:** early version (0.6). Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
+> **Status:** version 1.0. Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**.
+
+## Complete validation, step by step
+
+The complete validation has two parts, and the report brings them together:
+
+| Part | Command | Needs AI? | What it does |
+|---|---|---|---|
+| **1. Automated checks** | `npx ux-validate check` | No | Accessibility (axe-core, WAI-ARIA, keyboard, color blindness), links, errors, layout, spelling |
+| **2. Persona and task test** | `/ux-test` in your AI tool | Yes | Runs part 1, browses as each persona trying the tasks, and builds the report |
+
+The result is in `.ux-validate/runs/<date-time>/report.html` (and `report.md`). Before validating, the app must be running, or have its start command in `app.start`: ux-validate starts and stops the app itself.
+
+### Path 1: npm package (Claude Code, Cursor, Codex CLI or Gemini CLI)
+
+Once per project, in a terminal, in the project folder:
+
+```bash
+npm install -D ux-validate
+```
+
+```bash
+npx ux-validate install-browser
+```
+
+```bash
+npx ux-validate init
+```
+
+`init` asks for the language, the AI tools, the app's URL and start command, the **personas** and the **tasks** they will try.
+
+Each validation:
+
+1. *(Optional, fast, no AI)* `npx ux-validate check` then `npx ux-validate report`: the automated part only.
+2. Open your AI tool **in the project folder** and run **`/ux-test`** (in Codex, `$ux-test`). The first time, approve the `playwright` MCP server: it's the agent's browser.
+3. Open the latest run's `report.html`, in `.ux-validate/runs/`.
+4. To fix: `/ux-fix` in your AI tool, or `npx ux-validate fix` in the terminal (with the model set up in `init`).
+
+### Path 2: Claude Code plugin
+
+In Claude Code (once):
+
+```
+/plugin marketplace add fabiofigueredo/ux-validate
+```
+
+```
+/plugin install ux-validate@ux-validate
+```
+
+Then, in each project: `/ux-validate:ux-setup` (once), `/ux-validate:ux-test` for each validation, the `report.html` in `.ux-validate/runs/`, and `/ux-validate:ux-fix` to fix. No need to install the npm package. Use the plugin **or** `init` with Claude Code in a project, not both.
+
+### Path 3: from the source (Git), to contribute or test changes
+
+```bash
+git clone https://github.com/fabiofigueredo/ux-validate.git
+```
+
+```bash
+cd ux-validate && npm install && node bin/ux-validate.js install-browser
+```
+
+```bash
+npm test
+```
+
+To use your clone in a project, run `npm install -D /path/to/ux-validate` in that project and follow Path 1 from `init`. To test the plugin locally: `npm run build:plugin` in the clone and `claude --plugin-dir /path/to/ux-validate/plugin` in the project. The plugin's skills call the CLI published on npm at the plugin's version.
+
+### In CI
+
+The [GitHub Action](#github-action) runs part 1 only (no AI) on every pull request, with a PR comment and SARIF.
 
 ## How it works
 
@@ -21,7 +91,7 @@ Instead of just saying "contrast is below 4.5:1", ux-validate asks, through a si
    │     → same result with any language model
    │
    ├─ 2. Browsing as each persona  (agent + Playwright MCP)
-   │     tries to achieve their goals, with their limitations,
+   │     tries the project's tasks and their own goals, with their limitations,
    │     and evaluates content, navigation, interface and accessibility
    │     through their eyes; tests widgets with the keyboard (APG patterns)
    │     and reviews spelling and grammar

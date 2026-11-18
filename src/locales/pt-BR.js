@@ -272,6 +272,9 @@ Opções gerais:
   },
 
   checks: {
+    next:
+      '\nEssa foi a parte automática (sem IA). Para a validação completa, com as personas e as tarefas, rode /ux-test na sua\n' +
+      'ferramenta de IA (no Codex, $ux-test; no plugin do Claude Code, /ux-validate:ux-test). Para ver só este resultado: npx ux-validate report',
     crawling: 'Rastreando {url} (até {max} páginas)…',
     invalidFailOn: 'Valor inválido para --fail-on: {value}. Use: {valid}.',
     failOn: ({ n, severity }) => `\n✖ ${n} problema(s) com gravidade "${severity}" ou maior (--fail-on).`,
@@ -481,6 +484,7 @@ Opções gerais:
     offPath: 'fora do caminho',
     backtracks: 'voltas',
     lostAt: 'Onde se perdeu',
+    onlyChecks: 'Este relatório tem só as checagens automáticas (sem IA). As personas e as tarefas ainda não foram testadas: rode /ux-test na sua ferramenta de IA para a validação completa.',
     whereToFix: 'Onde corrigir',
     elements: 'Elemento(s)',
     element: 'Elemento',
@@ -651,6 +655,7 @@ Regras:
   },
 
   comment: {
+    written: '✔ Comentário gravado em {file}',
     title: 'ux-validate',
     noIssues: '✅ Nenhum problema encontrado pelas checagens fixas.',
     failing: ({ n, severity }) => `❌ **${n} problema(s)** de nível ${severity.toLowerCase()} ou mais grave: esta verificação falha.`,

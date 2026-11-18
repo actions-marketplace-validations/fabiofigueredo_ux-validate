@@ -78,6 +78,7 @@ export async function writeComment({ cwd, run, out, artifactUrl, sarifUploaded, 
     const file = path.resolve(cwd, out);
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, text);
+    console.log(t('comment.written', { file: path.relative(cwd, file) || file }));
   } else {
     console.log(text);
   }
