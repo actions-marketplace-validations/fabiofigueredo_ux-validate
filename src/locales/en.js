@@ -25,6 +25,11 @@ Usage:
   ux-validate install-browser                    Install the browser (Chromium) for the Playwright version ux-validate uses
   ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
                                                  Run the automated checks (accessibility, links, spelling, content)
+  ux-validate audit  <url> [--yes] [--personas id,id|all] [--task "<task>" …] [--max-pages 20]
+                     [--viewports mobile,desktop] [--fail-on high]
+                                                 Audit a published site, without its code (sites you are responsible
+                                                 for or authorized to test; respects robots.txt, never submits forms).
+                                                 With personas and tasks: /ux-audit <url> in your AI tool
   ux-validate report [--run <dir>]               Build report.md and report.html from a run
   ux-validate sarif  [--run <dir>] [--out <file>]
                                                  Export the issues as SARIF (GitHub code scanning)
@@ -42,6 +47,7 @@ Usage:
 
 General options:
   --config <file>      Path to the config file (default: ux-validate.config.yml)
+  --dir <folder>       Run the command in another folder (e.g. an audit: ux-validate-audits/<domain>)
   --lang <en|pt-BR>    Language of the tool's messages (default: from the config or your system)
   -h, --help           Show this help
 `,
@@ -127,16 +133,16 @@ General options:
       tools: {
         'claude-code':
           '     • Claude Code: open it in this project, approve the "playwright" MCP server and run /ux-test.\n' +
-          '       Also: /ux-task, /ux-persona, /ux-report, /ux-fix',
+          '       Also: /ux-task, /ux-persona, /ux-report, /ux-fix, /ux-audit <url> (published site)',
         cursor:
           '     • Cursor: open this project, enable the "playwright" MCP server in the MCP settings and run /ux-test in the agent chat.\n' +
-          '       Also: /ux-task, /ux-persona, /ux-report, /ux-fix',
+          '       Also: /ux-task, /ux-persona, /ux-report, /ux-fix, /ux-audit <url> (published site)',
         codex:
           '     • Codex CLI: run codex in this project and trust it (so .codex/config.toml loads the browser), then type $ux-test.\n' +
-          '       Also: $ux-task, $ux-persona, $ux-report, $ux-fix',
+          '       Also: $ux-task, $ux-persona, $ux-report, $ux-fix, $ux-audit <url> (published site)',
         gemini:
           '     • Gemini CLI: run gemini in this project (trust the folder if asked, so .gemini/settings.json loads the browser) and type /ux-test.\n' +
-          '       Also: /ux-task, /ux-persona, /ux-report, /ux-fix',
+          '       Also: /ux-task, /ux-persona, /ux-report, /ux-fix, /ux-audit <url> (published site)',
       },
       cliFix: '\n  Fixes from the terminal: npx ux-validate fix (model {provider} · {model}).',
       setKey: '  First, set {env} to your API key:',
@@ -277,6 +283,26 @@ General options:
     staticLabel: 'Static site (HTML)',
   },
 
+  audit: {
+    noUrl: 'Tell me the site URL: npx ux-validate audit https://www.example.com',
+    invalidUrl: 'Invalid URL: {url}. Use the address of a published site (http:// or https://).',
+    invalidMaxPages: 'Invalid --max-pages value: {value}. Use a whole number greater than 0.',
+    permissionIntro: '\nOnly audit sites you are responsible for or are authorized to test.\nThe audit visits public pages ({url}), one per second, respects robots.txt and never submits forms.\n',
+    permissionQ: 'Are you responsible for this site, or authorized to test it?',
+    needsYes: 'Confirm that you are responsible for the site, or authorized to test it, with --yes (needed outside an interactive terminal, e.g. in CI).',
+    notAuthorized: 'Audit cancelled: only audit sites you are responsible for or are authorized to test.',
+    folder: 'Audit folder: {dir}',
+    configHeader: '# ux-validate: audit of a published site (created by "npx ux-validate audit"). Personas and tasks in this folder are reused in the next audit.',
+    unreachable: "Couldn't open {url}. Check the address and whether the site is online.",
+    robotsStart: '{url} is blocked by the site\'s robots.txt ({robots}): the audit respects it and stops here.',
+    robotsRead: ({ n }) => `Reading robots.txt… ${n === 0 ? 'no blocked paths.' : `${n} blocked ${n === 1 ? 'path' : 'paths'} will be skipped.`}`,
+    robotsNone: 'No robots.txt: all public pages of the site may be visited.',
+    skippedSummary: ({ n }) => `${n} ${n === 1 ? 'page was' : 'pages were'} not visited (robots.txt or sign out/delete links): see "Limits of this audit" in the report.`,
+    done: '✔ Audit report:',
+    next: '\nThat was the automated part (no AI). To test with personas and tasks, run /ux-audit {url} in your AI tool\n(in Codex, $ux-audit; with the Claude Code plugin, /ux-validate:ux-audit). Personas and tasks for this site go in {dir}.',
+    notForAudit: 'This command works on the project\'s code, and an audit has none. Share the audit report with whoever maintains the site.',
+  },
+
   brief: {
     title: 'Automated checks: summary for the agent',
     url: 'URL',
@@ -290,6 +316,8 @@ General options:
     issues: 'Issues (grouped, most severe first)',
     none: 'No issues.',
     only: 'only for',
+    skipped: "Not visited (audit): don't open these pages",
+    unsafe: 'sign out/delete link',
     more: '…and {n} more: {ids}',
   },
 
@@ -455,6 +483,23 @@ General options:
   },
 
   report: {
+    audit: {
+      title: 'Audit of a published site',
+      site: 'Site',
+      onlyChecks: 'This audit has only the automated checks (no AI). Personas and tasks have not been tested yet: run /ux-audit in your AI tool for the complete audit.',
+      limitsTitle: 'Limits of this audit',
+      limitsIntro: 'Only public pages were visited, at most one per second. No form was submitted, no account was created and no purchase or contact was made.',
+      skippedRobots: 'Pages not visited: blocked by robots.txt',
+      skippedUnsafe: 'Links not followed: sign out, delete, cancel or unsubscribe',
+      agentLimits: 'What the personas could not test',
+      andMore: '…and {n} more',
+      planTitle: 'Plan for whoever maintains the site',
+      planIntro: 'In this order: first what stops people from finishing what they came to do, then the serious issues, then the rest grouped by kind of issue.',
+      planBlocking: 'What stops the personas from reaching their goals and tasks',
+      planUrgent: 'Critical and high issues',
+      planOthers: 'Other issues, by kind',
+      planNone: 'Nothing here.',
+    },
     title: 'ux-validate report',
     generated: '✔ Report generated:',
     noRun: 'No run found. Run /ux-test or "npx ux-validate check".',

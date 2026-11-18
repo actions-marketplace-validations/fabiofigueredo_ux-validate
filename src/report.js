@@ -18,7 +18,7 @@ const categoryEntries = () => CATEGORY_KEYS.map((k) => [k, CATEGORIES[k]]);
  * Junta checks.json (checagens fixas) e findings.json (avaliação do agente por persona)
  * em report.md e report.html. O formato do findings.json está em source/references/findings-format.md.
  */
-export async function buildReport({ cwd, run }) {
+export async function buildReport({ cwd, run, log = console.log }) {
   const runDir = run ? path.resolve(cwd, run) : latestRunDir(cwd);
   if (!runDir || !fs.existsSync(runDir)) throw new Error(t('report.noRun'));
 
@@ -30,9 +30,9 @@ export async function buildReport({ cwd, run }) {
   fs.writeFileSync(path.join(runDir, 'report.md'), renderMarkdown(data));
   fs.writeFileSync(path.join(runDir, 'report.html'), renderHtml(data));
 
-  console.log(t('report.generated'));
-  console.log(`  ${path.relative(cwd, path.join(runDir, 'report.md'))}`);
-  console.log(`  ${path.relative(cwd, path.join(runDir, 'report.html'))}`);
+  log(t('report.generated'));
+  log(`  ${path.relative(cwd, path.join(runDir, 'report.md'))}`);
+  log(`  ${path.relative(cwd, path.join(runDir, 'report.html'))}`);
   return { runDir, ...data };
 }
 
@@ -123,7 +123,38 @@ export function analyze(checks, agent, { traits = {}, tasks = [] } = {}) {
     scores,
     tasks: taskMatrix(tasks, personas),
     taskWarnings: checks?.taskWarnings ?? [],
+    audit: checks?.mode === 'audit',
+    skipped: checks?.skipped ?? [],
+    limits: Array.isArray(agent?.limits) ? agent.limits.filter((x) => typeof x === 'string') : [],
+    plan: auditPlan(findings, personas),
   };
+}
+
+/**
+ * Plano para quem mantém um site publicado (auditoria): o que impede as personas de concluir
+ * objetivos e tarefas, depois os problemas críticos e altos, e o resto agrupado por tipo de problema.
+ */
+function auditPlan(findings, personas) {
+  const blockerIds = new Set(personas.flatMap((p) => [...(p.goals ?? []), ...(p.tasks ?? [])].flatMap((g) => g.blockers ?? [])));
+  const blocking = findings.filter((f) => blockerIds.has(f.id));
+  const urgent = findings.filter((f) => !blockerIds.has(f.id) && (f.severity === 'critical' || f.severity === 'high'));
+  const groups = new Map();
+  for (const f of findings.filter((f) => !blockerIds.has(f.id) && f.severity !== 'critical' && f.severity !== 'high')) {
+    const g = groups.get(f.title) ?? { title: f.title, severity: f.severity, category: f.category, ids: [] };
+    g.ids.push(f.id);
+    groups.set(f.title, g);
+  }
+  return { blocking, urgent, others: [...groups.values()] };
+}
+
+/** Limites da auditoria: o que não foi visitado (robots.txt, links de sair/excluir) e o que o agente não pôde testar. */
+function auditLimits(d) {
+  const byReason = (reason) => d.skipped.filter((s) => s.reason === reason).map((s) => s.url);
+  return [
+    { label: t('report.audit.skippedRobots'), items: byReason('robots') },
+    { label: t('report.audit.skippedUnsafe'), items: byReason('unsafe') },
+    { label: t('report.audit.agentLimits'), items: d.limits },
+  ].filter((x) => x.items.length);
 }
 
 function affectedPersonas(f, personas, traits) {
@@ -159,12 +190,21 @@ function scoreFor(findings, persona) {
 
 function renderMarkdown(d) {
   const lines = [];
-  lines.push(`# ${t('report.title')}`, '');
-  lines.push(`**${t('report.app')}:** ${d.url ?? '—'}  `);
+  lines.push(`# ${t(d.audit ? 'report.audit.title' : 'report.title')}`, '');
+  lines.push(`**${t(d.audit ? 'report.audit.site' : 'report.app')}:** ${d.url ?? '—'}  `);
   lines.push(`**${t('report.date')}:** ${formatDate(d.createdAt)}  `);
   if (d.agentInfo) lines.push(`**${t('report.evaluatedBy')}:** ${[d.agentInfo.tool, d.agentInfo.model].filter(Boolean).join(' · ')}  `);
   lines.push(`**${t('report.pagesAnalyzed')}:** ${d.pages.length || '—'}`, '');
-  if (!d.personas.length) lines.push(`> ${t('report.onlyChecks')}`, '');
+  if (!d.personas.length) lines.push(`> ${t(d.audit ? 'report.audit.onlyChecks' : 'report.onlyChecks')}`, '');
+  if (d.audit) {
+    lines.push(`## ${t('report.audit.limitsTitle')}`, '', t('report.audit.limitsIntro'), '');
+    for (const { label, items } of auditLimits(d)) {
+      lines.push(`**${label}** (${items.length})`, '');
+      for (const item of items.slice(0, 20)) lines.push(`- ${item}`);
+      if (items.length > 20) lines.push(`- ${t('report.audit.andMore', { n: items.length - 20 })}`);
+      lines.push('');
+    }
+  }
 
   lines.push(`## ${t('report.scoresTitle')}`, '');
   lines.push(`| ${t('report.persona')} | ${t('report.overall')} | ${categoryEntries().map(([, v]) => v).join(' | ')} | ${t('report.goalsDone')} |`);
@@ -226,14 +266,30 @@ function renderMarkdown(d) {
     lines.push('');
   }
 
-  const top = d.findings.filter((f) => f.severity === 'critical' || f.severity === 'high');
-  lines.push(`## ${t('report.fixFirst')}`, '');
-  if (!top.length) lines.push(t('report.noTop'), '');
-  top.slice(0, 10).forEach((f, i) => lines.push(`${i + 1}. **[${f.id}] ${f.title}** — ${SEVERITY_LABEL[f.severity]}, ${CATEGORIES[f.category]}`));
-  lines.push('');
+  const item = (f) => `**[${f.id}] ${f.title}** — ${SEVERITY_LABEL[f.severity]}, ${CATEGORIES[f.category]}${f.page ? ` · ${f.page}` : ''}`;
+  if (d.audit) {
+    lines.push(`## ${t('report.audit.planTitle')}`, '', t('report.audit.planIntro'), '');
+    const sections = [
+      [t('report.audit.planBlocking'), d.plan.blocking.map(item)],
+      [t('report.audit.planUrgent'), d.plan.urgent.map(item)],
+      [t('report.audit.planOthers'), d.plan.others.map((g) => `**${g.title}** — ${SEVERITY_LABEL[g.severity]}, ${CATEGORIES[g.category]} (${g.ids.join(', ')})`)],
+    ];
+    sections.forEach(([title, list], i) => {
+      lines.push(`### ${i + 1}. ${title}`, '');
+      if (!list.length) lines.push(t('report.audit.planNone'));
+      list.forEach((x) => lines.push(`- ${x}`));
+      lines.push('');
+    });
+  } else {
+    const top = d.findings.filter((f) => f.severity === 'critical' || f.severity === 'high');
+    lines.push(`## ${t('report.fixFirst')}`, '');
+    if (!top.length) lines.push(t('report.noTop'), '');
+    top.slice(0, 10).forEach((f, i) => lines.push(`${i + 1}. **[${f.id}] ${f.title}** — ${SEVERITY_LABEL[f.severity]}, ${CATEGORIES[f.category]}`));
+    lines.push('');
 
-  if (d.findings.length) {
-    lines.push(`> ${t('report.applyFixes')}`, '');
+    if (d.findings.length) {
+      lines.push(`> ${t('report.applyFixes')}`, '');
+    }
   }
 
   for (const [cat, label] of categoryEntries()) {
@@ -356,13 +412,26 @@ ${d.tasks
     )
     .join('');
 
+  // Auditoria: limites do teste e o plano para quem mantém o site.
+  const planItem = (f) => `<li><a href="#f-${esc(f.id)}">[${esc(f.id)}] ${esc(f.title)}</a> <span class="muted">${esc(SEVERITY_LABEL[f.severity])}, ${esc(CATEGORIES[f.category])}${f.page ? ` · ${esc(f.page)}` : ''}</span></li>`;
+  const planList = (list, render) => (list.length ? `<ul>${list.map(render).join('')}</ul>` : `<p class="muted">${esc(t('report.audit.planNone'))}</p>`);
+  const auditHtml = d.audit
+    ? `<h2>${t('report.audit.limitsTitle')}</h2><section class="card"><p class="muted">${esc(t('report.audit.limitsIntro'))}</p>${auditLimits(d)
+        .map(({ label, items }) => `<h3>${esc(label)} <small>(${items.length})</small></h3><ul>${items.slice(0, 20).map((x) => `<li>${esc(x)}</li>`).join('')}${items.length > 20 ? `<li class="muted">${esc(t('report.audit.andMore', { n: items.length - 20 }))}</li>` : ''}</ul>`)
+        .join('')}</section>
+<h2>${t('report.audit.planTitle')}</h2><section class="card"><p class="muted">${esc(t('report.audit.planIntro'))}</p>
+<h3>1. ${esc(t('report.audit.planBlocking'))}</h3>${planList(d.plan.blocking, planItem)}
+<h3>2. ${esc(t('report.audit.planUrgent'))}</h3>${planList(d.plan.urgent, planItem)}
+<h3>3. ${esc(t('report.audit.planOthers'))}</h3>${planList(d.plan.others, (g) => `<li>${esc(g.title)} <span class="muted">${esc(SEVERITY_LABEL[g.severity])}, ${esc(CATEGORIES[g.category])} · ${g.ids.map((id) => `<a href="#f-${esc(id)}">${esc(id)}</a>`).join(', ')}</span></li>`)}</section>`
+    : '';
+
   const filters = categoryEntries()
     .map(([k, v]) => `<button data-filter="${k}">${v} (${d.findings.filter((f) => f.category === k).length})</button>`)
     .join('');
 
   const items = d.findings
     .map(
-      (f) => `<article class="finding" data-category="${esc(f.category)}">
+      (f) => `<article class="finding" id="f-${esc(f.id)}" data-category="${esc(f.category)}">
       <header><span class="sev ${esc(f.severity)}">${esc(SEVERITY_LABEL[f.severity])}</span>
         <span class="tag">${esc(CATEGORIES[f.category])}</span>
         <span class="tag">${f.origin === 'agent' ? t('report.tagPersona') : esc(t('report.tagCheck', { name: f.source?.replace('check:', '') }))}</span>
@@ -387,7 +456,7 @@ ${d.tasks
 
   return `<!doctype html>
 <html lang="${getLocale()}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${t('report.title')}</title>
+<title>${t(d.audit ? 'report.audit.title' : 'report.title')}</title>
 <style>
 :root{--bg:#f7f7f5;--card:#fff;--text:#1d1d1b;--muted:#6b6b66;--line:#e3e3de;--good:#1a7f4b;--warn:#a15c00;--bad:#b42318;--accent:#3b4ccf}
 @media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--text:#ecece8;--muted:#a3a39c;--line:#33332f;--good:#4ec98a;--warn:#f0b041;--bad:#f97066;--accent:#8b98ff}}
@@ -413,9 +482,10 @@ table.tasks th[scope=row]{font-weight:400;max-width:420px}table.tasks td{text-al
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.warn-note{border-left:3px solid var(--warn)}
 .cv{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}.cv figure{margin:0}.cv img{margin-top:4px;display:block}.cv figcaption{font-size:13px;color:var(--muted)}
 </style></head><body><main>
-<h1>${t('report.title')}</h1>
+<h1>${t(d.audit ? 'report.audit.title' : 'report.title')}</h1>
 <p class="muted">${esc(d.url ?? '')} · ${esc(formatDate(d.createdAt))}${d.agentInfo ? ` · ${esc([d.agentInfo.tool, d.agentInfo.model].filter(Boolean).join(' · '))}` : ''} · ${t('report.pagesCount', { n: d.pages.length })}</p>
-${d.personas.length ? '' : `<p class="card warn-note">${esc(t('report.onlyChecks'))}</p>`}
+${d.personas.length ? '' : `<p class="card warn-note">${esc(t(d.audit ? 'report.audit.onlyChecks' : 'report.onlyChecks'))}</p>`}
+${auditHtml}
 <h2>${t('report.scoresTitle')}</h2>
 <div style="overflow-x:auto"><table><thead><tr><th>${t('report.persona')}</th><th>${t('report.overall')}</th>${categoryEntries().map(([, c]) => `<th>${c}</th>`).join('')}<th>${t('report.goals')}</th></tr></thead><tbody>${scoreRows}</tbody></table></div>
 ${tasksHtml}
@@ -423,7 +493,7 @@ ${goals ? `<h2>${t('report.goals')}</h2>${goals}` : ''}
 ${colorVision}
 <h2>${t('report.issues')} (${d.findings.length})</h2>
 <div class="filters"><button data-filter="all" aria-pressed="true">${t('report.all')}</button>${filters}</div>
-${d.findings.length ? `<p class="card">${t('report.applyFixesHtml')}</p>` : ''}
+${d.findings.length && !d.audit ? `<p class="card">${t('report.applyFixesHtml')}</p>` : ''}
 ${items || `<p>${t('report.noIssuesHtml')}</p>`}
 </main>
 <script>

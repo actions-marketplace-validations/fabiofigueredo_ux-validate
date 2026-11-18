@@ -31,6 +31,7 @@ export const commandVars = (locale) => ({
   REFERENCES_DIR: `${WORK_DIR}/references`,
   DICTIONARY: projectDictionary(locale),
   CHECK_CMD: 'npx ux-validate check',
+  AUDIT_CMD: 'npx ux-validate audit',
   REPORT_CMD: 'npx ux-validate report',
   FIX_CMD: 'npx ux-validate fix',
   PERSONA_VALIDATE_CMD: 'npx ux-validate persona validate',

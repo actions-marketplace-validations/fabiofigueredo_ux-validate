@@ -12,9 +12,9 @@ import { t } from './i18n.js';
  */
 
 /** A URL responde? Qualquer resposta HTTP conta (até 404): significa que há um servidor ali. */
-export async function isUp(url, timeout = 3000) {
+export async function isUp(url, timeout = 3000, headers = {}) {
   try {
-    await fetch(url, { method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(timeout) });
+    await fetch(url, { method: 'GET', redirect: 'manual', headers, signal: AbortSignal.timeout(timeout) });
     return true;
   } catch {
     return false;

@@ -56,6 +56,12 @@ export function buildBrief(result) {
   }
   lines.push('');
 
+  if (result.skipped?.length) {
+    lines.push(`## ${t('brief.skipped')}`, '');
+    for (const s of result.skipped) lines.push(`- ${page(s.url)} (${s.reason === 'robots' ? 'robots.txt' : t('brief.unsafe')})`);
+    lines.push('');
+  }
+
   if (result.taskWarnings?.length) {
     lines.push(`## ${t('brief.taskWarnings')}`, '');
     for (const w of result.taskWarnings) lines.push(`- ${w.id}: ${w.labels.map((l) => `"${l}"`).join(', ')}`);

@@ -8,7 +8,7 @@ Em vez de só dizer "o contraste está abaixo de 4,5:1", o ux-validate pergunta,
 
 ![Relatório do ux-validate: notas por persona, objetivos e problemas](docs/ux-validate-demo-crop.gif)
 
-> **Status:** versão 1.0. Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**.
+> **Status:** versão 1.1. Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**.
 
 ## Validação completa, passo a passo
 
@@ -81,6 +81,27 @@ Para usar o seu clone num projeto, rode `npm install -D /caminho/para/ux-validat
 ### No CI
 
 A [GitHub Action](#github-action) roda só a parte 1 (sem IA) a cada pull request, com comentário no PR e SARIF.
+
+## Auditar um site publicado
+
+A mesma validação também funciona num site **já no ar**, a partir da URL, sem o código. Audite só sites pelos quais você responde ou que tem autorização para testar.
+
+| Parte | Comando | Precisa de IA? |
+|---|---|---|
+| **1. Auditoria automática** | `npx ux-validate audit https://www.exemplo.com.br` | Não |
+| **2. Personas e tarefas** | `/ux-audit https://www.exemplo.com.br` na sua ferramenta de IA (`$ux-audit` no Codex, `/ux-validate:ux-audit` com o plugin) | Sim |
+
+```bash
+npx ux-validate audit https://www.exemplo.com.br
+```
+
+- **Sem projeto e sem setup:** roda em qualquer pasta. Cada site ganha uma pasta própria, `ux-validate-audits/<domínio>/`, com as personas, as tarefas e uma pasta por execução com o `report.html`. A próxima auditoria do mesmo site reaproveita as personas e as tarefas, e o `/ux-audit` compara com a execução anterior.
+- **Seguro para um site no ar:** pergunta se você responde pelo site ou tem autorização para testá-lo (`--yes` confirma, ex.: no CI), respeita o `robots.txt`, visita no máximo uma página por segundo, se identifica como `ux-validate` no user agent do navegador, não segue links de sair, excluir ou cancelar e nunca envia formulários. As personas vão até o botão final de um formulário, login ou compra e param ali.
+- **O relatório** tem as mesmas notas, tarefas e problemas, mais "Limites desta auditoria" (páginas não visitadas e o que não pôde ser testado) e um "Plano para quem mantém o site": primeiro o que impede as pessoas de concluir as tarefas, depois os problemas críticos e altos, depois o resto agrupado por tipo. No lugar do arquivo e da linha, cada problema mostra a página, o elemento e um screenshot. Compartilhe o `report.html` com quem mantém o site.
+- **Opções:** `--personas dona-maria,lucas-leitor-de-tela` ou `all`, `--task "<tarefa>"` (pode repetir), `--max-pages 20`, `--viewports mobile,desktop`, `--fail-on high`. Os outros comandos funcionam na pasta do site com `--dir`, ex.: `npx ux-validate report --dir ux-validate-audits/www.exemplo.com.br`.
+- **O que não se aplica:** "onde corrigir" (arquivo e linha), nomes de componentes React, `fix` e `sarif`, que trabalham no código do projeto. Páginas atrás de login ainda não são auditadas.
+
+Para usar o `/ux-audit` sem o plugin, instale os comandos uma vez em qualquer pasta: `npx ux-validate init --tools claude-code` (ou `cursor`, `codex`, `gemini`).
 
 ## Como funciona
 
@@ -344,6 +365,7 @@ O teste com personas e tarefas roda **só dentro da sua ferramenta de IA**, no s
 |---|---|
 | `/ux-persona` | Cria uma persona conversando com você sobre quem usa a aplicação |
 | `/ux-task` | Cria tarefas para as personas tentarem (objetivos sem passo a passo) |
+| `/ux-audit https://www.exemplo.com.br` | Audita um site publicado, sem o código (veja [Auditar um site publicado](#auditar-um-site-publicado)) |
 | `/ux-test` | Testa com todas as personas e gera o relatório |
 | `/ux-test dona-maria` | Testa com uma persona só |
 | `/ux-test --only accessibility` | Avalia só uma categoria (`content`, `navigation`, `ui`, `accessibility`) |
@@ -362,6 +384,7 @@ npx ux-validate persona validate # confere os arquivos de persona
 npx ux-validate task new         # cria tarefas para as personas tentarem
 npx ux-validate task validate    # confere o arquivo de tarefas
 npx ux-validate check            # só as checagens fixas
+npx ux-validate audit <url>      # auditoria automática de um site publicado (sem o código)
 npx ux-validate report           # relatório da execução mais recente
 npx ux-validate fix              # aplica as correções com o modelo configurado no setup
 ```
@@ -598,6 +621,8 @@ Os comandos em `source/<idioma>/commands/` usam placeholders (`{{WORK_DIR}}`, `{
 - [x] Visão de cores: simulação de daltonismo, checagens de contraste, indicadores e estado só pela cor
 - [x] Plugin do Claude Code (`/plugin install ux-validate@ux-validate`)
 - [x] Tarefas: objetivos sem passo a passo, primeiro clique, voltas e tabela tarefa × persona
+- [x] Auditoria de site publicado pela URL (`audit` e `/ux-audit`)
+- [ ] Auditar páginas atrás de login (sessão salva)
 - [ ] Navegação com personas pelo terminal (sem ferramenta de IA), com o modelo escolhido no setup
 - [ ] Repetir a navegação e só confirmar problemas que aparecem em mais de uma execução
 

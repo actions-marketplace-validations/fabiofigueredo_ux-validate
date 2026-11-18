@@ -15,7 +15,7 @@ setLocale('en');
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'uxv-tools-'));
 const read = (dir, rel) => fs.readFileSync(path.join(dir, rel), 'utf8');
-const NAMES = ['ux-fix', 'ux-persona', 'ux-report', 'ux-task', 'ux-test'];
+const NAMES = ['ux-audit', 'ux-fix', 'ux-persona', 'ux-report', 'ux-task', 'ux-test'];
 
 test('as quatro ferramentas estão disponíveis', () => {
   assert.deepEqual(ADAPTERS.map((a) => [a.id, a.available]), [
@@ -80,7 +80,7 @@ test('Codex CLI: skills em .agents/skills, só chamadas explicitamente, e MCP no
     assert.deepEqual(Object.keys(front).sort(), ['description', 'name'], 'o Codex só aceita campos conhecidos');
     assert.equal(front.name, name);
     assert.match(front.description, new RegExp(`explicitly invokes \\$${name}\\.$`));
-    assert.doesNotMatch(skill, /\$ARGUMENTS|[\s`(]\/ux-(?:test|report|fix|persona|task)\b/);
+    assert.doesNotMatch(skill, /\$ARGUMENTS|[\s`(]\/ux-(?:test|report|fix|persona|task|audit)\b/);
 
     const openai = YAML.parse(read(dir, `.agents/skills/${name}/agents/openai.yaml`));
     assert.equal(openai.policy.allow_implicit_invocation, false);

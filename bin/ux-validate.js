@@ -25,9 +25,15 @@ const { positionals, values } = parseArgs({
     'artifact-url': { type: 'string' },
     'sarif-uploaded': { type: 'boolean' },
     config: { type: 'string', default: 'ux-validate.config.yml' },
+    dir: { type: 'string' },
+    'max-pages': { type: 'string' },
+    viewports: { type: 'string' },
     help: { type: 'boolean', short: 'h' },
   },
 });
+
+// --dir: roda o comando em outra pasta (ex.: a pasta de uma auditoria, ux-validate-audits/<domínio>).
+const cwd = path.resolve(process.cwd(), values.dir ?? '.');
 
 // Idioma da ferramenta: --lang > `locale` da configuração > idioma do sistema.
 setLocale(normalizeLocale(values.lang) ?? configLocale(values.config) ?? detectLocale());
@@ -44,7 +50,7 @@ try {
     case 'init': {
       const { init } = await import('../src/init.js');
       await init({
-        cwd: process.cwd(),
+        cwd,
         yes: values.yes || Boolean(values.tools) || Boolean(values.personas) || Boolean(values.task?.length),
         force: values.force,
         tools: values.tools,
@@ -57,23 +63,37 @@ try {
     }
     case 'check': {
       const { runChecks } = await import('../src/checks.js');
-      await runChecks({ cwd: process.cwd(), configPath: values.config, out: values.out, url: values.url, failOn: values['fail-on'] });
+      await runChecks({ cwd, configPath: values.config, out: values.out, url: values.url, failOn: values['fail-on'] });
+      break;
+    }
+    case 'audit': {
+      const { audit } = await import('../src/audit.js');
+      await audit({
+        cwd,
+        url: positionals[1] ?? values.url,
+        yes: values.yes,
+        personas: values.personas,
+        tasks: values.task ?? [],
+        maxPages: values['max-pages'],
+        viewports: values.viewports,
+        failOn: values['fail-on'],
+      });
       break;
     }
     case 'report': {
       const { buildReport } = await import('../src/report.js');
-      await buildReport({ cwd: process.cwd(), run: values.run });
+      await buildReport({ cwd, run: values.run });
       break;
     }
     case 'sarif': {
       const { writeSarif } = await import('../src/sarif.js');
-      await writeSarif({ cwd: process.cwd(), run: values.run, out: values.out });
+      await writeSarif({ cwd, run: values.run, out: values.out });
       break;
     }
     case 'comment': {
       const { writeComment } = await import('../src/comment.js');
       await writeComment({
-        cwd: process.cwd(),
+        cwd,
         run: values.run,
         out: values.out,
         artifactUrl: values['artifact-url'],
@@ -85,10 +105,10 @@ try {
     case 'persona': {
       const { newPersona, validatePersonas, showPresets, addPresets } = await import('../src/persona.js');
       const [, action, ...files] = positionals;
-      if (action === 'new') await newPersona({ cwd: process.cwd(), configPath: values.config, force: values.force });
-      else if (action === 'validate') validatePersonas({ cwd: process.cwd(), configPath: values.config, files });
+      if (action === 'new') await newPersona({ cwd, configPath: values.config, force: values.force });
+      else if (action === 'validate') validatePersonas({ cwd, configPath: values.config, files });
       else if (action === 'examples') showPresets();
-      else if (action === 'add') addPresets({ cwd: process.cwd(), configPath: values.config, ids: files, force: values.force });
+      else if (action === 'add') addPresets({ cwd, configPath: values.config, ids: files, force: values.force });
       else {
         console.error(`${t('cli.unknownCommand', { command: `persona ${action ?? ''}`.trim() })}\n`);
         console.log(t('cli.help'));
@@ -99,8 +119,8 @@ try {
     case 'task': {
       const { newTasks, validateTasks } = await import('../src/tasks.js');
       const [, action] = positionals;
-      if (action === 'new') await newTasks({ cwd: process.cwd(), configPath: values.config });
-      else if (action === 'validate') validateTasks({ cwd: process.cwd(), configPath: values.config });
+      if (action === 'new') await newTasks({ cwd, configPath: values.config });
+      else if (action === 'validate') validateTasks({ cwd, configPath: values.config });
       else {
         console.error(`${t('cli.unknownCommand', { command: `task ${action ?? ''}`.trim() })}\n`);
         console.log(t('cli.help'));
@@ -119,7 +139,7 @@ try {
     case 'fix': {
       const { fix } = await import('../src/fix.js');
       await fix({
-        cwd: process.cwd(),
+        cwd,
         configPath: values.config,
         run: values.run,
         ids: values.ids,
@@ -143,7 +163,7 @@ try {
 
 function configLocale(configPath) {
   try {
-    const file = path.resolve(process.cwd(), configPath);
+    const file = path.resolve(cwd, configPath);
     if (!fs.existsSync(file)) return null;
     return normalizeLocale(YAML.parse(fs.readFileSync(file, 'utf8'))?.locale);
   } catch {

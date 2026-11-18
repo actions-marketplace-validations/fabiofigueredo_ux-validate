@@ -81,6 +81,7 @@ Arquivo escrito pelo agente em `.ux-validate/runs/<execução>/findings.json`. O
 | `sourceHint` | `{ file, line? }` | Só quando houver segurança; caso contrário omita |
 | `confidence` | `confirmed`, `likely` | `confirmed` = reproduzido no navegador |
 | `relatedChecks` | ids do `checks.json` (ex.: `C004`) | Quando o achado explica o impacto de uma checagem fixa; o relatório deixa de mostrar a checagem duplicada |
+| `limits` | lista de frases, no nível principal | Só na auditoria de site publicado (`/ux-audit`): o que não pôde ser testado (login, pagamento, formulários não enviados). Aparece em "Limites desta auditoria" |
 
 Ids dos achados do agente começam com `A` (`A001`, `A002`…). Os das checagens fixas começam com `C`.
 

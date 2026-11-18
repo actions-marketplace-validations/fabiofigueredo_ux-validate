@@ -2,6 +2,16 @@
 
 All notable changes to ux-validate. The npm package, the GitHub Action (`@v1`) and the Claude Code plugin share the same version.
 
+## 1.1.0 — 2026-11-18
+
+- **Audit of a published site, without its code.** `npx ux-validate audit <url>` runs the automated checks on a site that is already online, and `/ux-audit <url>` (`$ux-audit` in Codex, `/ux-validate:ux-audit` with the plugin) adds the persona and task test.
+  - Each site gets its own folder, `ux-validate-audits/<domain>/`, with its personas, tasks and one folder per run; the next audit reuses them.
+  - Safe for a live site: asks for confirmation that you are responsible for the site or authorized to test it (`--yes` in CI), respects `robots.txt`, visits at most one page per second, identifies itself as `ux-validate` in the user agent, doesn't follow sign out/delete/cancel links and never submits forms. Spelling uses the language the site declares (`<html lang>`).
+  - Report: "Audit of a published site", "Limits of this audit" (pages not visited and what the personas couldn't test) and a "Plan for whoever maintains the site". `fix` and `sarif` don't apply to an audit and say so.
+  - Options: `--personas`, `--task`, `--max-pages`, `--viewports`, `--fail-on`.
+- `--dir <folder>` runs any command in another folder (e.g. `npx ux-validate report --dir ux-validate-audits/<domain>`).
+- `findings.json` accepts `limits` (what couldn't be tested), shown in the audit report.
+
 ## 1.0.1 — 2026-11-18
 
 - **Fewer tokens in `/ux-test`, same test:**
