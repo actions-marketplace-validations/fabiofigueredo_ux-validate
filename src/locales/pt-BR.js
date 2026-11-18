@@ -292,6 +292,8 @@ Opções gerais:
     needsYes: 'Confirme com --yes que você é responsável pelo site ou tem autorização para testá-lo (necessário fora de um terminal interativo, ex.: no CI).',
     notAuthorized: 'Auditoria cancelada: audite só sites pelos quais você responde ou que tem autorização para testar.',
     folder: 'Pasta da auditoria: {dir}',
+    gitignoreComment: '# ux-validate: auditorias de sites publicados',
+    gitignored: '{dir} adicionada ao .gitignore (esta pasta está num repositório Git).',
     configHeader: '# ux-validate: auditoria de site publicado (criada por "npx ux-validate audit"). As personas e tarefas desta pasta são reaproveitadas na próxima auditoria.',
     unreachable: 'Não consegui abrir {url}. Confira o endereço e se o site está no ar.',
     robotsStart: '{url} está bloqueada pelo robots.txt do site ({robots}): a auditoria respeita o arquivo e para aqui.',

@@ -5,7 +5,7 @@ description: Audits a site that is already published (no source code needed) as
   whoever maintains the site.
 argument-hint: <site URL> [persona] [--only content|navigation|ui|accessibility]
 disable-model-invocation: true
-allowed-tools: Bash(npx -y ux-validate@1.1.0 *)
+allowed-tools: Bash(npx -y ux-validate@1.1.1 *)
 ---
 
 # /ux-validate:ux-audit
@@ -35,7 +35,7 @@ Write everything (findings, summaries, your answer) in English.
 
 Each site has its own folder, `ux-validate-audits/<domain>/` (e.g. `ux-validate-audits/www.example.com/`), with its personas (`personas/`), its tasks (`tasks.yml`) and one folder per run. If it already exists, reuse its personas and tasks, and tell the user.
 
-1. **Personas.** If the folder has none, run `npx -y ux-validate@1.1.0 persona examples` and show the user the predefined personas with each one's characteristics (who they are, device, tech literacy, vision, patience, reading level, goals). Ask whether they want **the predefined ones** (all or some), **their own**, or **both**, and wait for the answer. Predefined ones are added in Step 2 (`--personas`). To create one, follow the `/ux-validate:ux-persona` flow and save the file in `ux-validate-audits/<domain>/personas/` (format in `${CLAUDE_PLUGIN_ROOT}/references/persona-format.md`).
+1. **Personas.** If the folder has none, run `npx -y ux-validate@1.1.1 persona examples` and show the user the predefined personas with each one's characteristics (who they are, device, tech literacy, vision, patience, reading level, goals). Ask whether they want **the predefined ones** (all or some), **their own**, or **both**, and wait for the answer. Predefined ones are added in Step 2 (`--personas`). To create one, follow the `/ux-validate:ux-persona` flow and save the file in `ux-validate-audits/<domain>/personas/` (format in `${CLAUDE_PLUGIN_ROOT}/references/persona-format.md`).
 2. **Tasks (mandatory).** If the folder has no tasks, ask the user what people come to do on the site and write the tasks following `${CLAUDE_PLUGIN_ROOT}/references/tasks-format.md`: goals as scenarios, no step-by-step, without the words of the site's menus and buttons (open the home page and read the menu to avoid them), with a success criterion when possible. Show them and ask for confirmation.
 
 ## Step 2: automated audit
@@ -43,10 +43,10 @@ Each site has its own folder, `ux-validate-audits/<domain>/` (e.g. `ux-validate-
 Run, with the personas and tasks from Step 1 (each new task in its own `--task`):
 
 ```bash
-npx -y ux-validate@1.1.0 audit <url> --yes --personas <ids> --task "<task 1>" --task "<task 2>"
+npx -y ux-validate@1.1.1 audit <url> --yes --personas <ids> --task "<task 1>" --task "<task 2>"
 ```
 
-Use `--yes` only because the user already confirmed the authorization in rule 1. Leave out `--personas` and `--task` when the folder already has them. The command creates the folder, respects robots.txt, waits between pages, doesn't follow sign out/delete links, and writes a run folder `ux-validate-audits/<domain>/<date-time>/` with `checks-brief.md`, `checks.json`, screenshots, `color-vision/` and `aria/`. If you created personas or wrote tasks by hand, check them with `npx -y ux-validate@1.1.0 persona validate --dir ux-validate-audits/<domain>` and `npx -y ux-validate@1.1.0 task validate --dir ux-validate-audits/<domain>`.
+Use `--yes` only because the user already confirmed the authorization in rule 1. Leave out `--personas` and `--task` when the folder already has them. The command creates the folder, respects robots.txt, waits between pages, doesn't follow sign out/delete links, and writes a run folder `ux-validate-audits/<domain>/<date-time>/` with `checks-brief.md`, `checks.json`, screenshots, `color-vision/` and `aria/`. If you created personas or wrote tasks by hand, check them with `npx -y ux-validate@1.1.1 persona validate --dir ux-validate-audits/<domain>` and `npx -y ux-validate@1.1.1 task validate --dir ux-validate-audits/<domain>`.
 
 Read `checks-brief.md` (not `checks.json`; open it only for the details of a specific id). These issues **are already recorded**: don't repeat them as your own findings. When one of them hurts a persona in a specific way, create your own finding explaining the impact and cite its id in `relatedChecks`.
 
@@ -81,7 +81,7 @@ Once per audit (not per persona), unless `--only` excludes them:
 2. Build the report:
 
 ```bash
-npx -y ux-validate@1.1.0 report --dir ux-validate-audits/<domain>
+npx -y ux-validate@1.1.1 report --dir ux-validate-audits/<domain>
 ```
 
 3. If the folder has a previous run, compare: read its `findings.json` and `checks-brief.md` and show what was **resolved**, what **remains** and what is **new** (by title, page and element, not by id).
