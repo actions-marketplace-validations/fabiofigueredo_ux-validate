@@ -142,7 +142,8 @@ test('audit de ponta a ponta: respeita robots.txt, não segue sair/excluir, não
     assert.match(md, /## Plan for whoever maintains the site/);
     assert.doesNotMatch(md, /ux-fix/);
     assert.match(fs.readFileSync(path.join(runDir, 'checks-brief.md'), 'utf8'), /Not visited \(audit\)/);
-    assert.ok(lines.some((l) => /\/ux-audit/.test(l)));
+    // A dica do próximo passo (/ux-audit) não aparece no CI, como no check.
+    assert.equal(lines.some((l) => /\/ux-audit/.test(l)), !process.env.CI);
 
     // Na pasta da auditoria, fix e sarif não se aplicam (não há código).
     const { fix } = await import('../src/fix.js');
