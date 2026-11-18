@@ -17,7 +17,7 @@ export default {
 
 Usage:
   ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini|none] [--personas all|none|id,id]
-                     [--url <url>] [--start <command>]
+                     [--url <url>] [--start <command>] [--task "<task>" …]
                                                  Set up the project and install the commands in your AI tools
   ux-validate install-browser                    Install the browser (Chromium) for the Playwright version ux-validate uses
   ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
@@ -31,6 +31,8 @@ Usage:
   ux-validate persona validate [files…]          Check persona files (default: all in the project)
   ux-validate persona examples                   Show the predefined personas and their characteristics
   ux-validate persona add <id…|all> [--force]    Copy predefined personas into the project
+  ux-validate task new                           Create tasks for the personas to try (no step-by-step)
+  ux-validate task validate                      Check the tasks file
   ux-validate fix    [--run <dir>] [--ids A001,C003] [--severity high] [--dry-run] [--yes]
                                                  Apply the report's fixes with the model set up in init
                                                  (uses your API key and your tokens)
@@ -67,6 +69,7 @@ General options:
     targetsQ: 'Which AI tool will you use the commands in?',
     soon: '(coming soon)',
     unknownTool: 'Unknown AI tool: {list}. Use: {valid}.',
+    staticDetected: '\n  Static site detected in the {dir} folder: we suggest serving it with http-server on port 3000 (ux-validate starts and stops the server itself).\n',
     frameworkDetected: '\n  {name} project detected: we suggest the development server, where ux-validate can point to the component and file of each issue.\n',
     urlQ: 'URL of the app to test (e.g. http://localhost:3000):',
     startQ: 'Command to start the app (optional, e.g. npm run dev):',
@@ -110,22 +113,24 @@ General options:
       title: '\nNext steps:',
       personas: ({ dir, n }) =>
         `  1. ${n} persona(s) in ${dir}/. Adjust their goals to your product; to add more, use npx ux-validate persona new or the ux-persona command in your AI tool.`,
+      tasks: ({ n, file }) => `     ${n} task(s) in ${file}. To add more: npx ux-validate task new or the ux-task command.`,
+      noTasks: ({ file }) => `     No tasks in ${file} yet. Create them with npx ux-validate task new; ux-test will ask too.`,
       noPersonas: ({ dir }) =>
         `  1. No personas in ${dir}/ yet. Before testing, pick the predefined ones (npx ux-validate persona examples) or create your own (npx ux-validate persona new). ux-test will ask for this too.`,
       useTools: '  2. In your AI tool:',
       tools: {
         'claude-code':
           '     • Claude Code: open it in this project, approve the "playwright" MCP server and run /ux-test.\n' +
-          '       Also: /ux-persona, /ux-report, /ux-fix',
+          '       Also: /ux-task, /ux-persona, /ux-report, /ux-fix',
         cursor:
           '     • Cursor: open this project, enable the "playwright" MCP server in the MCP settings and run /ux-test in the agent chat.\n' +
-          '       Also: /ux-persona, /ux-report, /ux-fix',
+          '       Also: /ux-task, /ux-persona, /ux-report, /ux-fix',
         codex:
           '     • Codex CLI: run codex in this project and trust it (so .codex/config.toml loads the browser), then type $ux-test.\n' +
-          '       Also: $ux-persona, $ux-report, $ux-fix',
+          '       Also: $ux-task, $ux-persona, $ux-report, $ux-fix',
         gemini:
           '     • Gemini CLI: run gemini in this project (trust the folder if asked, so .gemini/settings.json loads the browser) and type /ux-test.\n' +
-          '       Also: /ux-persona, /ux-report, /ux-fix',
+          '       Also: /ux-task, /ux-persona, /ux-report, /ux-fix',
       },
       cliFix: '\n  Fixes from the terminal: npx ux-validate fix (model {provider} · {model}).',
       setKey: '  First, set {env} to your API key:',
@@ -220,6 +225,50 @@ General options:
       description: '"{text}" differs from the items next to it only by color. With {type}, it looks like the others and you can\'t tell which one is selected or active.',
       suggestion: 'Show the state another way too: underline or thicker border, bold, a check icon, and aria-current/aria-selected for screen readers.',
     },
+  },
+
+  tasks: {
+    fileHeader:
+      '# Tasks the simulated personas try in the app. Write the goal, not the path:\n' +
+      '# no step-by-step and no exact menu words. Format: .ux-validate/references/tasks-format.md',
+    intro:
+      '  Tasks: what the personas should try to do in the app, as in a usability test.\n' +
+      '  Write the goal, not the path: "You want to know how much the cheapest plan costs",\n' +
+      '  not "Click Pricing and check the price". Avoid the exact words of menus and buttons:\n' +
+      '  the point is to see whether the persona finds the way on their own.',
+    taskQ: 'Task {n} (leave empty to finish):',
+    successQ: '  How do you know it worked? (optional; e.g. "the page shows the price of the cheapest plan"):',
+    onlySomeQ: '  Does this task apply only to some personas?',
+    personasQ: '  Which personas?',
+    anotherQ: 'Add another task?',
+    needOne: 'Write at least one task.',
+    saved: ({ n, file }) => `✔ ${n} task(s) saved in ${file}`,
+    leading: ({ id, labels }) => `⚠ Task "${id}" uses the exact words of links or buttons on the site (${labels}): that gives the answer away. Rewrite it in the user's words, not the interface's.`,
+    validate: {
+      notObject: 'each task needs the id and task fields',
+      missingField: 'required field missing: {field}',
+      invalidId: 'invalid id "{id}": use lowercase letters, numbers and hyphens',
+      tooShort: "task too short: describe the persona's goal and context",
+      looksLikeSteps: 'looks like step-by-step instructions (click, menu, →…): describe the goal, not the path',
+      success: 'success must be text',
+      personas: 'personas must be a list of ids',
+      unknownPersonas: "persona(s) that don't exist in the project: {list}",
+      duplicateId: 'the id "{id}" appears more than once',
+      noneFound: 'No tasks in {file}. Create them with "npx ux-validate task new" or /ux-task.',
+      summary: '{ok} of {total} task(s) valid ({file}).',
+      failed: '{n} task(s) with errors.',
+    },
+  },
+
+  app: {
+    notRunning:
+      "Nothing is responding at {url}. Start the app first (e.g. npm run dev) or set app.start in ux-validate.config.yml " +
+      'so ux-validate starts it. For a plain HTML site, use for example: app.start: npx -y http-server <folder> -p 3000 -c-1',
+    starting: 'Starting the app: {command}',
+    started: '✔ App is up at {url}.',
+    exited: 'The command "{command}" ended before {url} responded. Check the command in app.start.',
+    timeout: "{url} didn't respond within {seconds}s after \"{command}\". Check the port in app.url and the command in app.start.",
+    staticLabel: 'Static site (HTML)',
   },
 
   checks: {
@@ -423,6 +472,17 @@ General options:
     colorVisionIntro: 'How each page looks to people with color blindness (about 1 in 12 men and 1 in 200 women). Compare the images: whatever disappears or looks the same is information these people lose.',
     colorVisionAlt: '{page} simulated with {type}',
     colorVisionIssues: ({ n }) => (n ? `${n} issue(s) for color-blind users` : 'no issues found by the color checks'),
+    tasksTitle: 'Tasks',
+    tasksIntro: "Each simulated persona tried the project's tasks with no step-by-step, starting from the home page. It's an AI simulation: it points out where the path may be unclear, but it doesn't replace a usability test with real people.",
+    tasksLegend: "✅ achieved · ⚠️ partly · ❌ not achieved · the number is how many steps · — the task doesn't apply to this persona",
+    task: 'Task',
+    notTested: 'not tested',
+    successCriterion: 'Success criterion',
+    firstClick: 'first click',
+    onPath: 'on the right path',
+    offPath: 'off the path',
+    backtracks: 'backtracks',
+    lostAt: 'Where they got lost',
     whereToFix: 'Where to fix',
     elements: 'Element(s)',
     element: 'Element',

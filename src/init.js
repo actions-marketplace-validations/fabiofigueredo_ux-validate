@@ -10,12 +10,15 @@ import { projectDictionary } from './spelling.js';
 import { t, getLocale, setLocale } from './i18n.js';
 import { loadPresets, describePersona, addPresets, newPersona, countPersonas } from './persona.js';
 import { detectFramework } from './react.js';
+import { detectStaticSite } from './app-server.js';
+import { askTasks, withIds, writeTasks, loadTasks, tasksFile } from './tasks.js';
 
 const CONTENT_LANGUAGES = ['pt-BR', 'en', 'es', 'other'];
 
-export async function init({ cwd, yes = false, force = false, tools, personas, url, start }) {
+export async function init({ cwd, yes = false, force = false, tools, personas, url, start, tasks }) {
   // Projeto React (Vite, Next.js, CRA…): a URL e o comando do servidor de desenvolvimento viram o padrão.
-  const framework = detectFramework(cwd);
+  // Sem React: um site só com HTML (index.html na raiz ou numa subpasta) é servido com http-server.
+  const framework = detectFramework(cwd) ?? detectStaticSite(cwd);
   const answers = yes ? defaultAnswers(tools, personas, framework) : await ask(framework);
   if (url) {
     const valid = validateUrl(url);
@@ -23,6 +26,7 @@ export async function init({ cwd, yes = false, force = false, tools, personas, u
     answers.url = url;
   }
   if (start != null) answers.start = start;
+  if (tasks?.length) answers.tasks = tasks.map((task) => ({ task: String(task).trim() })).filter((x) => x.task);
   setLocale(answers.locale);
   // Carrega os comandos antes de gravar qualquer arquivo, para não deixar uma instalação pela metade.
   const commands = loadCommands(answers.locale);
@@ -56,7 +60,37 @@ export async function init({ cwd, yes = false, force = false, tools, personas, u
   // para o assistente usar a pasta de personas e o idioma do conteúdo escolhidos.
   if (answers.createPersonas) await createPersonas(cwd);
 
+  // Passo obrigatório: as tarefas que as personas vão tentar (sem passo a passo). Pergunta depois das
+  // personas, para poder limitar uma tarefa a algumas delas. Não sobrescreve tarefas que já existem.
+  if (!answers.tasks && !yes) answers.tasks = await askTasks({ min: 1, personaIds: personaIdsIn(cwd) });
+  if (answers.tasks?.length) {
+    const { tasks: current } = loadTasks(cwd);
+    // Rodar o init de novo com as mesmas tarefas não as duplica.
+    const known = new Set(current.map((x) => String(x.task).trim().toLowerCase()));
+    const added = answers.tasks.filter((x) => !known.has(x.task.trim().toLowerCase()));
+    if (added.length) {
+      const file = writeTasks(cwd, withIds([...current, ...added]));
+      console.log(`\n${t('tasks.saved', { n: added.length, file: path.relative(cwd, file) })}`);
+    }
+  }
+
   printNextSteps(answers, cwd);
+}
+
+function personaIdsIn(cwd) {
+  const dir = path.join(cwd, WORK_DIR, 'personas');
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((f) => /\.ya?ml$/.test(f))
+    .map((f) => {
+      try {
+        return YAML.parse(fs.readFileSync(path.join(dir, f), 'utf8'))?.id;
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
 }
 
 /** Assistente de criação em sequência: pelo menos uma persona, depois quantas o usuário quiser. */
@@ -154,7 +188,7 @@ async function ask(framework) {
     // Várias ferramentas podem ser escolhidas: cada uma recebe os comandos no seu formato.
   });
 
-  if (framework) console.log(t('init.frameworkDetected', { name: framework.label }));
+  if (framework) console.log(framework.id === 'static' ? t('init.staticDetected', { dir: framework.dir }) : t('init.frameworkDetected', { name: framework.label }));
   const url = await input({ message: t('init.urlQ'), default: framework?.url ?? 'http://localhost:3000', validate: validateUrl });
   const start = await input({ message: t('init.startQ'), default: framework?.start ?? '' });
 
@@ -233,6 +267,7 @@ function renderConfig(a) {
     targets: a.targets,
     app: { url: a.url, ...(a.start ? { start: a.start } : {}) },
     personas: `${WORK_DIR}/personas`,
+    tasks: `${WORK_DIR}/tasks.yml`,
     viewports: a.viewports,
     language: a.language,
     spelling: { enabled: a.language !== 'other', ignore: [] },
@@ -259,6 +294,9 @@ function printNextSteps(a, cwd) {
   const n = countPersonas(cwd);
   const dir = `${WORK_DIR}/personas`;
   console.log(n ? t('init.next.personas', { dir, n }) : t('init.next.noPersonas', { dir }));
+  const { tasks } = loadTasks(cwd);
+  const file = path.relative(cwd, tasksFile(cwd));
+  console.log(tasks.length ? t('init.next.tasks', { n: tasks.length, file }) : t('init.next.noTasks', { file }));
   if (a.targets.length) {
     console.log(t('init.next.useTools'));
     for (const id of a.targets) console.log(t(`init.next.tools.${id}`));

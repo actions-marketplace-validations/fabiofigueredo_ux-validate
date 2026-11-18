@@ -17,7 +17,7 @@ export default {
 
 Uso:
   ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini|none] [--personas all|none|id,id]
-                     [--url <url>] [--start <comando>]
+                     [--url <url>] [--start <comando>] [--task "<tarefa>" …]
                                                  Configura o projeto e instala os comandos nas suas ferramentas de IA
   ux-validate install-browser                    Instala o navegador (Chromium) da versão do Playwright que o ux-validate usa
   ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
@@ -31,6 +31,8 @@ Uso:
   ux-validate persona validate [arquivos…]       Confere arquivos de persona (padrão: todos do projeto)
   ux-validate persona examples                   Mostra as personas pré-definidas e suas características
   ux-validate persona add <id…|all> [--force]    Copia personas pré-definidas para o projeto
+  ux-validate task new                           Cria tarefas para as personas tentarem (sem passo a passo)
+  ux-validate task validate                      Confere o arquivo de tarefas
   ux-validate fix    [--run <dir>] [--ids A001,C003] [--severity high] [--dry-run] [--yes]
                                                  Aplica as correções do relatório com o modelo configurado
                                                  no setup (usa a sua API key e os seus tokens)
@@ -67,6 +69,7 @@ Opções gerais:
     targetsQ: 'Em qual ferramenta de IA você vai usar os comandos?',
     soon: '(em breve)',
     unknownTool: 'Ferramenta de IA desconhecida: {list}. Use: {valid}.',
+    staticDetected: '\n  Site estático detectado na pasta {dir}: sugerimos servi-la com http-server na porta 3000 (o ux-validate inicia e encerra o servidor sozinho).\n',
     frameworkDetected: '\n  Projeto {name} detectado: sugerimos o servidor de desenvolvimento, onde o ux-validate consegue apontar o componente e o arquivo de cada problema.\n',
     urlQ: 'URL da aplicação a ser testada (ex.: http://localhost:3000):',
     startQ: 'Comando para subir a aplicação (opcional, ex.: npm run dev):',
@@ -110,22 +113,24 @@ Opções gerais:
       title: '\nPróximos passos:',
       personas: ({ dir, n }) =>
         `  1. ${n} persona(s) em ${dir}/. Ajuste os objetivos ao seu produto; para criar mais, use npx ux-validate persona new ou o comando ux-persona na sua ferramenta de IA.`,
+      tasks: ({ n, file }) => `     ${n} tarefa(s) em ${file}. Para criar mais: npx ux-validate task new ou o comando ux-task.`,
+      noTasks: ({ file }) => `     Nenhuma tarefa em ${file} ainda. Crie com npx ux-validate task new; o ux-test também vai pedir.`,
       noPersonas: ({ dir }) =>
         `  1. Nenhuma persona em ${dir}/ ainda. Antes de testar, escolha as pré-definidas (npx ux-validate persona examples) ou crie as suas (npx ux-validate persona new). O ux-test também vai pedir isso.`,
       useTools: '  2. Na sua ferramenta de IA:',
       tools: {
         'claude-code':
           '     • Claude Code: abra neste projeto, aprove o servidor MCP "playwright" e rode /ux-test.\n' +
-          '       Também: /ux-persona, /ux-report, /ux-fix',
+          '       Também: /ux-task, /ux-persona, /ux-report, /ux-fix',
         cursor:
           '     • Cursor: abra este projeto, ative o servidor MCP "playwright" nas configurações de MCP e rode /ux-test no chat do agente.\n' +
-          '       Também: /ux-persona, /ux-report, /ux-fix',
+          '       Também: /ux-task, /ux-persona, /ux-report, /ux-fix',
         codex:
           '     • Codex CLI: rode codex neste projeto e marque-o como confiável (para o .codex/config.toml carregar o navegador), depois digite $ux-test.\n' +
-          '       Também: $ux-persona, $ux-report, $ux-fix',
+          '       Também: $ux-task, $ux-persona, $ux-report, $ux-fix',
         gemini:
           '     • Gemini CLI: rode gemini neste projeto (confie na pasta se ele perguntar, para o .gemini/settings.json carregar o navegador) e digite /ux-test.\n' +
-          '       Também: /ux-persona, /ux-report, /ux-fix',
+          '       Também: /ux-task, /ux-persona, /ux-report, /ux-fix',
       },
       cliFix: '\n  Correções pelo terminal: npx ux-validate fix (modelo {provider} · {model}).',
       setKey: '  Antes, defina a variável {env} com a sua API key:',
@@ -220,6 +225,50 @@ Opções gerais:
       description: '"{text}" se diferencia dos itens vizinhos só pela cor. Com {type}, ele fica igual aos outros e não dá para saber qual está selecionado ou ativo.',
       suggestion: 'Marque o estado também de outro jeito: sublinhado ou borda mais grossa, negrito, ícone de check, e aria-current/aria-selected para leitores de tela.',
     },
+  },
+
+  tasks: {
+    fileHeader:
+      '# Tarefas que as personas simuladas tentam na aplicação. Escreva o objetivo, não o caminho:\n' +
+      '# sem passo a passo e sem as palavras exatas dos menus. Formato: .ux-validate/references/tasks-format.md',
+    intro:
+      '  Tarefas: o que as personas devem tentar fazer na aplicação, como num teste de usabilidade.\n' +
+      '  Escreva o objetivo, não o caminho: "Você quer saber quanto custa o plano mais barato",\n' +
+      '  e não "Clique em Planos e veja o preço". Evite as palavras exatas dos menus e botões:\n' +
+      '  o teste é justamente ver se a persona encontra o caminho sozinha.',
+    taskQ: 'Tarefa {n} (deixe vazio para terminar):',
+    successQ: '  Como saber que deu certo? (opcional; ex.: "a página mostra o preço do plano mais barato"):',
+    onlySomeQ: '  Esta tarefa vale só para algumas personas?',
+    personasQ: '  Para quais personas?',
+    anotherQ: 'Adicionar outra tarefa?',
+    needOne: 'Escreva pelo menos uma tarefa.',
+    saved: ({ n, file }) => `✔ ${n} tarefa(s) salva(s) em ${file}`,
+    leading: ({ id, labels }) => `⚠ A tarefa "${id}" usa as palavras exatas de links ou botões do site (${labels}): isso entrega a resposta. Reescreva com as palavras de quem usa, não as da interface.`,
+    validate: {
+      notObject: 'cada tarefa precisa dos campos id e task',
+      missingField: 'campo obrigatório ausente: {field}',
+      invalidId: 'id inválido "{id}": use letras minúsculas, números e hífen',
+      tooShort: 'tarefa muito curta: descreva o objetivo e o contexto da persona',
+      looksLikeSteps: 'parece um passo a passo (clique, menu, →…): descreva o objetivo, não o caminho',
+      success: 'success precisa ser um texto',
+      personas: 'personas precisa ser uma lista de ids',
+      unknownPersonas: 'persona(s) que não existem no projeto: {list}',
+      duplicateId: 'o id "{id}" aparece mais de uma vez',
+      noneFound: 'Nenhuma tarefa em {file}. Crie com "npx ux-validate task new" ou /ux-task.',
+      summary: '{ok} de {total} tarefa(s) válidas ({file}).',
+      failed: '{n} tarefa(s) com erro.',
+    },
+  },
+
+  app: {
+    notRunning:
+      'Nada está respondendo em {url}. Inicie a aplicação antes (ex.: npm run dev) ou configure app.start no ux-validate.config.yml ' +
+      'para o ux-validate iniciá-la sozinho. Para um site só com HTML, use por exemplo: app.start: npx -y http-server <pasta> -p 3000 -c-1',
+    starting: 'Iniciando a aplicação: {command}',
+    started: '✔ Aplicação no ar em {url}.',
+    exited: 'O comando "{command}" terminou antes de {url} responder. Confira o comando em app.start.',
+    timeout: '{url} não respondeu em {seconds}s depois de "{command}". Confira a porta em app.url e o comando em app.start.',
+    staticLabel: 'Site estático (HTML)',
   },
 
   checks: {
@@ -421,6 +470,17 @@ Opções gerais:
     colorVisionIntro: 'Como cada página aparece para pessoas com daltonismo (cerca de 1 em cada 12 homens e 1 em cada 200 mulheres). Compare as imagens: o que some ou fica igual é informação que essas pessoas perdem.',
     colorVisionAlt: '{page} simulada com {type}',
     colorVisionIssues: ({ n }) => (n ? `${n} problema(s) para quem tem daltonismo` : 'nenhum problema encontrado pelas checagens de cor'),
+    tasksTitle: 'Tarefas',
+    tasksIntro: 'Cada persona simulada tentou as tarefas do projeto sem passo a passo, partindo da página inicial. É uma simulação por IA: aponta onde o caminho pode não ser claro, mas não substitui um teste de usabilidade com pessoas reais.',
+    tasksLegend: '✅ cumpriu · ⚠️ cumpriu em parte · ❌ não cumpriu · o número é a quantidade de passos · — a tarefa não vale para essa persona',
+    task: 'Tarefa',
+    notTested: 'não testada',
+    successCriterion: 'Critério de sucesso',
+    firstClick: 'primeiro clique',
+    onPath: 'no caminho certo',
+    offPath: 'fora do caminho',
+    backtracks: 'voltas',
+    lostAt: 'Onde se perdeu',
     whereToFix: 'Onde corrigir',
     elements: 'Elemento(s)',
     element: 'Elemento',

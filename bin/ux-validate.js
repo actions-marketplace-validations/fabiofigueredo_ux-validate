@@ -20,6 +20,7 @@ const { positionals, values } = parseArgs({
     tools: { type: 'string' },
     personas: { type: 'string' },
     start: { type: 'string' },
+    task: { type: 'string', multiple: true },
     'fail-on': { type: 'string' },
     'artifact-url': { type: 'string' },
     'sarif-uploaded': { type: 'boolean' },
@@ -44,12 +45,13 @@ try {
       const { init } = await import('../src/init.js');
       await init({
         cwd: process.cwd(),
-        yes: values.yes || Boolean(values.tools) || Boolean(values.personas),
+        yes: values.yes || Boolean(values.tools) || Boolean(values.personas) || Boolean(values.task?.length),
         force: values.force,
         tools: values.tools,
         personas: values.personas,
         url: values.url,
         start: values.start,
+        tasks: values.task,
       });
       break;
     }
@@ -89,6 +91,18 @@ try {
       else if (action === 'add') addPresets({ cwd: process.cwd(), configPath: values.config, ids: files, force: values.force });
       else {
         console.error(`${t('cli.unknownCommand', { command: `persona ${action ?? ''}`.trim() })}\n`);
+        console.log(t('cli.help'));
+        process.exit(1);
+      }
+      break;
+    }
+    case 'task': {
+      const { newTasks, validateTasks } = await import('../src/tasks.js');
+      const [, action] = positionals;
+      if (action === 'new') await newTasks({ cwd: process.cwd(), configPath: values.config });
+      else if (action === 'validate') validateTasks({ cwd: process.cwd(), configPath: values.config });
+      else {
+        console.error(`${t('cli.unknownCommand', { command: `task ${action ?? ''}`.trim() })}\n`);
         console.log(t('cli.help'));
         process.exit(1);
       }

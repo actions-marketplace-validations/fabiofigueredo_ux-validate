@@ -31,7 +31,10 @@ Argumentos recebidos: `$ARGUMENTS`
    2. Pergunte o que ele prefere: **usar as pré-definidas** (todas ou só algumas), **criar as próprias** ou **as duas coisas**. Espere a resposta; não escolha por ele.
    3. Para as pré-definidas escolhidas, rode `{{PERSONA_ADD_CMD}} <ids>` (ou `all`). Para criar, siga o fluxo do comando `/ux-persona` (conversa, confirmação, arquivo YAML, validação).
    4. Só continue o teste quando houver pelo menos uma persona na pasta.
-3. Verifique se a aplicação responde na `app.url`. Se não responder e houver `app.start`, suba-a em segundo plano e espere ficar disponível (até ~60s). Se continuar fora do ar, pare e explique ao usuário.
+3. Leia as tarefas do projeto em `tasks` na configuração (padrão `{{WORK_DIR}}/tasks.yml`). O formato e como escrevê-las estão em `{{REFERENCES_DIR}}/tasks-format.md`. Se o arquivo parecer inválido, rode `{{TASK_VALIDATE_CMD}}` e mostre os erros.
+
+   **Se não houver tarefas, este passo é obrigatório antes de qualquer teste:** pergunte ao usuário o que as personas devem tentar fazer na aplicação, seguindo o fluxo do `/ux-task` (objetivos escritos como cenário, sem passo a passo, sem as palavras da interface e, quando possível, com critério de sucesso). Grave o arquivo, valide e só continue quando houver pelo menos uma tarefa.
+4. Verifique se a aplicação responde na `app.url`. Se não responder e houver `app.start`, rode **exatamente esse comando** em segundo plano e espere ficar disponível (até ~60s); ela precisa continuar no ar enquanto você navega. **Não improvise outro comando** para subir a aplicação: se não houver `app.start`, ou se continuar fora do ar, pare e peça ao usuário para iniciá-la ou configurar o `app.start` (para um site só com HTML, por exemplo `npx -y http-server <pasta> -p 3000 -c-1`).
 
 ## Passo 2: checagens fixas
 
@@ -50,12 +53,19 @@ Leia o `checks.json`. Esses problemas **já estão registrados**: não os repita
 Para cada persona, use as ferramentas de navegador do Playwright MCP (`browser_resize`, `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_take_screenshot` etc.):
 
 1. Ajuste a janela ao viewport da persona: mobile 390×844, tablet 768×1024, desktop 1440×900.
-2. Abra a `app.url`. Para **cada objetivo** da persona:
+2. **Primeiro as tarefas.** Abra o `start` da tarefa (padrão `app.url`) e, para **cada tarefa** que vale para a persona (sem o campo `personas`, ou com o id dela na lista):
+   - Leia só o texto de `task`, como a persona ouviria de quem conduz o teste. **Não use o que você sabe do código, das rotas ou das personas anteriores**: nada de digitar URLs, nada de busca no site a menos que a persona pensasse nisso, nada de atalhos. O objetivo é ver se a interface a leva até lá.
+   - Anote o **primeiro clique** (ou toque) e se ele levou na direção do objetivo (`onPath`). É o melhor indicador de sucesso.
+   - Conte os passos e as **voltas** (voltar, reabrir o menu, refazer o caminho). Pare como nos objetivos, abaixo.
+   - Julgue o resultado pelo `success`, quando a tarefa tiver; `partial` quando ela chegou por acaso ou sem ter certeza.
+   - Onde ela se perdeu ou desistiu, tire um screenshot (`lostAt`) e registre o motivo em `notes`. Crie achados para as causas (rótulos pouco claros, informação em lugar inesperado, link que falta) e liste-os em `blockers`.
+   - Antes da próxima tarefa, volte à página de partida: cada tarefa começa do zero.
+3. Depois, para **cada objetivo** da persona:
    - Tente cumpri-lo partindo da página inicial, como ela faria. Use `browser_snapshot` para ler a página e decidir o próximo passo.
    - Conte cada ação (clique, digitação, rolagem para procurar algo) como um passo. Pare quando cumprir o objetivo, quando chegar a `maxStepsPerGoal` ou antes, se o comportamento da persona indicar que ela desistiria (ex.: `patience: baixa` desiste após 3 ou 4 passos sem progresso visível).
    - Registre o caminho (URLs visitadas), o resultado (`success`, `partial` ou `fail`) e, em `notes`, o momento exato em que hesitou ou travou e por quê.
    - Em cada ponto de atrito, tire um screenshot com `browser_take_screenshot` e salve-o em `<pasta da execução>/screenshots/` com nome descritivo (ex.: `ana-checkout-botao-escondido.png`).
-3. Ao longo do caminho, avalie as quatro categorias pelo olhar da persona, usando `{{REFERENCES_DIR}}/heuristics.md`, `{{REFERENCES_DIR}}/content-guidelines.md` e `{{REFERENCES_DIR}}/wai-aria.md`:
+4. Ao longo do caminho, avalie as quatro categorias pelo olhar da persona, usando `{{REFERENCES_DIR}}/heuristics.md`, `{{REFERENCES_DIR}}/content-guidelines.md` e `{{REFERENCES_DIR}}/wai-aria.md`:
    - **Conteúdo**: ela entende os textos? Jargão, termos em inglês sem explicação, tom inadequado, informação que ela procura e não acha, textos contraditórios ou genéricos demais.
    - **Navegação**: ela sabe onde está e como voltar? Menus claros, rótulos que dizem para onde levam, becos sem saída, passos desnecessários, feedback após ações.
    - **Interface**: ela consegue ver e usar? Tamanho e legibilidade para a visão dela, alvos de toque no celular, estados de carregamento e erro, consistência visual, elementos que parecem clicáveis e não são (ou o contrário).
@@ -110,6 +120,8 @@ Para cada achado seu, procure no código do projeto o arquivo provável. Busque 
 
 3. Responda ao usuário com:
    - a tabela de notas por persona (está no topo do `report.md`);
+   - a tabela de tarefas (tarefa × persona) e, para cada tarefa que falhou, onde as personas se perderam;
+   - os avisos do `checks.json` (`taskWarnings`) sobre tarefas que usam as palavras da própria interface: sugira reescrevê-las;
    - os objetivos que falharam e o motivo, em uma linha cada;
    - os 5 problemas mais importantes, com o arquivo provável de correção;
    - o caminho do `report.html` para ver tudo com screenshots;

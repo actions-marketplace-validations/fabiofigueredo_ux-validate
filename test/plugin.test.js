@@ -30,7 +30,7 @@ test('manifesto, marketplace e MCP do plugin', () => {
 
 test('skills: frontmatter, nomes com prefixo do plugin, CLI fixada na versão e referências existentes', () => {
   const skills = fs.readdirSync(path.join(PLUGIN_DIR, 'skills')).sort();
-  assert.deepEqual(skills, ['ux-fix', 'ux-persona', 'ux-report', 'ux-setup', 'ux-test']);
+  assert.deepEqual(skills, ['ux-fix', 'ux-persona', 'ux-report', 'ux-setup', 'ux-task', 'ux-test']);
   for (const name of skills) {
     const text = read(`skills/${name}/SKILL.md`);
     const [, fm, body] = text.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -40,7 +40,7 @@ test('skills: frontmatter, nomes com prefixo do plugin, CLI fixada na versão e 
     assert.equal(meta['disable-model-invocation'], true, `${name}: só roda quando chamada`);
     assert.equal(meta['allowed-tools'], `Bash(npx -y ux-validate@${pkg.version} *)`);
     assert.doesNotMatch(body, /\{\{\w+\}\}/, `${name}: marcador sem substituir`);
-    assert.doesNotMatch(body, /(^|[\s`(])\/ux-(test|report|fix|persona|setup)\b/m, `${name}: comando sem o prefixo do plugin`);
+    assert.doesNotMatch(body, /(^|[\s`(])\/ux-(test|report|fix|persona|task|setup)\b/m, `${name}: comando sem o prefixo do plugin`);
     assert.match(body, /Language:\*\* read `locale`/, `${name}: instrução de idioma`);
     for (const cmd of body.matchAll(/npx (?:-y )?ux-validate(@[\w.-]+)? /g)) assert.equal(cmd[1], `@${pkg.version}`, `${name}: ${cmd[0]}`);
     for (const ref of body.matchAll(/\$\{CLAUDE_PLUGIN_ROOT\}\/(references\/[\w.-]+\.md)/g)) {

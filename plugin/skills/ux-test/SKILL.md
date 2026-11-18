@@ -5,7 +5,7 @@ description: Tests the web app's content, navigation, interface and
   issues and how to fix them.
 argument-hint: "[persona] [--only content|navigation|ui|accessibility]"
 disable-model-invocation: true
-allowed-tools: Bash(npx -y ux-validate@0.5.1 *)
+allowed-tools: Bash(npx -y ux-validate@0.6.1 *)
 ---
 
 # /ux-validate:ux-test
@@ -33,21 +33,24 @@ Write everything (findings, summaries, your answer) in English.
 ## Step 1: prepare
 
 1. Read `ux-validate.config.yml`. It has `app.url`, the `app.start` command (optional), the `viewports`, the personas folder and `agent.maxStepsPerGoal`.
-2. Read the personas in the configured folder (default `.ux-validate/personas/*.yml`). The format is in `${CLAUDE_PLUGIN_ROOT}/references/persona-format.md`. If a file looks invalid, run `npx -y ux-validate@0.5.1 persona validate` and show the errors.
+2. Read the personas in the configured folder (default `.ux-validate/personas/*.yml`). The format is in `${CLAUDE_PLUGIN_ROOT}/references/persona-format.md`. If a file looks invalid, run `npx -y ux-validate@0.6.1 persona validate` and show the errors.
 
    **If there are no personas, this step is mandatory before any test:**
-   1. Run `npx -y ux-validate@0.5.1 persona examples` and show the user the predefined personas with each one's characteristics: who they are, device, tech literacy, vision, patience, reading level, goals and expectations. Don't summarize so much that the characteristics disappear: the user decides based on them.
+   1. Run `npx -y ux-validate@0.6.1 persona examples` and show the user the predefined personas with each one's characteristics: who they are, device, tech literacy, vision, patience, reading level, goals and expectations. Don't summarize so much that the characteristics disappear: the user decides based on them.
    2. Ask what they prefer: **use the predefined ones** (all or only some), **create their own**, or **both**. Wait for the answer; don't choose for them.
-   3. For the chosen predefined personas, run `npx -y ux-validate@0.5.1 persona add <ids>` (or `all`). To create one, follow the `/ux-validate:ux-persona` flow (conversation, confirmation, YAML file, validation).
+   3. For the chosen predefined personas, run `npx -y ux-validate@0.6.1 persona add <ids>` (or `all`). To create one, follow the `/ux-validate:ux-persona` flow (conversation, confirmation, YAML file, validation).
    4. Only continue the test once the folder has at least one persona.
-3. Check that the app responds at `app.url`. If it doesn't and there is an `app.start`, start it in the background and wait until it is available (up to ~60s). If it is still down, stop and explain to the user.
+3. Read the project's tasks in `tasks` from the config (default `.ux-validate/tasks.yml`). The format and how to write them are in `${CLAUDE_PLUGIN_ROOT}/references/tasks-format.md`. If the file looks invalid, run `npx -y ux-validate@0.6.1 task validate` and show the errors.
+
+   **If there are no tasks, this step is mandatory before any test:** ask the user what the personas should try to do in the app, following the `/ux-validate:ux-task` flow (goals written as scenarios, no step-by-step, no interface words, with a success criterion when possible). Write the file, validate it, and only continue once there is at least one task.
+4. Check that the app responds at `app.url`. If it doesn't and there is an `app.start`, run **exactly that command** in the background and wait until it is available (up to ~60s); it must stay up while you browse. **Don't improvise another command** to start the app: if there is no `app.start`, or the app is still down, stop and ask the user to start it or to set `app.start` (for a plain HTML site, e.g. `npx -y http-server <folder> -p 3000 -c-1`).
 
 ## Step 2: automated checks
 
 Run:
 
 ```bash
-npx -y ux-validate@0.5.1 check
+npx -y ux-validate@0.6.1 check
 ```
 
 This creates a run folder at `.ux-validate/runs/<date-time>/` with `checks.json` (accessibility via axe-core and WAI-ARIA, keyboard navigation, broken links, console errors, horizontal scrolling, placeholder text, spelling, color vision), screenshots, in `color-vision/` each page as people with color blindness see it and, in `aria/`, each page's accessibility tree (what a screen reader announces). Note the folder path: everything from this run goes there.
@@ -59,12 +62,19 @@ Read `checks.json`. These issues **are already recorded**: don't repeat them as 
 For each persona, use the Playwright MCP browser tools (`browser_resize`, `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_take_screenshot`, etc.):
 
 1. Resize the window to the persona's viewport: mobile 390×844, tablet 768×1024, desktop 1440×900.
-2. Open `app.url`. For **each goal** of the persona:
+2. **Tasks first.** Open the task's `start` (default `app.url`) and, for **each task** that applies to the persona (no `personas` field, or the persona's id listed in it):
+   - Read only the `task` text, as the persona would hear it from a facilitator. **Don't use what you know from the code, routes or previous personas**: no typed URLs, no site search unless the persona would think of it, no shortcuts. The point is to see whether the interface leads them there.
+   - Write down the **first click** (or tap) and whether it led toward the goal (`onPath`). It is the best predictor of success.
+   - Count steps and **backtracks** (going back, reopening the menu, retracing the path). Stop as in the goals below.
+   - Judge the outcome by `success` when the task has it; `partial` when they got there by luck or weren't sure they had.
+   - Where they got lost or gave up, take a screenshot (`lostAt`) and record why in `notes`. Create findings for the causes (unclear labels, information in an unexpected place, missing link) and list them in `blockers`.
+   - Before the next task, go back to the starting page: each task starts fresh.
+3. Then, for **each goal** of the persona:
    - Try to achieve it starting from the home page, the way they would. Use `browser_snapshot` to read the page and decide the next step.
    - Count each action (click, typing, scrolling to look for something) as one step. Stop when the goal is achieved, when you reach `maxStepsPerGoal`, or earlier if the persona's behavior says they would give up (e.g. `patience: low` gives up after 3 or 4 steps without visible progress).
    - Record the path (URLs visited), the outcome (`success`, `partial` or `fail`) and, in `notes`, the exact moment they hesitated or got stuck and why.
    - At each friction point, take a screenshot with `browser_take_screenshot` and save it in `<run folder>/screenshots/` with a descriptive name (e.g. `anna-checkout-hidden-button.png`).
-3. Along the way, evaluate the four categories through the persona's eyes, using `${CLAUDE_PLUGIN_ROOT}/references/heuristics.md`, `${CLAUDE_PLUGIN_ROOT}/references/content-guidelines.md` and `${CLAUDE_PLUGIN_ROOT}/references/wai-aria.md`:
+4. Along the way, evaluate the four categories through the persona's eyes, using `${CLAUDE_PLUGIN_ROOT}/references/heuristics.md`, `${CLAUDE_PLUGIN_ROOT}/references/content-guidelines.md` and `${CLAUDE_PLUGIN_ROOT}/references/wai-aria.md`:
    - **Content**: do they understand the text? Jargon, unexplained foreign terms, wrong tone, information they look for and can't find, contradictory or overly generic text.
    - **Navigation**: do they know where they are and how to go back? Clear menus, labels that say where they lead, dead ends, unnecessary steps, feedback after actions.
    - **Interface**: can they see it and use it? Size and readability for their eyesight, touch targets on mobile, loading and error states, visual consistency, things that look clickable and aren't (or the other way around).
@@ -114,11 +124,13 @@ For each of your findings, look in the project's code for the likely file. Searc
 2. Build the report:
 
 ```bash
-npx -y ux-validate@0.5.1 report --run <run folder>
+npx -y ux-validate@0.6.1 report --run <run folder>
 ```
 
 3. Answer the user with:
    - the table of scores by persona (at the top of `report.md`);
+   - the tasks table (task × persona) and, for each task that failed, where the personas got lost;
+   - any warning from `checks.json` (`taskWarnings`) about tasks that use the interface's own words: suggest rewriting them;
    - the goals that failed and why, one line each;
    - the 5 most important issues, with the likely file to fix;
    - the path to `report.html` to see everything with screenshots;

@@ -36,6 +36,7 @@ export const commandVars = (locale) => ({
   PERSONA_VALIDATE_CMD: 'npx ux-validate persona validate',
   PERSONA_EXAMPLES_CMD: 'npx ux-validate persona examples',
   PERSONA_ADD_CMD: 'npx ux-validate persona add',
+  TASK_VALIDATE_CMD: 'npx ux-validate task validate',
 });
 
 /** `overrides` troca valores dos placeholders (ex.: o plugin do Claude Code aponta para os próprios arquivos). */

@@ -23,6 +23,19 @@ Arquivo escrito pelo agente em `.ux-validate/runs/<execução>/findings.json`. O
           "notes": "Achou pelo menu, mas hesitou porque o item se chama 'Pricing'.",
           "blockers": []
         }
+      ],
+      "tasks": [
+        {
+          "id": "preco-plano-barato",
+          "outcome": "partial",
+          "steps": 6,
+          "firstClick": { "label": "Produtos", "onPath": false },
+          "backtracks": 2,
+          "path": ["http://localhost:3000/", "http://localhost:3000/produtos", "http://localhost:3000/planos"],
+          "notes": "Esperava o preço em Produtos; voltou e achou em 'Assinaturas', mas não teve certeza de que era o mais barato.",
+          "lostAt": { "page": "http://localhost:3000/produtos", "screenshot": "screenshots/dona-maria-tarefa-preco-produtos.png" },
+          "blockers": ["A001"]
+        }
       ]
     }
   ],
@@ -56,7 +69,11 @@ Arquivo escrito pelo agente em `.ux-validate/runs/<execução>/findings.json`. O
 | Campo | Valores | Observação |
 |---|---|---|
 | `outcome` | `success`, `partial`, `fail` | `partial` = cumpriu com ajuda de sorte ou sem certeza de ter conseguido |
-| `blockers` | ids de achados | Achados que impediram ou atrasaram o objetivo |
+| `blockers` | ids de achados | Achados que impediram ou atrasaram o objetivo ou a tarefa |
+| `tasks[].id` | id do `tasks.yml` | Uma entrada por tarefa que vale para a persona (veja `tasks-format.md`) |
+| `tasks[].firstClick` | `{ label, onPath }` | A primeira coisa em que a persona clicou ou tocou, e se isso a levou na direção do objetivo |
+| `tasks[].backtracks` | número | Quantas vezes ela voltou ou refez o caminho |
+| `tasks[].lostAt` | `{ page, screenshot }` | Onde ela se perdeu ou desistiu, com captura de tela |
 | `category` | `content`, `navigation`, `ui`, `accessibility` | Uma por achado; se tocar duas, escolha a da causa. Problemas de teclado, leitor de tela, ARIA e WCAG vão em `accessibility` |
 | `severity` | `critical`, `high`, `medium`, `low` | Ver tabela abaixo |
 | `personas` | ids das personas afetadas | Obrigatório e não vazio |
