@@ -272,6 +272,9 @@ General options:
   },
 
   checks: {
+    next:
+      '\nThat was the automated part (no AI). For the complete validation, with personas and tasks, run /ux-test in your AI\n' +
+      'tool (in Codex, $ux-test; with the Claude Code plugin, /ux-validate:ux-test). To see just this result: npx ux-validate report',
     crawling: 'Crawling {url} (up to {max} pages)…',
     invalidFailOn: 'Invalid --fail-on value: {value}. Use: {valid}.',
     failOn: ({ n, severity }) => `\n✖ ${n} ${n === 1 ? 'issue' : 'issues'} with severity "${severity}" or higher (--fail-on).`,
@@ -483,6 +486,7 @@ General options:
     offPath: 'off the path',
     backtracks: 'backtracks',
     lostAt: 'Where they got lost',
+    onlyChecks: 'This report has only the automated checks (no AI). Personas and tasks have not been tested yet: run /ux-test in your AI tool for the complete validation.',
     whereToFix: 'Where to fix',
     elements: 'Element(s)',
     element: 'Element',
@@ -653,6 +657,7 @@ Rules:
   },
 
   comment: {
+    written: '✔ Comment written to {file}',
     title: 'ux-validate',
     noIssues: '✅ No issues found by the automated checks.',
     failing: ({ n, severity }) => `❌ **${n} ${n === 1 ? 'issue' : 'issues'}** with severity ${severity.toLowerCase()} or higher: this check fails.`,

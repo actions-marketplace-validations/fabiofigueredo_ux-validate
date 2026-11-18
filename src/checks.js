@@ -141,6 +141,8 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
       }),
     );
     console.log(`  ${path.relative(cwd, path.join(runDir, 'checks.json'))}`);
+    // O check é só a parte automática: diz como seguir para a validação completa (fora do CI).
+    if (!process.env.CI) console.log(t('checks.next'));
 
     // --fail-on: código de saída 2 se houver problema dessa gravidade ou mais grave (para o CI).
     if (failOn) {

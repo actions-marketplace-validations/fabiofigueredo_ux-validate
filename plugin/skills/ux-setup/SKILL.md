@@ -4,7 +4,7 @@ description: Sets up ux-validate in the current project (app URL, language,
   personas and tasks) so the other ux-validate skills can run.
 argument-hint: "[app URL]"
 disable-model-invocation: true
-allowed-tools: Bash(npx -y ux-validate@0.6.1 *)
+allowed-tools: Bash(npx -y ux-validate@1.0.0 *)
 ---
 
 # /ux-validate:ux-setup
@@ -19,23 +19,23 @@ Arguments received: `$ARGUMENTS` (optionally, the URL of the app to test).
 
 1. **Existing setup.** If `ux-validate.config.yml` already exists, show its main values (`locale`, `app.url`, `app.start`, `language`) and the personas in `.ux-validate/personas/`, and ask whether the user wants to change anything. If not, stop and suggest `/ux-validate:ux-test`.
 2. **Language.** Ask which language ux-validate should use for messages and the report: English (`en`) or Portuguese (`pt-BR`). Default: the language the user is writing in. From now on, talk to the user in that language.
-3. **App URL and start command.** Read `package.json` (if any) to suggest them: Vite → `http://localhost:5173` and `npm run dev`; Next.js or Create React App → `http://localhost:3000`. For a plain HTML site (an `index.html` in the root or in a subfolder, no framework), suggest `http://localhost:3000` and `npx -y http-server <folder> -p 3000 -c-1`. Otherwise ask. With a start command, `npx -y ux-validate@0.6.1 check` starts the app when it isn't running and stops it at the end; leave it empty only if the app is already running or deployed.
+3. **App URL and start command.** Read `package.json` (if any) to suggest them: Vite → `http://localhost:5173` and `npm run dev`; Next.js or Create React App → `http://localhost:3000`. For a plain HTML site (an `index.html` in the root or in a subfolder, no framework), suggest `http://localhost:3000` and `npx -y http-server <folder> -p 3000 -c-1`. Otherwise ask. With a start command, `npx -y ux-validate@1.0.0 check` starts the app when it isn't running and stops it at the end; leave it empty only if the app is already running or deployed.
 4. **Personas (required step).** ux-validate tests the app through each persona's eyes, so the project needs at least one.
-   - Run `npx -y ux-validate@0.6.1 persona examples --lang <language>` and show the user the predefined personas with each one's characteristics (who they are, device, tech literacy, vision, patience, reading level, goals, expectations). Don't summarize them away: the user decides based on them.
+   - Run `npx -y ux-validate@1.0.0 persona examples --lang <language>` and show the user the predefined personas with each one's characteristics (who they are, device, tech literacy, vision, patience, reading level, goals, expectations). Don't summarize them away: the user decides based on them.
    - Ask whether they want to **use the predefined ones** (all or only some), **create their own**, or **both**. Wait for the answer.
 5. **Write the setup.** Run, with the values chosen (quote the start command; leave `--start` out if empty):
 
 ```bash
-npx -y ux-validate@0.6.1 init --tools none --lang <language> --url <url> --start "<command>" --personas <ids separated by commas | all | none>
+npx -y ux-validate@1.0.0 init --tools none --lang <language> --url <url> --start "<command>" --personas <ids separated by commas | all | none>
 ```
 
    Use `--personas none` when the user only wants their own personas. Then, if they want their own, follow the `/ux-validate:ux-persona` flow for each one.
-6. **Tasks (required step).** Ask what the personas should try to do in the app, following the `/ux-validate:ux-task` flow: goals written as scenarios, no step-by-step, no interface words, with a success criterion when possible. At least one task. Save them in `.ux-validate/tasks.yml` and validate with `npx -y ux-validate@0.6.1 task validate`.
+6. **Tasks (required step).** Ask what the personas should try to do in the app, following the `/ux-validate:ux-task` flow: goals written as scenarios, no step-by-step, no interface words, with a success criterion when possible. At least one task. Save them in `.ux-validate/tasks.yml` and validate with `npx -y ux-validate@1.0.0 task validate`.
 7. **Content language.** `language` in the config is the language of the app's content, used by the spell check (default: the same as the tool). If the app's text is in another language (e.g. tool in Portuguese, site in English), change `language` in `ux-validate.config.yml` (`pt-BR`, `en`, `es`, or `other` to turn off the spell check).
 8. **Browser.** Install the browser the automated checks use (once per machine):
 
 ```bash
-npx -y ux-validate@0.6.1 install-browser
+npx -y ux-validate@1.0.0 install-browser
 ```
 
 9. **Done.** Summarize what was created (`ux-validate.config.yml`, `.ux-validate/personas/`, `.ux-validate/tasks.yml`, `.ux-validate/references/`) and tell the user they can run `/ux-validate:ux-test` now (with the app running, or with `app.start` set).
