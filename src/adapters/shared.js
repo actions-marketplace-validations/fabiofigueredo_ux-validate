@@ -40,6 +40,6 @@ export function registerJsonMcp(cwd, rel) {
 export function adaptBody(body, { args, prefix = '/' }) {
   let out = body.replaceAll('`$ARGUMENTS`', args).replaceAll('$ARGUMENTS', args);
   // Função de substituição: com uma string, um prefixo "$" seria lido como padrão especial ($$, $1…).
-  if (prefix !== '/') out = out.replace(/(^|[\s`(])\/(ux-(?:test|report|fix|persona|task))\b/g, (_, before, name) => `${before}${prefix}${name}`);
+  if (prefix !== '/') out = out.replace(/(^|[\s`(])\/(ux-(?:test|report|fix|persona|task|audit))\b/g, (_, before, name) => `${before}${prefix}${name}`);
   return out;
 }

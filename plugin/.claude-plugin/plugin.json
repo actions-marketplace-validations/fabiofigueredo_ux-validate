@@ -1,6 +1,6 @@
 {
   "name": "ux-validate",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Persona-based testing of web app content, navigation, interface and accessibility (WCAG, WAI-ARIA, color blindness), with a report and fixes.",
   "author": {
     "name": "Fabio Figueredo",

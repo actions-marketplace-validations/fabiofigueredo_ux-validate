@@ -8,7 +8,8 @@ import { VIEWPORTS, SEVERITY_ORDER, loadConfig, newRunDir } from './config.js';
 import { runAriaChecks } from './aria.js';
 import { runColorVisionChecks } from './color.js';
 import { leadingLabels, loadTasks } from './tasks.js';
-import { ensureAppRunning } from './app-server.js';
+import { ensureAppRunning, isUp } from './app-server.js';
+import { ROBOTS_AGENT, loadRobots } from './robots.js';
 import { checkSpelling, createSpeller } from './spelling.js';
 import { annotateFindings, checkClientNavigation, classifyConsole, cleanReactMessage, detectReact, isReactMessage } from './react.js';
 import { t, getLocale } from './i18n.js';
@@ -37,6 +38,12 @@ function axeLocale() {
   return axeLocaleCache[file];
 }
 
+// Auditoria de site publicado: links que não seguimos, porque podem encerrar a sessão ou mudar dados.
+export const UNSAFE_LINK = /\b(log[\s_-]?out|log[\s_-]?off|sign[\s_-]?out|sair|desconectar|deslogar|excluir|apagar|delete|remove|remover|cancelar|cancel|unsubscribe|descadastrar)\b/i;
+const PROJECT_URL = 'https://github.com/fabiofigueredo/ux-validate';
+const VERSION = createRequire(import.meta.url)('../package.json').version;
+const sleep = (ms) => (ms > 0 ? new Promise((r) => setTimeout(r, ms)) : null);
+
 const AXE_SEVERITY = { critical: 'critical', serious: 'high', moderate: 'medium', minor: 'low' };
 
 // Textos que não deveriam chegar ao usuário final (comuns em código gerado por IA).
@@ -57,23 +64,40 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
   }
   const config = loadConfig(cwd, configPath, { optional: Boolean(url) });
   const startUrl = url ?? config.app.url;
-  const runDir = out ? path.resolve(cwd, out) : newRunDir(cwd);
+  // Auditoria de site publicado (ux-validate audit): nunca inicia a aplicação, respeita o robots.txt,
+  // espera entre as páginas, se identifica e não segue links de sair/excluir.
+  const audit = config.mode === 'audit';
+  if (audit && !(await isUp(startUrl, 15000, { 'user-agent': `${ROBOTS_AGENT}/${VERSION} (+${PROJECT_URL})` }))) throw new Error(t('audit.unreachable', { url: startUrl }));
+  const runDir = out ? path.resolve(cwd, out) : newRunDir(cwd, configPath);
   fs.mkdirSync(path.join(runDir, 'screenshots'), { recursive: true });
 
   // Sobe a aplicação com app.start, se ela não estiver no ar (e a encerra no fim).
-  const app = await ensureAppRunning({ url: startUrl, start: config.app.start, cwd });
+  const app = audit ? { stop: () => {} } : await ensureAppRunning({ url: startUrl, start: config.app.start, cwd });
   const browser = await chromium.launch(
     process.env.UX_VALIDATE_CHROMIUM ? { executablePath: process.env.UX_VALIDATE_CHROMIUM } : {},
   );
+  const contextOptions = {};
+  let robots = null;
+  if (audit) {
+    contextOptions.userAgent = await auditUserAgent(browser);
+    robots = await loadRobots(startUrl, { userAgent: contextOptions.userAgent });
+    if (!robots.allowed(startUrl)) {
+      await browser.close();
+      throw new Error(t('audit.robotsStart', { url: startUrl, robots: robots.url }));
+    }
+    console.log(robots.found ? t('audit.robotsRead', { n: robots.rules.filter((r) => !r.allow).length }) : t('audit.robotsNone'));
+  }
+  const skipped = [];
   const findings = [];
   const add = (f) => findings.push({ id: `C${String(findings.length + 1).padStart(3, '0')}`, ...f });
 
   try {
     console.log(t('checks.crawling', { url: startUrl, max: config.crawl.maxPages }));
-    const { pages, react } = await crawl(browser, startUrl, config, add);
+    const { pages, react } = await crawl(browser, startUrl, config, add, { contextOptions, robots, skipped, audit });
     if (!pages.length) throw new Error(t('checks.cannotOpen', { url: startUrl }));
     if (react) console.log(t(react.dev ? 'react.detectedDev' : 'react.detectedProd', { version: react.version ? ` ${react.version}` : '' }));
     const sourceMaps = new Map();
+    if (audit && !config.languageSet) config.language = pages.find((p) => p.ok && p.lang)?.lang || config.language;
 
     let speller = null;
     if (config.spelling.enabled) {
@@ -89,7 +113,7 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
     const keyboardViewport = config.viewports.includes('desktop') ? 'desktop' : config.viewports[0];
     for (const vpName of config.viewports) {
       console.log(t('checks.analyzing', { n: pages.length, viewport: vpName }));
-      const context = await browser.newContext({ viewport: VIEWPORTS[vpName], ...pick(VIEWPORTS[vpName]) });
+      const context = await browser.newContext({ viewport: VIEWPORTS[vpName], ...pick(VIEWPORTS[vpName]), ...contextOptions });
       for (const p of pages.filter((p) => p.ok)) {
         await inspectPage(context, p, vpName, runDir, add, {
           checkContent: vpName === config.viewports[0],
@@ -101,6 +125,7 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
           speller,
           react: react?.dev ? { cwd, sourceMaps } : null,
         });
+        await sleep(config.crawl.delayMs);
       }
       await context.close();
     }
@@ -126,6 +151,7 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
       viewports: config.viewports,
       ...(react ? { app: { framework: react.next ? 'next' : 'react', react } } : {}),
       ...(taskWarnings.length ? { taskWarnings } : {}),
+      ...(audit ? { mode: 'audit', robots: robots.found ? robots.url : null, skipped } : {}),
       pages: pages.map(({ url, status, title, ok, soft404, screenshots, ariaTree, colorVision, linksTo }) => ({ url, status, title, ok, ...(soft404 ? { soft404 } : {}), screenshots, ariaTree, ...(colorVision ? { colorVision } : {}), linksTo })),
       findings: dedupe(findings),
     };
@@ -143,9 +169,10 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
         low: count('low'),
       }),
     );
-    console.log(`  ${path.relative(cwd, path.join(runDir, 'checks.json'))}`);
+    // Na auditoria, o comando audit mostra o caminho do relatório (relativo à pasta onde foi chamado).
+    if (!audit) console.log(`  ${path.relative(cwd, path.join(runDir, 'checks.json'))}`);
     // O check é só a parte automática: diz como seguir para a validação completa (fora do CI).
-    if (!process.env.CI) console.log(t('checks.next'));
+    if (!process.env.CI && !audit) console.log(t('checks.next'));
 
     // --fail-on: código de saída 2 se houver problema dessa gravidade ou mais grave (para o CI).
     if (failOn) {
@@ -161,6 +188,15 @@ export async function runChecks({ cwd, configPath, out, url, failOn }) {
     await browser.close();
     app.stop();
   }
+}
+
+/** O navegador de sempre, identificado: o dono do site vê nos logs quem fez as visitas. */
+async function auditUserAgent(browser) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const ua = await page.evaluate(() => navigator.userAgent);
+  await context.close();
+  return `${ua} ${ROBOTS_AGENT}/${VERSION} (+${PROJECT_URL})`;
 }
 
 function axeFor(page) {
@@ -185,9 +221,15 @@ function wcagCriteria(tags) {
 const pick = ({ isMobile, hasTouch }) => ({ isMobile, hasTouch });
 
 /** BFS pelas páginas do mesmo domínio, registrando links quebrados e "#" sem destino. */
-async function crawl(browser, startUrl, config, add) {
+async function crawl(browser, startUrl, config, add, { contextOptions = {}, robots = null, skipped = [], audit = false } = {}) {
   const origin = new URL(startUrl).origin;
-  const context = await browser.newContext({ viewport: VIEWPORTS.desktop });
+  const context = await browser.newContext({ viewport: VIEWPORTS.desktop, ...contextOptions });
+  // Na auditoria, páginas bloqueadas pelo robots.txt e links de sair/excluir ficam de fora (e vão para o relatório).
+  const skip = (url, text = '') => {
+    if (robots && !robots.allowed(url)) return 'robots';
+    if (audit && (UNSAFE_LINK.test(decodeURIComponent(new URL(url).pathname).replace(/[/_.-]+/g, ' ')) || UNSAFE_LINK.test(text))) return 'unsafe';
+    return null;
+  };
   // Rotas que não aparecem como link (ex.: navegação por botão no React) entram pela configuração.
   const extra = (config.crawl.routes ?? []).map((r) => {
     try {
@@ -196,7 +238,11 @@ async function crawl(browser, startUrl, config, add) {
       return null;
     }
   });
-  const queue = [...new Set([normalize(startUrl), ...extra.filter(Boolean)])];
+  const queue = [...new Set([normalize(startUrl), ...extra.filter(Boolean)])].filter((u, i) => {
+    const reason = i > 0 && skip(u);
+    if (reason) skipped.push({ url: u, reason });
+    return !reason;
+  });
   const seen = new Set(queue.map(samePage));
   const pages = [];
   const checkedExternal = new Map();
@@ -226,6 +272,7 @@ async function crawl(browser, startUrl, config, add) {
     pages.push(entry);
 
     if (ok) {
+      entry.lang ??= await page.evaluate(() => document.documentElement.lang || '').catch(() => '');
       react ??= await detectReact(page);
       const text = await renderedText(page);
       if (notFound && pageUrl !== normalize(startUrl) && text === notFound) {
@@ -293,7 +340,9 @@ async function crawl(browser, startUrl, config, add) {
           entry.linksTo.push(next);
           if (!seen.has(samePage(next))) {
             seen.add(samePage(next));
-            queue.push(next);
+            const reason = skip(next, link.text);
+            if (reason) skipped.push({ url: next, reason, from: pageUrl, text: link.text });
+            else queue.push(next);
           }
         } else if (config.crawl.checkExternalLinks && !checkedExternal.has(target.href)) {
           const res = await context.request.get(target.href, { timeout: 10000 }).catch(() => null);
@@ -316,6 +365,7 @@ async function crawl(browser, startUrl, config, add) {
       entry.linksTo = [...new Set(entry.linksTo)];
     }
     await page.close();
+    if (queue.length) await sleep(config.crawl.delayMs);
   }
 
   // Quais páginas linkam para as páginas com erro (ajuda a achar onde corrigir).

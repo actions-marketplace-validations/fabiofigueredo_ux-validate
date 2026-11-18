@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { confirm } from '@inquirer/prompts';
-import { loadConfig, latestRunDir, WORK_DIR } from './config.js';
+import { isAuditRun, loadConfig, latestRunDir, WORK_DIR } from './config.js';
 import { analyze } from './report.js';
 import { completeJson, checkCredentials, FatalLlmError } from './llm.js';
 import { t, formatNumber } from './i18n.js';
@@ -55,6 +55,8 @@ const SCHEMA = {
 };
 
 export async function fix({ cwd, configPath, run, ids, severity = 'medium', yes = false, dryRun = false, llm = completeJson, log = console.log }) {
+  // Auditoria de site publicado: não há código para corrigir.
+  if (isAuditRun(cwd, run)) throw new Error(t('audit.notForAudit'));
   const config = loadConfig(cwd, configPath);
   if (!config.standalone?.provider || !config.standalone?.model) {
     throw new Error(t('fix.noModel'));

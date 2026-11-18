@@ -9,6 +9,6 @@ Install:
 /plugin install ux-validate@ux-validate
 ```
 
-Then, in your project: `/ux-validate:ux-setup` once, and `/ux-validate:ux-test` whenever you want to test. Other skills: `/ux-validate:ux-report`, `/ux-validate:ux-fix` and `/ux-validate:ux-persona`. Requires Node.js 20 or later.
+Then, in your project: `/ux-validate:ux-setup` once, and `/ux-validate:ux-test` whenever you want to test. To audit a site that is already published, from its URL and without its code: `/ux-validate:ux-audit https://www.example.com` (only sites you are responsible for or authorized to test). Other skills: `/ux-validate:ux-report`, `/ux-validate:ux-fix`, `/ux-validate:ux-persona` and `/ux-validate:ux-task`. Requires Node.js 20 or later.
 
 These files are generated from the ux-validate repository by `npm run build:plugin`; don't edit them by hand. Docs: https://github.com/fabiofigueredo/ux-validate#readme
