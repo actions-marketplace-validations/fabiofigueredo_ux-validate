@@ -6,6 +6,7 @@ import { VIEWPORTS, loadConfig } from './config.js';
 import { t, getLocale } from './i18n.js';
 import { addPresets } from './persona.js';
 import { loadTasks, withIds, writeTasks } from './tasks.js';
+import { ensureGitignore, inGitRepo } from './files.js';
 
 /**
  * `ux-validate audit <url>`: as mesmas checagens num site já publicado, sem o código do projeto.
@@ -85,6 +86,11 @@ export async function audit({ cwd, url: rawUrl, yes = false, personas, tasks = [
   prepareAuditDir(dir, { url, maxPages: max, viewports: vps });
   const rel = (p) => path.relative(cwd, p).split(path.sep).join('/') || '.';
   log(t('audit.folder', { dir: rel(dir) }));
+  // Dentro de um repositório Git, a pasta das auditorias não deve ir para o commit por engano.
+  if (inGitRepo(cwd)) {
+    const { status } = ensureGitignore(cwd, `${AUDITS_DIR}/`, t('audit.gitignoreComment'));
+    if (status !== 'kept') log(t('audit.gitignored', { dir: `${AUDITS_DIR}/` }));
+  }
 
   if (personas && personas !== 'none') addPresets({ cwd: dir, configPath: AUDIT_CONFIG, ids: personas.split(',').map((s) => s.trim()).filter(Boolean), log });
   if (tasks.length) {

@@ -113,6 +113,7 @@ test('audit de ponta a ponta: respeita robots.txt, não segue sair/excluir, não
   const { audit } = await import('../src/audit.js');
   const { server, hits, url } = await startSite();
   const cwd = tmp();
+  fs.mkdirSync(path.join(cwd, '.git')); // a auditoria roda dentro de um repositório Git
   try {
     const { value, lines } = await quiet(() =>
       audit({ cwd, url, yes: true, personas: 'margaret', tasks: ['You want to talk to the company.'], viewports: 'desktop', log: console.log }),
@@ -133,6 +134,7 @@ test('audit de ponta a ponta: respeita robots.txt, não segue sair/excluir, não
     assert.equal(config.mode, 'audit');
     assert.equal(config.crawl.delayMs, 1000);
     assert.ok(fs.existsSync(path.join(dir, 'personas/margaret.yml')));
+    assert.equal(fs.readFileSync(path.join(cwd, '.gitignore'), 'utf8'), '# ux-validate: audits of published sites\nux-validate-audits/\n');
     assert.equal(YAML.parse(fs.readFileSync(path.join(dir, 'tasks.yml'), 'utf8')).length, 1);
     assert.equal(path.dirname(runDir), dir);
     const md = fs.readFileSync(path.join(runDir, 'report.md'), 'utf8');
@@ -158,6 +160,20 @@ test('audit de ponta a ponta: respeita robots.txt, não segue sair/excluir, não
   } finally {
     server.close();
   }
+});
+
+test('.gitignore: a pasta das auditorias entra só dentro de um repositório Git, sem repetir', async () => {
+  const { ensureGitignore, inGitRepo } = await import('../src/files.js');
+  const repo = tmp();
+  fs.mkdirSync(path.join(repo, '.git'));
+  fs.mkdirSync(path.join(repo, 'sub'));
+  assert.equal(inGitRepo(path.join(repo, 'sub')), true);
+  fs.writeFileSync(path.join(repo, '.gitignore'), 'node_modules');
+  assert.equal(ensureGitignore(repo, 'ux-validate-audits/', '# c').status, 'updated');
+  assert.equal(ensureGitignore(repo, 'ux-validate-audits/', '# c').status, 'kept');
+  assert.equal(fs.readFileSync(path.join(repo, '.gitignore'), 'utf8'), 'node_modules\n# c\nux-validate-audits/\n');
+  fs.writeFileSync(path.join(repo, '.gitignore'), '/ux-validate-audits\n');
+  assert.equal(ensureGitignore(repo, 'ux-validate-audits/', '# c').status, 'kept');
 });
 
 test('sem --yes fora de um terminal interativo, a auditoria não começa', async () => {

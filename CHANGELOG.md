@@ -2,6 +2,11 @@
 
 All notable changes to ux-validate. The npm package, the GitHub Action (`@v1`) and the Claude Code plugin share the same version.
 
+## 1.1.1 — 2026-11-18
+
+- `audit` adds `ux-validate-audits/` to `.gitignore` when it runs inside a Git repository, so audit results don't end up in a commit by accident (existing entries are kept, with or without slashes).
+- Website: a section on auditing a published site (what it does, the safeguards, with and without AI), the audit command in "Get started", the audit plan in "What you get" and the audit's limits in "What ux-validate doesn't do".
+
 ## 1.1.0 — 2026-11-18
 
 - **Audit of a published site, without its code.** `npx ux-validate audit <url>` runs the automated checks on a site that is already online, and `/ux-audit <url>` (`$ux-audit` in Codex, `/ux-validate:ux-audit` with the plugin) adds the persona and task test.

@@ -292,6 +292,8 @@ General options:
     needsYes: 'Confirm that you are responsible for the site, or authorized to test it, with --yes (needed outside an interactive terminal, e.g. in CI).',
     notAuthorized: 'Audit cancelled: only audit sites you are responsible for or are authorized to test.',
     folder: 'Audit folder: {dir}',
+    gitignoreComment: '# ux-validate: audits of published sites',
+    gitignored: 'Added {dir} to .gitignore (this folder is in a Git repository).',
     configHeader: '# ux-validate: audit of a published site (created by "npx ux-validate audit"). Personas and tasks in this folder are reused in the next audit.',
     unreachable: "Couldn't open {url}. Check the address and whether the site is online.",
     robotsStart: '{url} is blocked by the site\'s robots.txt ({robots}): the audit respects it and stops here.',

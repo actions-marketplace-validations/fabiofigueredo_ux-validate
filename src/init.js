@@ -5,7 +5,7 @@ import YAML from 'yaml';
 import { checkbox, confirm, input, select } from '@inquirer/prompts';
 import { PROVIDERS, VIEWPORTS, WORK_DIR, RUNS_DIR } from './config.js';
 import { ADAPTERS, sourceDir, loadCommands } from './adapters/index.js';
-import { writeFile } from './files.js';
+import { ensureGitignore as ensureProjectGitignore, writeFile } from './files.js';
 import { projectDictionary } from './spelling.js';
 import { t, getLocale, setLocale } from './i18n.js';
 import { loadPresets, describePersona, addPresets, newPersona, countPersonas } from './persona.js';
@@ -280,13 +280,7 @@ function renderConfig(a) {
 }
 
 function ensureGitignore(cwd) {
-  const file = path.join(cwd, '.gitignore');
-  const line = `${RUNS_DIR}/`;
-  const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
-  if (current.split('\n').some((l) => l.trim() === line)) return { rel: '.gitignore', status: 'kept' };
-  const prefix = current && !current.endsWith('\n') ? '\n' : '';
-  fs.writeFileSync(file, `${current}${prefix}${t('init.gitignoreComment')}\n${line}\n`);
-  return { rel: '.gitignore', status: current ? 'updated' : 'created' };
+  return ensureProjectGitignore(cwd, `${RUNS_DIR}/`, t('init.gitignoreComment'));
 }
 
 function printNextSteps(a, cwd) {
