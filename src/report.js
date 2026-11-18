@@ -164,6 +164,7 @@ function renderMarkdown(d) {
   lines.push(`**${t('report.date')}:** ${formatDate(d.createdAt)}  `);
   if (d.agentInfo) lines.push(`**${t('report.evaluatedBy')}:** ${[d.agentInfo.tool, d.agentInfo.model].filter(Boolean).join(' · ')}  `);
   lines.push(`**${t('report.pagesAnalyzed')}:** ${d.pages.length || '—'}`, '');
+  if (!d.personas.length) lines.push(`> ${t('report.onlyChecks')}`, '');
 
   lines.push(`## ${t('report.scoresTitle')}`, '');
   lines.push(`| ${t('report.persona')} | ${t('report.overall')} | ${categoryEntries().map(([, v]) => v).join(' | ')} | ${t('report.goalsDone')} |`);
@@ -414,6 +415,7 @@ table.tasks th[scope=row]{font-weight:400;max-width:420px}table.tasks td{text-al
 </style></head><body><main>
 <h1>${t('report.title')}</h1>
 <p class="muted">${esc(d.url ?? '')} · ${esc(formatDate(d.createdAt))}${d.agentInfo ? ` · ${esc([d.agentInfo.tool, d.agentInfo.model].filter(Boolean).join(' · '))}` : ''} · ${t('report.pagesCount', { n: d.pages.length })}</p>
+${d.personas.length ? '' : `<p class="card warn-note">${esc(t('report.onlyChecks'))}</p>`}
 <h2>${t('report.scoresTitle')}</h2>
 <div style="overflow-x:auto"><table><thead><tr><th>${t('report.persona')}</th><th>${t('report.overall')}</th>${categoryEntries().map(([, c]) => `<th>${c}</th>`).join('')}<th>${t('report.goals')}</th></tr></thead><tbody>${scoreRows}</tbody></table></div>
 ${tasksHtml}

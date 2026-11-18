@@ -458,9 +458,9 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
       <button class="x" type="button" data-close aria-label="Fechar">×</button>
     </header>
     <pre class="term" id="cmds"><span class="p">$</span> npm install -D ux-validate
-<span class="p">$</span> npx playwright install chromium
+<span class="p">$</span> npx ux-validate install-browser
 <span class="p">$</span> npx ux-validate init</pre>
-    <small data-i18n="dlg.note">O setup pede para você escolher as personas: as pré-definidas, as suas ou as duas. Depois, no Claude Code, Cursor ou Gemini CLI, rode /ux-test. No Codex, $ux-test.</small>
+    <small data-i18n="dlg.note">O setup pede as personas e as tarefas que elas vão tentar. Depois, com a aplicação no ar, rode /ux-test no Claude Code, Cursor ou Gemini CLI (no Codex, $ux-test). No Claude Code, também dá para usar o plugin: /plugin marketplace add fabiofigueredo/ux-validate.</small>
     <div class="row">
       <button class="btn dark" type="button" id="copy" data-i18n="dlg.copy">Copiar comandos</button>
       <a class="btn light" href="https://github.com/fabiofigueredo/ux-validate#readme" target="_blank" rel="noopener" data-i18n="dlg.docs">Ler a documentação</a>
@@ -502,7 +502,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
     'lim.l3': 'Personas are simulated by AI and may repeat model biases. They are still being validated.',
     'bar.title': 'Validate your app now', 'bar.text': 'Start with a first-pass check, then test with real people.',
     'dlg.hand': 'in 3 commands', 'dlg.title': 'Start in your project',
-    'dlg.note': 'Setup asks you to choose the personas: the predefined ones, your own, or both. Then, in Claude Code, Cursor or Gemini CLI, run /ux-test. In Codex, $ux-test.',
+    'dlg.note': 'Setup asks for the personas and the tasks they will try. Then, with the app running, run /ux-test in Claude Code, Cursor or Gemini CLI (in Codex, $ux-test). In Claude Code you can also use the plugin: /plugin marketplace add fabiofigueredo/ux-validate.',
     'dlg.copy': 'Copy commands', 'dlg.copied': 'Copied', 'dlg.docs': 'Read the docs'
   };
   const nodes = [...document.querySelectorAll('[data-i18n]')];
@@ -534,7 +534,7 @@ dialog::backdrop { background: rgba(17,17,17,.45); }
 
   const copy = document.getElementById('copy');
   copy.addEventListener('click', () => {
-    const text = 'npm install -D ux-validate\nnpx playwright install chromium\nnpx ux-validate init';
+    const text = 'npm install -D ux-validate\nnpx ux-validate install-browser\nnpx ux-validate init';
     const done = () => {
       const old = copy.textContent;
       copy.textContent = lang === 'en' ? EN['dlg.copied'] : 'Copiado';
