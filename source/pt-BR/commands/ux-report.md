@@ -29,6 +29,6 @@ Argumentos recebidos: `$ARGUMENTS`
    - um **plano de correção em ordem**: primeiro o que bloqueia objetivos, depois críticos e altos que afetam mais personas, depois o resto agrupado por arquivo (para corrigir vários de uma vez);
    - o caminho do `report.html`;
    - a sugestão de aplicar as correções com `/ux-fix` (ou `{{FIX_CMD}}`, fora do Claude Code).
-4. Com `--compare`: leia o `findings.json` e o `checks.json` da execução anterior e mostre o que foi **resolvido**, o que **continua** e o que é **novo** (compare pelo título, página e elemento, não pelo id). Mostre também como as notas mudaram.
+4. Com `--compare`: leia o `findings.json` e o `checks-brief.md` (em execuções antigas, sem ele, o `checks.json`) da execução anterior e mostre o que foi **resolvido**, o que **continua** e o que é **novo** (compare pelo título, página e elemento, não pelo id). Mostre também como as notas mudaram.
 
 Não altere o código da aplicação neste comando.

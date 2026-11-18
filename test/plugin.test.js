@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import YAML from 'yaml';
 import { buildPlugin, pluginDiff, PLUGIN_DIR } from '../scripts/build-plugin.js';
-import { PLAYWRIGHT_MCP_VERSION } from '../src/adapters/shared.js';
+import { PLAYWRIGHT_MCP_ARGS, PLAYWRIGHT_MCP_VERSION } from '../src/adapters/shared.js';
 
 const pkg = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 const read = (rel) => fs.readFileSync(path.join(PLUGIN_DIR, rel), 'utf8');
@@ -23,7 +23,7 @@ test('manifesto, marketplace e MCP do plugin', () => {
   assert.equal(market.plugins[0].source, './plugin');
   assert.equal(market.plugins[0].version, undefined, 'a versão fica só no plugin.json');
   const mcp = JSON.parse(read('.mcp.json'));
-  assert.deepEqual(mcp.mcpServers.playwright, { command: 'npx', args: ['-y', `@playwright/mcp@${PLAYWRIGHT_MCP_VERSION}`] });
+  assert.deepEqual(mcp.mcpServers.playwright, { command: 'npx', args: ['-y', `@playwright/mcp@${PLAYWRIGHT_MCP_VERSION}`, ...PLAYWRIGHT_MCP_ARGS] });
   const icon = fs.readFileSync(path.join(PLUGIN_DIR, '.claude-plugin/icon.png'));
   assert.equal(icon.subarray(1, 4).toString(), 'PNG');
 });

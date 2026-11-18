@@ -24,7 +24,7 @@ Argumentos recebidos: `$ARGUMENTS`
 
 ## Passos
 
-1. Descubra a pasta da execução e leia `checks.json` e `findings.json`. Monte a lista de problemas a corrigir conforme os argumentos, do mais grave para o menos grave. Os ids do agente começam com `A`; os das checagens fixas, com `C`. Um achado com `relatedChecks` já cobre essas checagens.
+1. Descubra a pasta da execução e leia o `findings.json` e o `checks-brief.md` (em execuções antigas, sem ele, o `checks.json`). Monte a lista de problemas a corrigir conforme os argumentos, do mais grave para o menos grave. Os ids do agente começam com `A`; os das checagens fixas, com `C`. Um achado com `relatedChecks` já cobre essas checagens. Abra o `checks.json` só para os detalhes (seletor, componentes, arquivo) dos problemas que você vai corrigir.
 2. Se o projeto usa Git e há mudanças não commitadas nos arquivos que você vai tocar, avise o usuário antes de começar.
 3. Mostre o plano: quais problemas, em quais arquivos (use `sourceHint`; sem ele, procure no código o texto, o seletor ou o trecho de `evidence`). Separe os que dependem de informação do usuário. Peça confirmação.
 4. Corrija um problema de cada vez. Para cada um:
@@ -37,5 +37,5 @@ Argumentos recebidos: `$ARGUMENTS`
 {{CHECK_CMD}}
 ```
 
-   Compare com a execução anterior: o que foi resolvido, o que continua e se algo novo apareceu por causa das mudanças. Se apareceu, corrija ou explique.
+   Compare o `checks-brief.md` da nova execução com o da anterior: o que foi resolvido, o que continua e se algo novo apareceu por causa das mudanças. Se apareceu, corrija ou explique.
 6. Responda com: problemas corrigidos (arquivo e mudança em uma linha cada), problemas que dependem do usuário (e o que falta), problemas que continuam e por quê, e a sugestão de revisar com `git diff`.

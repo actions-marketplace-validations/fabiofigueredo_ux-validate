@@ -15,7 +15,7 @@ Cerca de 1 em cada 12 homens e 1 em cada 200 mulheres têm algum tipo de daltoni
 
 ## Testando como uma persona daltônica
 
-1. Compare `color-vision/<página>-normal.jpg` com as imagens simuladas. O que some ou fica igual é informação que a persona perde.
+1. Nas páginas com problemas `check:color` ou com informação diferenciada pela cor, compare `color-vision/<página>-normal.jpg` com a imagem do tipo da persona (não todas: cada imagem custa tokens). O que some ou fica igual é informação que a persona perde.
 2. Simule no navegador enquanto navega: rode isto com `browser_evaluate`, trocando `type` (`protanopia`, `deuteranopia`, `tritanopia`), e depois use `browser_take_screenshot`:
 
 ```js

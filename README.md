@@ -133,8 +133,9 @@ Setup installs the same commands (`ux-test`, `ux-report`, `ux-fix`, `ux-persona`
 Notes:
 
 - The commands only run when you call them: the tests open a browser and use tokens. In Claude Code this is `disable-model-invocation`; in Codex, `allow_implicit_invocation: false`.
+- **Fewer tokens, same test:** the agent reads a short summary of the automated checks (`checks-brief.md`) instead of the full `checks.json`, tests each persona in a clean context when the tool has subagents (Claude Code), opens color-blindness images and accessibility trees only where needed, and the browser doesn't repeat console logs at every step. To spend even less, test one persona (`/ux-test margaret`) or one category (`--only accessibility`).
 - Codex reads `.codex/config.toml` and Gemini reads `.gemini/settings.json` only in folders you **trust**; accept the prompt the first time you open the project.
-- Existing config files are preserved: setup only adds the `playwright` server if it isn't there.
+- Existing config files are preserved: setup only adds the `playwright` server if it isn't there (or updates the one an earlier ux-validate version wrote).
 - The Playwright MCP server is installed at a **pinned version** (`@playwright/mcp@0.0.83`), not `@latest`, so no new, unreviewed version is downloaded and run without you knowing. If you installed an earlier ux-validate version, replace `@latest` with the pinned version in your tool's MCP file.
 - Gemini CLI also reads `.agents/skills/`. If you install both Codex and Gemini, Gemini may list the Codex skills too; use the `/ux-…` commands, and Gemini asks for confirmation before activating any skill.
 - Arguments go after the command name in every tool, e.g. `/ux-test margaret` or `$ux-test margaret`.

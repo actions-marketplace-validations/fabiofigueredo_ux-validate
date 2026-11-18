@@ -5,7 +5,13 @@ import path from 'node:path';
 // Versão fixa: com @latest, cada abertura da ferramenta baixaria e executaria a versão mais nova publicada,
 // sem revisão. Atualize aqui (e rode o init de novo) quando quiser uma versão nova.
 export const PLAYWRIGHT_MCP_VERSION = '0.0.83';
-export const PLAYWRIGHT_MCP = { command: 'npx', args: [`@playwright/mcp@${PLAYWRIGHT_MCP_VERSION}`] };
+// Só erros do console nas respostas: os logs da aplicação repetidos a cada ação gastam tokens, e os
+// erros já são registrados pela checagem automática (check:console).
+export const PLAYWRIGHT_MCP_ARGS = ['--console-level', 'error'];
+export const PLAYWRIGHT_MCP = { command: 'npx', args: [`@playwright/mcp@${PLAYWRIGHT_MCP_VERSION}`, ...PLAYWRIGHT_MCP_ARGS] };
+// Configuração gravada pelas versões anteriores: é atualizada; qualquer outra (do usuário) é mantida.
+const isOldDefault = (entry) =>
+  entry?.command === 'npx' && Array.isArray(entry.args) && entry.args.length === 1 && /^@playwright\/mcp@[\w.]+$/.test(entry.args[0]);
 
 /**
  * Registra o Playwright MCP num arquivo JSON com `mcpServers` (Claude Code, Cursor, Gemini CLI),
@@ -23,7 +29,7 @@ export function registerJsonMcp(cwd, rel) {
     }
   }
   data.mcpServers ??= {};
-  if (data.mcpServers.playwright) return { rel, status: 'mcpKept' };
+  if (data.mcpServers.playwright && !isOldDefault(data.mcpServers.playwright)) return { rel, status: 'mcpKept' };
   data.mcpServers.playwright = PLAYWRIGHT_MCP;
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(data, null, 2) + '\n');

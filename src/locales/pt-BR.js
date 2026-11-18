@@ -277,6 +277,22 @@ Opções gerais:
     staticLabel: 'Site estático (HTML)',
   },
 
+  brief: {
+    title: 'Checagens automáticas: resumo para o agente',
+    url: 'URL',
+    viewports: 'telas',
+    details: 'Detalhes completos de cada problema (seletor, captura de tela, componentes, documentação): procure o id no checks.json, só quando precisar.',
+    pages: 'Páginas',
+    page: 'página',
+    pageTitle: 'título',
+    aria: 'árvore de acessibilidade',
+    taskWarnings: 'Tarefas que usam as palavras de um link ou botão',
+    issues: 'Problemas (agrupados, os mais graves primeiro)',
+    none: 'Nenhum problema.',
+    only: 'só para',
+    more: '…e mais {n}: {ids}',
+  },
+
   checks: {
     next:
       '\nEssa foi a parte automática (sem IA). Para a validação completa, com as personas e as tarefas, rode /ux-test na sua\n' +

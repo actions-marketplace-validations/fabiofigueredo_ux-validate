@@ -277,6 +277,22 @@ General options:
     staticLabel: 'Static site (HTML)',
   },
 
+  brief: {
+    title: 'Automated checks: summary for the agent',
+    url: 'URL',
+    viewports: 'viewports',
+    details: 'Full details of each issue (selector, screenshot, components, documentation): look up its id in checks.json, only when you need them.',
+    pages: 'Pages',
+    page: 'page',
+    pageTitle: 'title',
+    aria: 'accessibility tree',
+    taskWarnings: 'Tasks that use the words of a link or button',
+    issues: 'Issues (grouped, most severe first)',
+    none: 'No issues.',
+    only: 'only for',
+    more: '…and {n} more: {ids}',
+  },
+
   checks: {
     next:
       '\nThat was the automated part (no AI). For the complete validation, with personas and tasks, run /ux-test in your AI\n' +

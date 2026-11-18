@@ -22,6 +22,7 @@ Write everything (findings, summaries, your answer) in English.
 3. **Stay in the persona's shoes.** They don't read the code, don't type URLs in the address bar, don't open DevTools and don't know hidden routes. They only use what is visible on screen.
 4. **Don't change the app's code** during the test. This command only diagnoses. Fixes come later, if the user asks.
 5. **Don't use real data.** In forms, use obvious test data (e.g. `test+persona@example.com`). Don't complete payments or send messages to third parties.
+6. **Save tokens without skipping anything.** Read each reference file once per run, only when the step that needs it starts. Every browser action already returns the page snapshot: don't call `browser_snapshot` again right after one. Take screenshots only as evidence of a problem or a step where a persona got lost, of the visible area (not `fullPage`) or of just the element (`target`), with `scale: "css"`, and don't open images you don't need to judge. Fill forms with `browser_fill_form` (all fields at once) instead of one `browser_type` per field.
 
 ## Step 1: prepare
 
@@ -46,11 +47,13 @@ Run:
 {{CHECK_CMD}}
 ```
 
-This creates a run folder at `{{WORK_DIR}}/runs/<date-time>/` with `checks.json` (accessibility via axe-core and WAI-ARIA, keyboard navigation, broken links, console errors, horizontal scrolling, placeholder text, spelling, color vision), screenshots, in `color-vision/` each page as people with color blindness see it and, in `aria/`, each page's accessibility tree (what a screen reader announces). Note the folder path: everything from this run goes there.
+This creates a run folder at `{{WORK_DIR}}/runs/<date-time>/` with `checks-brief.md` (the summary for you), `checks.json` (accessibility via axe-core and WAI-ARIA, keyboard navigation, broken links, console errors, horizontal scrolling, placeholder text, spelling, color vision), screenshots, in `color-vision/` each page as people with color blindness see it and, in `aria/`, each page's accessibility tree (what a screen reader announces). Note the folder path: everything from this run goes there.
 
-Read `checks.json`. These issues **are already recorded**: don't repeat them as your own findings. When one of them hurts a persona in a specific way, create your own finding explaining the impact on them and cite the check's id in `relatedChecks`.
+Read `checks-brief.md`, not `checks.json`: it has the pages, the task warnings and every issue grouped, with its id, page and the element involved, in a fraction of the size. Open `checks.json` only to see the details of a specific id (selector, components, screenshot). These issues **are already recorded**: don't repeat them as your own findings. When one of them hurts a persona in a specific way, create your own finding explaining the impact on them and cite the check's id in `relatedChecks`.
 
 ## Step 3: browse as each persona
+
+**One persona at a time, each in a clean context.** If your tool can delegate to a subagent that has the same browser tools (e.g. the Agent/Task tool in Claude Code), give each persona to a subagent, **one after the other, never in parallel** (they share the browser). Pass it: the persona file, the tasks, the run folder, the path to these instructions (Steps 3, 3c and 4), the references it needs and a range of ids for its findings (first persona `A101`–`A199`, second `A201`–`A299`…). It replies with only its entry in `personas` and its `findings`, in the `findings.json` format; you put them together in Step 5. This way, what one persona saw doesn't take up space (or influence) the next. Without subagents, do everything here, in order.
 
 For each persona, use the Playwright MCP browser tools (`browser_resize`, `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_type`, `browser_take_screenshot`, etc.):
 
@@ -63,7 +66,7 @@ For each persona, use the Playwright MCP browser tools (`browser_resize`, `brows
    - Where they got lost or gave up, take a screenshot (`lostAt`) and record why in `notes`. Create findings for the causes (unclear labels, information in an unexpected place, missing link) and list them in `blockers`.
    - Before the next task, go back to the starting page: each task starts fresh.
 3. Then, for **each goal** of the persona:
-   - Try to achieve it starting from the home page, the way they would. Use `browser_snapshot` to read the page and decide the next step.
+   - Try to achieve it starting from the home page, the way they would. Read the snapshot that each action returns to decide the next step.
    - Count each action (click, typing, scrolling to look for something) as one step. Stop when the goal is achieved, when you reach `maxStepsPerGoal`, or earlier if the persona's behavior says they would give up (e.g. `patience: low` gives up after 3 or 4 steps without visible progress).
    - Record the path (URLs visited), the outcome (`success`, `partial` or `fail`) and, in `notes`, the exact moment they hesitated or got stuck and why.
    - At each friction point, take a screenshot with `browser_take_screenshot` and save it in `<run folder>/screenshots/` with a descriptive name (e.g. `anna-checkout-hidden-button.png`).
@@ -75,7 +78,7 @@ For each persona, use the Playwright MCP browser tools (`browser_resize`, `brows
 
 Personas with `vision: screen-reader` browse **without looking at the screen**: use only the keyboard (`browser_press_key`) and the accessibility tree (`browser_snapshot`), never `browser_click` on coordinates or on elements the keyboard can't reach. If something only works with a mouse, it is a blocker for them.
 
-Personas with `vision: color-blind` see the page with the colors changed: before navigating as them, read `{{REFERENCES_DIR}}/color-vision.md`, compare the images in `<run folder>/color-vision/` and simulate their type of color blindness in the browser (the snippet is in that file). Anything told apart only by color (status, charts, selected tab, form errors) may be invisible to them.
+Personas with `vision: color-blind` see the page with the colors changed: before navigating as them, read `{{REFERENCES_DIR}}/color-vision.md` and simulate their type of color blindness in the browser (the snippet is in that file). The `check:color` issues already compare the colors of every page; open the images in `<run folder>/color-vision/` only for the pages with those issues or with charts, status or anything told apart by color, and only the `normal` one and the persona's type. Anything told apart only by color (status, charts, selected tab, form errors) may be invisible to them.
 
 Adjust the rigor to the persona's traits (e.g. `vision: reduced` raises the severity of contrast and small fonts; `tech_literacy: low` raises it for jargon and unlabeled icons). Persona files may use Portuguese trait values (`baixa`, `reduzida`, `leitor-de-tela`); treat them as `low`, `reduced`, `screen-reader`.
 
@@ -83,9 +86,9 @@ Adjust the rigor to the persona's traits (e.g. `vision: reduced` raises the seve
 
 Do this once per run (not per persona), unless `--only` excludes `accessibility`. Follow `{{REFERENCES_DIR}}/wai-aria.md`.
 
-1. For each page visited, read its tree in `<run folder>/aria/`. Check accessible names, roles, states, landmarks and the heading hierarchy.
+1. For each page visited, use its accessibility tree: the snapshot you already have from browsing or, for pages no persona visited, the file in `<run folder>/aria/` (it is listed in `checks-brief.md`). Don't read both for the same page. Check accessible names, roles, states, landmarks and the heading hierarchy.
 2. Identify the app's **widgets**: dialogs, tabs, accordions, menus, combobox/autocomplete, carousels, custom checkboxes or selects, forms.
-3. Test each kind of widget **with the keyboard**, following the matching APG pattern: open, operate, close, and where focus goes afterwards. Use `browser_press_key` and check the result with `browser_snapshot`.
+3. Test each kind of widget **with the keyboard**, following the matching APG pattern: open, operate, close, and where focus goes afterwards. Use `browser_press_key` and check the result with `browser_snapshot` limited to the widget (`target`). To locate a widget, `browser_find` costs less than a full snapshot; use it only in this audit, never while browsing as a persona (it works like Ctrl+F, which they wouldn't use).
 4. In forms, submit with an error on purpose (test data) and check whether the error is announced: `aria-invalid`, `aria-describedby`, focus on the first error, messages in `role="alert"`/`status`.
 5. Record findings with `category: "accessibility"`, citing the WCAG criterion and the APG pattern in `heuristic`. In `personas`, list who is affected: usually the personas whose `vision` isn't `normal`, but think about who suffers most (e.g. invisible focus hurts anyone using a keyboard).
 
@@ -99,13 +102,7 @@ The dictionary (check `check:spelling`) flags unknown words and foreign words in
 
 ## Step 3d: React apps and other SPAs
 
-If `checks.json` has `app.framework` (`react` or `next`), or if the app switches screens without reloading the page:
-
-1. **Routes that aren't links.** Screens opened by a button (`navigate()`), tabs or modals aren't part of the automatic crawl. If you find important screens like that, suggest the user add them to `crawl.routes` in `ux-validate.config.yml`.
-2. **Route changes.** While navigating as the persona, check what the browser would do on a regular page: does the tab title change? Does focus go to the new content or get lost? Screen reader personas need to hear that the page changed. The `check:spa` check tests one change; evaluate the others along the persona's path.
-3. **Async states.** Loading, empty and error: do they show up, are they announced (`aria-busy`, `role="status"`) and do they avoid a blank screen? Are buttons disabled while submitting and re-enabled afterwards?
-4. **Where to fix.** The checks already include `react.components` (the component that rendered the element and the ones above it) and, on the development server, `sourceHint` with file and line. Use them in your findings: look in the component's file first. Remember that in JSX the `class` attribute is `className` and text may be split across expressions (`{name}`).
-5. **Production build.** If `checks.json` says `react.dev: false`, there are no component names or files: tell the user that running against the development server (e.g. `npm run dev`) improves where-to-fix hints.
+Only if `checks-brief.md` shows a framework (`react` or `next`) on the URL line, or if the app switches screens without reloading the page: read `{{REFERENCES_DIR}}/spa.md` and follow it. Otherwise skip this step.
 
 ## Step 4: point to where to fix
 
@@ -113,7 +110,7 @@ For each of your findings, look in the project's code for the likely file. Searc
 
 ## Step 5: record and build the report
 
-1. Write `<run folder>/findings.json` following `{{REFERENCES_DIR}}/findings-format.md` exactly. Rate severity with the table in that file. Use `confidence: "confirmed"` only when you reproduced the issue; otherwise `"likely"`.
+1. Write `<run folder>/findings.json` following `{{REFERENCES_DIR}}/findings-format.md` exactly. If you used subagents, put all their `personas` and `findings` together in this one file. Rate severity with the table in that file. Use `confidence: "confirmed"` only when you reproduced the issue; otherwise `"likely"`.
 2. Build the report:
 
 ```bash
@@ -123,7 +120,7 @@ For each of your findings, look in the project's code for the likely file. Searc
 3. Answer the user with:
    - the table of scores by persona (at the top of `report.md`);
    - the tasks table (task × persona) and, for each task that failed, where the personas got lost;
-   - any warning from `checks.json` (`taskWarnings`) about tasks that use the interface's own words: suggest rewriting them;
+   - any warning in `checks-brief.md` about tasks that use the interface's own words: suggest rewriting them;
    - the goals that failed and why, one line each;
    - the 5 most important issues, with the likely file to fix;
    - the path to `report.html` to see everything with screenshots;

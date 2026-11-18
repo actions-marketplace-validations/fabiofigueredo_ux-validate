@@ -133,8 +133,9 @@ O setup instala os mesmos comandos (`ux-test`, `ux-report`, `ux-fix`, `ux-person
 Observações:
 
 - Os comandos só rodam quando você os chama: os testes abrem navegador e gastam tokens. No Claude Code isso é o `disable-model-invocation`; no Codex, `allow_implicit_invocation: false`.
+- **Menos tokens, o mesmo teste:** o agente lê um resumo curto das checagens automáticas (`checks-brief.md`) em vez do `checks.json` inteiro, testa cada persona num contexto limpo quando a ferramenta tem subagentes (Claude Code), abre as imagens de daltonismo e as árvores de acessibilidade só onde precisa, e o navegador não repete os logs do console a cada passo. Para gastar ainda menos, teste uma persona (`/ux-test dona-maria`) ou uma categoria (`--only accessibility`).
 - O Codex lê o `.codex/config.toml` e o Gemini lê o `.gemini/settings.json` só em pastas **confiáveis**; aceite a pergunta na primeira vez que abrir o projeto.
-- Arquivos de configuração existentes são preservados: o setup só adiciona o servidor `playwright` se ele não estiver lá.
+- Arquivos de configuração existentes são preservados: o setup só adiciona o servidor `playwright` se ele não estiver lá (ou atualiza o que uma versão anterior do ux-validate gravou).
 - O servidor MCP do Playwright é instalado numa **versão fixa** (`@playwright/mcp@0.0.83`), não em `@latest`: assim nenhuma versão nova e não revisada é baixada e executada sem você saber. Se você instalou uma versão anterior do ux-validate, troque `@latest` pela versão fixa no arquivo de MCP da sua ferramenta.
 - O Gemini CLI também lê `.agents/skills/`. Se você instalar Codex e Gemini juntos, o Gemini pode listar as skills do Codex; use os comandos `/ux-…`, e o Gemini pede confirmação antes de ativar qualquer skill.
 - Os argumentos vão depois do nome do comando em todas as ferramentas, ex.: `/ux-test dona-maria` ou `$ux-test dona-maria`.

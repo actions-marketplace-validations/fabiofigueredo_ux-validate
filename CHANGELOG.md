@@ -4,6 +4,13 @@ All notable changes to ux-validate. The npm package, the GitHub Action (`@v1`) a
 
 ## 1.0.1 — 2026-11-18
 
+- **Fewer tokens in `/ux-test`, same test:**
+  - `check` also writes `checks-brief.md`, a summary of `checks.json` for the agent: the same issue on several pages becomes one group, URLs are short, and screenshots, documentation links and generic suggestions stay in `checks.json` (looked up by id when needed). About 84% smaller on the demo site; `/ux-fix` and `/ux-report --compare` use it too.
+  - Each persona is tested in a clean context when the tool has subagents (e.g. Claude Code), one at a time, so what one persona saw doesn't fill the context (or influence) the next.
+  - Color-blindness images are opened only for pages with color issues, and only the persona's type; the accessibility audit reuses the snapshots from browsing instead of rereading the `aria/` files.
+  - Leaner browser use: no extra `browser_snapshot` after actions that already return one, screenshots of the visible area or the element, `browser_fill_form` for forms, `browser_find` and partial snapshots in the accessibility audit.
+  - The React/SPA step moved to a reference file (`spa.md`) read only when the app uses React or switches screens without reloading.
+  - The Playwright MCP server starts with `--console-level error`: console logs are no longer repeated at every step (errors are still reported, and `check:console` records them). `init` updates the entry an earlier ux-validate version wrote and keeps any other.
 - Clear everywhere that the complete test (personas and tasks) requires an AI tool (Claude Code, Cursor, Codex CLI or Gemini CLI), and that without one only the automated validation runs: READMEs (highlighted notice and usage section), `--help`, the end of `init` and the website's "Get started".
 
 ## 1.0.0 — 2026-11-18
