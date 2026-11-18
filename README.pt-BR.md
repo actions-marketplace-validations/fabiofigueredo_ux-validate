@@ -21,6 +21,8 @@ A validação completa tem duas partes, e o relatório junta as duas:
 
 O resultado fica em `.ux-validate/runs/<data-hora>/report.html` (e `report.md`). Antes de validar, a aplicação precisa estar no ar, ou ter o comando para subi-la em `app.start`: o ux-validate inicia e encerra a aplicação sozinho.
 
+> **Importante: o teste com personas e tarefas precisa de IA.** Ele só roda dentro de uma ferramenta de IA com agente (Claude Code, Cursor, Codex CLI ou Gemini CLI), com o modelo e a conta dessa ferramenta. **Sem uma delas, o ux-validate executa apenas a validação automática** (`npx ux-validate check`): acessibilidade, teclado, daltonismo, links, erros, layout e ortografia. As personas e as tarefas não são testadas, e o relatório avisa isso no topo.
+
 ### Caminho 1: pacote do npm (Claude Code, Cursor, Codex CLI ou Gemini CLI)
 
 Uma vez por projeto, no terminal, na pasta do projeto:
@@ -335,7 +337,7 @@ Depois, no projeto que você quer testar:
 
 ## Uso
 
-Na sua ferramenta de IA, dentro do seu projeto (no Codex, use `$` no lugar de `/`):
+O teste com personas e tarefas roda **só dentro da sua ferramenta de IA**, no seu projeto (no Codex, use `$` no lugar de `/`):
 
 | Comando | O que faz |
 |---|---|
@@ -349,7 +351,7 @@ Na sua ferramenta de IA, dentro do seu projeto (no Codex, use `$` no lugar de `/
 | `/ux-fix` | Aplica as correções do relatório (críticos, altos e médios) |
 | `/ux-fix A001,C003` | Aplica só as correções desses problemas |
 
-Pelo terminal (útil no CI):
+Pelo terminal, **sem IA** (só a validação automática; personas e tarefas não são testadas; útil no CI):
 
 ```bash
 npx ux-validate persona examples # mostra as personas pré-definidas e suas características

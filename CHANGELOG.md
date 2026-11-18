@@ -2,6 +2,10 @@
 
 All notable changes to ux-validate. The npm package, the GitHub Action (`@v1`) and the Claude Code plugin share the same version.
 
+## 1.0.1 — 2026-11-18
+
+- Clear everywhere that the complete test (personas and tasks) requires an AI tool (Claude Code, Cursor, Codex CLI or Gemini CLI), and that without one only the automated validation runs: READMEs (highlighted notice and usage section), `--help`, the end of `init` and the website's "Get started".
+
 ## 1.0.0 — 2026-11-18
 
 First stable release.

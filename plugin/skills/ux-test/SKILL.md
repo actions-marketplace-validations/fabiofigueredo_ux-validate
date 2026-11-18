@@ -5,7 +5,7 @@ description: Tests the web app's content, navigation, interface and
   issues and how to fix them.
 argument-hint: "[persona] [--only content|navigation|ui|accessibility]"
 disable-model-invocation: true
-allowed-tools: Bash(npx -y ux-validate@1.0.0 *)
+allowed-tools: Bash(npx -y ux-validate@1.0.1 *)
 ---
 
 # /ux-validate:ux-test
@@ -33,14 +33,14 @@ Write everything (findings, summaries, your answer) in English.
 ## Step 1: prepare
 
 1. Read `ux-validate.config.yml`. It has `app.url`, the `app.start` command (optional), the `viewports`, the personas folder and `agent.maxStepsPerGoal`.
-2. Read the personas in the configured folder (default `.ux-validate/personas/*.yml`). The format is in `${CLAUDE_PLUGIN_ROOT}/references/persona-format.md`. If a file looks invalid, run `npx -y ux-validate@1.0.0 persona validate` and show the errors.
+2. Read the personas in the configured folder (default `.ux-validate/personas/*.yml`). The format is in `${CLAUDE_PLUGIN_ROOT}/references/persona-format.md`. If a file looks invalid, run `npx -y ux-validate@1.0.1 persona validate` and show the errors.
 
    **If there are no personas, this step is mandatory before any test:**
-   1. Run `npx -y ux-validate@1.0.0 persona examples` and show the user the predefined personas with each one's characteristics: who they are, device, tech literacy, vision, patience, reading level, goals and expectations. Don't summarize so much that the characteristics disappear: the user decides based on them.
+   1. Run `npx -y ux-validate@1.0.1 persona examples` and show the user the predefined personas with each one's characteristics: who they are, device, tech literacy, vision, patience, reading level, goals and expectations. Don't summarize so much that the characteristics disappear: the user decides based on them.
    2. Ask what they prefer: **use the predefined ones** (all or only some), **create their own**, or **both**. Wait for the answer; don't choose for them.
-   3. For the chosen predefined personas, run `npx -y ux-validate@1.0.0 persona add <ids>` (or `all`). To create one, follow the `/ux-validate:ux-persona` flow (conversation, confirmation, YAML file, validation).
+   3. For the chosen predefined personas, run `npx -y ux-validate@1.0.1 persona add <ids>` (or `all`). To create one, follow the `/ux-validate:ux-persona` flow (conversation, confirmation, YAML file, validation).
    4. Only continue the test once the folder has at least one persona.
-3. Read the project's tasks in `tasks` from the config (default `.ux-validate/tasks.yml`). The format and how to write them are in `${CLAUDE_PLUGIN_ROOT}/references/tasks-format.md`. If the file looks invalid, run `npx -y ux-validate@1.0.0 task validate` and show the errors.
+3. Read the project's tasks in `tasks` from the config (default `.ux-validate/tasks.yml`). The format and how to write them are in `${CLAUDE_PLUGIN_ROOT}/references/tasks-format.md`. If the file looks invalid, run `npx -y ux-validate@1.0.1 task validate` and show the errors.
 
    **If there are no tasks, this step is mandatory before any test:** ask the user what the personas should try to do in the app, following the `/ux-validate:ux-task` flow (goals written as scenarios, no step-by-step, no interface words, with a success criterion when possible). Write the file, validate it, and only continue once there is at least one task.
 4. Check that the app responds at `app.url`. If it doesn't and there is an `app.start`, run **exactly that command** in the background and wait until it is available (up to ~60s); it must stay up while you browse. **Don't improvise another command** to start the app: if there is no `app.start`, or the app is still down, stop and ask the user to start it or to set `app.start` (for a plain HTML site, e.g. `npx -y http-server <folder> -p 3000 -c-1`).
@@ -50,7 +50,7 @@ Write everything (findings, summaries, your answer) in English.
 Run:
 
 ```bash
-npx -y ux-validate@1.0.0 check
+npx -y ux-validate@1.0.1 check
 ```
 
 This creates a run folder at `.ux-validate/runs/<date-time>/` with `checks.json` (accessibility via axe-core and WAI-ARIA, keyboard navigation, broken links, console errors, horizontal scrolling, placeholder text, spelling, color vision), screenshots, in `color-vision/` each page as people with color blindness see it and, in `aria/`, each page's accessibility tree (what a screen reader announces). Note the folder path: everything from this run goes there.
@@ -124,7 +124,7 @@ For each of your findings, look in the project's code for the likely file. Searc
 2. Build the report:
 
 ```bash
-npx -y ux-validate@1.0.0 report --run <run folder>
+npx -y ux-validate@1.0.1 report --run <run folder>
 ```
 
 3. Answer the user with:

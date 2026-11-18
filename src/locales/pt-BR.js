@@ -15,6 +15,9 @@ export default {
   cli: {
     help: `ux-validate — testes de conteúdo, navegação, interface e acessibilidade guiados por personas
 
+Teste completo (personas e tarefas): precisa de uma ferramenta de IA. Rode /ux-test no Claude Code, Cursor,
+Codex CLI ($ux-test) ou Gemini CLI. Sem IA, roda só a validação automática: ux-validate check e ux-validate report.
+
 Uso:
   ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini|none] [--personas all|none|id,id]
                      [--url <url>] [--start <comando>] [--task "<tarefa>" …]
@@ -118,6 +121,9 @@ Opções gerais:
       noPersonas: ({ dir }) =>
         `  1. Nenhuma persona em ${dir}/ ainda. Antes de testar, escolha as pré-definidas (npx ux-validate persona examples) ou crie as suas (npx ux-validate persona new). O ux-test também vai pedir isso.`,
       useTools: '  2. Na sua ferramenta de IA:',
+      aiRequired:
+        '\n  Importante: as personas e as tarefas só são testadas dentro de uma ferramenta de IA (/ux-test).\n' +
+        '  Sem ela, rode npx ux-validate check: só a validação automática.',
       tools: {
         'claude-code':
           '     • Claude Code: abra neste projeto, aprove o servidor MCP "playwright" e rode /ux-test.\n' +
