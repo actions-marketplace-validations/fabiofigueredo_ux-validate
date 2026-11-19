@@ -1,6 +1,6 @@
 {
   "name": "ux-validate",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Persona-based testing of web app content, navigation, interface and accessibility, run by your AI agent. English and Portuguese.",
   "author": "Fabio Figueredo (https://github.com/fabiofigueredo)",
   "repository": {

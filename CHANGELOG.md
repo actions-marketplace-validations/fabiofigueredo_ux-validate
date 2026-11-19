@@ -2,6 +2,17 @@
 
 All notable changes to ux-validate. The npm package, the GitHub Action (`@v1`) and the Claude Code plugin share the same version.
 
+## 1.2.0 — 2026-11-18
+
+- **New look for `report.html`, with the ux-validate visual identity** (the same as the website): dotted paper, the logo, lime, lilac and yellow, DM Sans, DM Mono and Caveat.
+  - At the top: the main numbers (average score, tasks completed, goals not achieved, issues) and a reminder that the personas are simulated.
+  - A card per persona with the overall score, a bar per category and their traits (device, vision, tech literacy).
+  - Task outcomes as labeled tags (icon and text, not color alone), plus a card for each time a persona got lost.
+  - "Fix first" (or, in an audit, the plan for whoever maintains the site) as a numbered list that links to each issue.
+  - Issue cards with severity, the snippet, "How to fix" and the screenshot. Category filters, print styles, no horizontal scroll on phones.
+  - The report is light only, like the website. Fonts load from Google Fonts; offline, system fonts are used. `report.md` is unchanged.
+- **READMEs rewritten** (English and Portuguese) and reorganized: what it does (project or published site, with or without AI), quick start, installation, usage, personas, tasks, audit, the report, what is checked, fixes, CI, limitations and development, with a table of contents.
+
 ## 1.1.1 — 2026-11-18
 
 - `audit` adds `ux-validate-audits/` to `.gitignore` when it runs inside a Git repository, so audit results don't end up in a commit by accident (existing entries are kept, with or without slashes).
