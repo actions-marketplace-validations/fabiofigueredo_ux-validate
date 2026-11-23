@@ -8,7 +8,7 @@ Instead of just saying "contrast is below 4.5:1", ux-validate asks, through a si
 
 ![ux-validate report: scores by persona, goals and issues](docs/ux-validate-demo-crop.gif)
 
-> **Status:** version 1.2. Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**. Website: [fabiofigueredo.github.io/ux-validate](https://fabiofigueredo.github.io/ux-validate/)
+> **Status:** version 1.3. Works with **Claude Code**, **Cursor**, **Codex CLI** and **Gemini CLI**. Website: [fabiofigueredo.github.io/ux-validate](https://fabiofigueredo.github.io/ux-validate/)
 
 ## Contents
 
@@ -67,7 +67,7 @@ npx ux-validate install-browser
 npx ux-validate init
 ```
 
-`init` asks for the language, your AI tools, the app's URL and start command, the **personas** and the **tasks** they will try. Then, for each validation:
+`init` asks for the language, your AI tools, the app's URL and start command, the client and logo for the report (optional), the **personas** and the **tasks** they will try. Then, for each validation:
 
 1. Open your AI tool **in the project folder** and run **`/ux-test`** (in Codex, `$ux-test`). The first time, approve the `playwright` MCP server: it's the agent's browser.
 2. Open `report.html` in the latest folder in `.ux-validate/runs/`.
@@ -154,6 +154,7 @@ npx ux-validate init
 
 - the **tool's language** (English or Portuguese);
 - **which AI tools** you'll use (Claude Code, Cursor, Codex CLI, Gemini CLI; one or more);
+- the **client's name and logo** for the report (optional);
 - the app's **URL** and the **command to start it** (`app.start`). With it, `check` starts the app when it isn't running and stops it at the end. Setup suggests it for React projects and for plain HTML sites (`npx -y http-server <folder> -p 3000 -c-1`);
 - the **screen sizes** (mobile, tablet, desktop) and the **language of the content**, for the spell check;
 - optionally, a **model to apply fixes from the terminal** (`npx ux-validate fix`): provider, model and the name of the environment variable with your API key;
@@ -171,7 +172,7 @@ It creates:
 | `.ux-validate/dictionary.txt` | Correct words the dictionary doesn't know |
 | The commands and MCP file for each tool | See [Supported AI tools](#supported-ai-tools) |
 
-Without questions: `--yes` accepts the defaults, `--tools claude-code,cursor,codex,gemini` chooses the tools, `--personas all|none|margaret,raj-dev` chooses the predefined personas, `--task "…"` adds a task (repeatable), `--url` and `--start` set the app. `--force` overwrites existing files.
+Without questions: `--yes` accepts the defaults, `--tools claude-code,cursor,codex,gemini` chooses the tools, `--personas all|none|margaret,raj-dev` chooses the predefined personas, `--task "…"` adds a task (repeatable), `--url` and `--start` set the app, `--client` and `--logo` the report's client and logo. `--force` overwrites existing files.
 
 > **Upgrading from a version before 0.3?** The agent commands were renamed (`/persona-test` → `/ux-test`, `/persona-report` → `/ux-report`, `/persona-fix` → `/ux-fix`, `/persona-new` → `/ux-persona`). Run `npx ux-validate init` again: it installs the new ones and removes the old ones.
 
@@ -274,7 +275,7 @@ Each run creates `.ux-validate/runs/<date-time>/` (already in `.gitignore`):
 
 | File | Contents |
 |---|---|
-| `report.html` / `report.md` | The report |
+| `report.html` (+ `report-*.html`, `report.css`) / `report.md` | The report: a small site (home page plus one page per area) and the Markdown version |
 | `checks.json` | Automated check results, in full |
 | `checks-brief.md` | Short summary the agent reads |
 | `findings.json` | The agent's evaluation by persona |
@@ -348,21 +349,34 @@ npx ux-validate audit https://www.example.com
 - **No project and no setup.** It runs in any folder. Each site gets its own folder, `ux-validate-audits/<domain>/`, with its personas, tasks and one folder per run with `report.html`. The next audit of the same site reuses them, and `/ux-audit` compares with the previous run. Inside a Git repository, `ux-validate-audits/` is added to `.gitignore`.
 - **Safe for a live site.** It asks whether you are responsible for the site or authorized to test it (`--yes` confirms it, e.g. in CI), respects `robots.txt`, visits at most one page per second, identifies itself as `ux-validate` in the user agent, doesn't follow sign out, delete or cancel links, and never submits forms. The personas go as far as the final button of a form, login or purchase, and stop there.
 - **With personas and tasks:** `/ux-audit <url>` in your AI tool asks for the authorization, the personas and the tasks, runs the audit and browses as each persona. To use it without the plugin, install the commands once in any folder: `npx ux-validate init --tools claude-code` (or `cursor`, `codex`, `gemini`).
-- **The report** adds "Limits of this audit" (pages not visited and what couldn't be tested) and a "Plan for whoever maintains the site": first what stops people from finishing their tasks, then critical and high issues, then the rest grouped by kind. Each issue shows the page, the element and a screenshot instead of the file and line. Share `report.html` with whoever maintains the site.
-- **Options:** `--personas margaret,lucas-screen-reader` or `all`, `--task "<task>"` (repeatable), `--max-pages 20`, `--viewports mobile,desktop`, `--fail-on high`. Other commands work in the site's folder with `--dir`, e.g. `npx ux-validate report --dir ux-validate-audits/www.example.com`.
+- **The report** adds "Limits of this audit" (pages not visited and what couldn't be tested) and a "Plan for whoever maintains the site": first what stops people from finishing their tasks, then critical and high issues, then the rest grouped by kind. Each issue shows the page, the element and a screenshot instead of the file and line. To share it with whoever maintains the site, send the whole run folder.
+- **Options:** `--personas margaret,lucas-screen-reader` or `all`, `--task "<task>"` (repeatable), `--max-pages 20`, `--viewports mobile,desktop`, `--fail-on high`, `--client "<name>"` and `--logo <file or URL>`. Other commands work in the site's folder with `--dir`, e.g. `npx ux-validate report --dir ux-validate-audits/www.example.com`.
 - **What doesn't apply:** file and line, React component names, `fix` and `sarif`, which work on the project's code. Pages behind a login aren't audited yet.
 
 ## The report
 
-`report.html` uses the ux-validate visual identity and has, in order:
+The report is a small site in the run folder, with the ux-validate visual identity. `report.html` is the home page, and each area has its own page, linked from a menu at the top:
 
-1. **The main numbers:** average score, tasks completed, goals not achieved and issues by severity, with a reminder that the personas are simulated (or that the report has only the automated checks).
-2. **Scores by persona:** a card for each one, with the overall score from 0 to 100, a bar per category (content, navigation, interface, accessibility) and their traits. Each persona only loses points for the issues that affect them.
-3. **Tasks:** a task × persona table with the outcome and the number of steps, and a card for each time a persona got lost (first click, backtracks, notes and screenshot).
-4. **Fix first:** the critical and high issues as a numbered list, with the file to fix. In an audit, the plan for whoever maintains the site and the limits of the audit.
-5. **Goals** of each persona, **color vision** (each page as seen with each type of color blindness) and **all the issues**, with filters by category: evidence, the WCAG criterion, the snippet, how to fix it and the screenshot.
+| Page | Contents |
+|---|---|
+| **Overview** (`report.html`) | The main numbers (average score, tasks completed, goals not achieved, issues by severity), each persona's score, **Fix first** (the critical and high issues, with the file to fix) and shortcuts to the other areas |
+| **Personas** | A card for each persona: overall score from 0 to 100, a bar per category, traits, summary and goals. Each persona only loses points for the issues that affect them |
+| **Tasks** | A task × persona table with the outcome and the number of steps, and where each persona got lost (first click, backtracks, notes and screenshot) |
+| **Issues** | Every issue, closed in one line, opening with the evidence, the WCAG criterion, the snippet, how to fix it and the screenshot. Filters by category, severity and persona |
+| **Color vision** | Each page as seen with each type of color blindness |
+| **Audit scope** | Audit only: the pages analyzed and what was left out. In an audit, the overview shows the **Fix plan** for whoever maintains the site instead of "Fix first" |
 
-`report.md` has the same content in Markdown. The HTML report is light only and loads its fonts from Google Fonts; offline, it uses the system fonts.
+- **Client and logo:** shown at the top of every page. `init` and `/ux-audit` ask for them (optional), or set them in `ux-validate.config.yml`; a local logo is copied into the run folder.
+
+  ```yaml
+  report:
+    client: Client name
+    logo: ./client-logo.png   # image file (png, jpg, svg, webp) or https:// URL
+  ```
+
+- **Footer:** who evaluated (AI tool and model), the date and the ux-validate version.
+- **Sharing:** send the whole run folder (e.g. as a zip): the pages, `report.css`, the logo and the screenshots go together.
+- `report.md` has all the content in a single Markdown file. The HTML report is light only and loads its fonts from Google Fonts; offline, it uses the system fonts.
 
 ## What is checked
 
@@ -656,6 +670,7 @@ Suggestions and PRs are welcome. Run `npm test` before opening a PR. To change t
 - [x] Tasks: goals without step-by-step, first click, backtracks
 - [x] Audit of a published site from its URL
 - [x] Report with the ux-validate visual identity
+- [x] Report as a site, one page per area, with the client's logo
 - [ ] Audit pages behind a login (saved session)
 - [ ] Persona browsing from the terminal (no AI tool), with the model chosen in setup
 - [ ] Repeat the browsing and only confirm issues that show up in more than one run

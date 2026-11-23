@@ -123,5 +123,5 @@ For each of your findings, look in the project's code for the likely file. Searc
    - any warning in `checks-brief.md` about tasks that use the interface's own words: suggest rewriting them;
    - the goals that failed and why, one line each;
    - the 5 most important issues, with the likely file to fix;
-   - the path to `report.html` to see everything with screenshots;
+   - the path to `report.html`, the report's home page, with a page for each area (personas, tasks, issues…) and the screenshots;
    - an offer to fix the issues with `/ux-fix`, starting with the critical ones.

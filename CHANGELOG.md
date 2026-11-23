@@ -2,6 +2,18 @@
 
 All notable changes to ux-validate. The npm package, the GitHub Action (`@v1`) and the Claude Code plugin share the same version.
 
+## 1.3.0 — 2026-11-23
+
+- **The HTML report is now a small site,** one page per area, so large reports stay easy to read:
+  - **Overview** (`report.html`): main numbers, each persona's score, "Fix first" (in an audit, the **Fix plan**) and shortcuts to the areas.
+  - **Personas**, **Tasks**, **Issues** and **Color vision** pages, plus **Audit scope** in an audit (pages analyzed and what was left out).
+  - Issues are closed in one line and open with the details; filters by category, severity and persona; links from the plan open the right issue.
+  - A menu at the top of every page (a "Menu" button on phones), a skip link and a shared `report.css`.
+- **Client and logo** at the top of the report: `init`, the plugin's setup and `/ux-audit` ask for them (optional); `--client` and `--logo` in `init` and `audit`; `report.client` and `report.logo` in the config. A local logo is copied into the run folder (and, in an audit, into the site's folder).
+- **Footer** with who evaluated (AI tool and model), the date and the ux-validate version, instead of the top of the report.
+- "To apply the fixes" now says "in your AI tool" instead of "in Claude Code".
+- `report.md` is unchanged.
+
 ## 1.2.0 — 2026-11-18
 
 - **New look for `report.html`, with the ux-validate visual identity** (the same as the website): dotted paper, the logo, lime, lilac and yellow, DM Sans, DM Mono and Caveat.

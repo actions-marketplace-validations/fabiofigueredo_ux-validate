@@ -157,7 +157,16 @@ test('relatório em Markdown e HTML com a seção de tarefas', async () => {
   assert.match(md, /first click: "Products" \(off the path\)/);
   assert.match(md, /Success criterion:\*\* The price shows on screen\./);
   assert.match(md, /Task "price" uses the exact words/);
-  const html = fs.readFileSync(path.join(run, 'report.html'), 'utf8');
+  const html = fs.readFileSync(path.join(run, 'report-tasks.html'), 'utf8');
   assert.match(html, /<table class="tasks">/);
   assert.match(html, /doesn&#39;t replace a usability test with real people/);
+});
+
+test('init --client e --logo gravam o cliente e o logo do relatório; logo inválido é recusado', async () => {
+  const { init } = await import('../src/init.js');
+  const dir = tmp();
+  fs.writeFileSync(path.join(dir, 'marca.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>');
+  await quiet(() => init({ cwd: dir, yes: true, tools: 'none', personas: 'margaret', client: 'Acme Ltda', logo: 'marca.svg', tasks: ['You want to know the price.'] }));
+  assert.deepEqual(YAML.parse(fs.readFileSync(path.join(dir, 'ux-validate.config.yml'), 'utf8')).report, { client: 'Acme Ltda', logo: 'marca.svg' });
+  await assert.rejects(quiet(() => init({ cwd: tmp(), yes: true, tools: 'none', personas: 'none', logo: 'nao-existe.png' })), /Logo not found/);
 });

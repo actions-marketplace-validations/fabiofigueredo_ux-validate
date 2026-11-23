@@ -36,3 +36,16 @@ export function inGitRepo(cwd) {
     if (path.dirname(dir) === dir) return false;
   }
 }
+
+const LOGO_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.svg', '.webp', '.gif'];
+
+/** Caminho do logo como o usuário digitou (no Windows, arrastar o arquivo para o terminal põe aspas). */
+export const cleanLogo = (value) => String(value ?? '').trim().replace(/^(["'])(.*)\1$/, '$2').trim();
+
+/** Logo do relatório: vazio, uma URL http(s) ou uma imagem que existe (relativa a `cwd`). */
+export function isValidLogo(cwd, value) {
+  const v = cleanLogo(value);
+  if (!v || /^https?:\/\//i.test(v)) return true;
+  const file = path.resolve(cwd, v);
+  return fs.existsSync(file) && fs.statSync(file).isFile() && LOGO_EXTENSIONS.includes(path.extname(file).toLowerCase());
+}

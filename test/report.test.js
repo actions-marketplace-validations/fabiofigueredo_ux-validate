@@ -70,25 +70,30 @@ test('report.html só cria links http(s), file ou relativos (bloqueia javascript
   } finally {
     console.log = log;
   }
-  const html = fs.readFileSync(path.join(dir, 'report.html'), 'utf8');
+  // O relatório é um site: confere todas as páginas.
+  const html = fs.readdirSync(dir).filter((f) => /^report.*\.html$/.test(f)).map((f) => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
   assert.doesNotMatch(html, /href="javascript:|href="JavaScript:|src="data:/i);
   assert.match(html, /href="http:\/\/localhost\/ok"/);
   assert.match(html, /src="screenshots\/home\.png"/);
   assert.match(html, /rel="noopener noreferrer"/);
 });
 
-test('report.html: identidade visual do ux-validate, números principais e plano em lista', async () => {
+test('relatório em páginas: visão geral, áreas, logo do cliente e rodapé com quem avaliou', async () => {
+  setLocale('en');
   const { buildReport } = await import('../src/report.js');
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'uxv-design-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'uxv-site-'));
+  fs.writeFileSync(path.join(dir, 'logo.svg'), '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>');
+  fs.writeFileSync(path.join(dir, 'ux-validate.config.yml'), 'app:\n  url: http://localhost/\nreport:\n  client: Cliente X\n  logo: logo.svg\n');
   const run = path.join(dir, 'run');
   fs.mkdirSync(run);
+  fs.writeFileSync(path.join(run, 'report-color-vision.html'), 'antiga'); // página de uma geração anterior
   fs.writeFileSync(
     path.join(run, 'checks.json'),
     JSON.stringify({ url: 'http://localhost/', pages: [{ url: 'http://localhost/', ok: true, title: 'Acme' }], findings: [{ id: 'C001', category: 'ui', severity: 'high', title: 'Overflow', page: 'http://localhost/plans' }] }),
   );
   fs.writeFileSync(
     path.join(run, 'findings.json'),
-    JSON.stringify({ personas: [{ id: 'm', name: 'Margaret', viewport: 'mobile', goals: [{ goal: 'Find the price', outcome: 'fail', steps: 9 }] }], findings: [] }),
+    JSON.stringify({ agent: { tool: 'claude-code', model: 'claude-opus-5-5' }, personas: [{ id: 'm', name: 'Margaret', viewport: 'mobile', goals: [{ goal: 'Find the price', outcome: 'fail', steps: 9 }] }], findings: [] }),
   );
   const log = console.log;
   console.log = () => {};
@@ -97,15 +102,21 @@ test('report.html: identidade visual do ux-validate, números principais e plano
   } finally {
     console.log = log;
   }
-  const html = fs.readFileSync(path.join(run, 'report.html'), 'utf8');
-  assert.match(html, /<title>[^<]*Acme<\/title>/);
-  assert.match(html, /class="logo"><span class="dots"/);
-  assert.match(html, /fonts\.googleapis\.com/);
-  assert.match(html, /class="hand"/);
-  assert.match(html, /class="kpis"/);
-  assert.match(html, /role="img" aria-label="[^"]+ \d+ /, 'nota com texto alternativo');
-  assert.match(html, /<ol><li><span><a href="#f-C001">Overflow<\/a>/, 'corrigir primeiro aponta para o problema');
-  assert.match(html, /id="f-C001"/);
-  assert.match(html, /<small[^>]*>[^<]*\/plans/, 'endereço curto no plano');
-  assert.doesNotMatch(html, /prefers-color-scheme:dark/);
+  const files = fs.readdirSync(run).filter((f) => /^report/.test(f)).sort();
+  assert.deepEqual(files, ['report-issues.html', 'report-logo.svg', 'report-personas.html', 'report.css', 'report.html', 'report.md']);
+  const home = fs.readFileSync(path.join(run, 'report.html'), 'utf8');
+  assert.match(home, /<title>Overview · validation report · Cliente X<\/title>/);
+  assert.match(home, /<img src="report-logo\.svg" alt="Cliente X"/);
+  assert.match(home, /<link rel="stylesheet" href="report\.css">/);
+  assert.match(home, /<a href="report\.html" aria-current="page">Overview<\/a>/);
+  assert.match(home, /<a href="report-issues\.html">Issues<span class="n">1<\/span><\/a>/);
+  assert.match(home, /class="kpis"/);
+  assert.match(home, /<ol><li><span><a href="report-issues\.html#f-C001">Overflow<\/a>/, 'corrigir primeiro aponta para o problema');
+  assert.match(home, /<footer>[\s\S]*Evaluated by claude-code · claude-opus-5-5[\s\S]*Built by ux-validate/, 'quem avaliou fica no rodapé');
+  assert.doesNotMatch(home.split('<footer>')[0], /claude-opus-5-5/, 'e não no topo');
+  assert.doesNotMatch(home, /prefers-color-scheme:dark/);
+  const issues = fs.readFileSync(path.join(run, 'report-issues.html'), 'utf8');
+  assert.match(issues, /<details class="finding" id="f-C001"/);
+  assert.match(issues, /aria-current="page">Issues/);
+  assert.match(fs.readFileSync(path.join(run, 'report-personas.html'), 'utf8'), /id="p-m"/);
 });
