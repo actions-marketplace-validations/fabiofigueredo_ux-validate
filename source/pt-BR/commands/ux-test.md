@@ -121,5 +121,5 @@ Para cada achado seu, procure no código do projeto o arquivo provável. Busque 
    - os avisos do `checks-brief.md` sobre tarefas que usam as palavras da própria interface: sugira reescrevê-las;
    - os objetivos que falharam e o motivo, em uma linha cada;
    - os 5 problemas mais importantes, com o arquivo provável de correção;
-   - o caminho do `report.html` para ver tudo com screenshots;
+   - o caminho do `report.html`, a página inicial do relatório, com uma página para cada área (personas, tarefas, problemas…) e os screenshots;
    - a oferta de corrigir os problemas com `/ux-fix`, começando pelos críticos.

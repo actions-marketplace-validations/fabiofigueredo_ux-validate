@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import YAML from 'yaml';
-import { confirm } from '@inquirer/prompts';
+import { confirm, input } from '@inquirer/prompts';
 import { VIEWPORTS, loadConfig } from './config.js';
 import { t, getLocale } from './i18n.js';
 import { addPresets } from './persona.js';
 import { loadTasks, withIds, writeTasks } from './tasks.js';
-import { ensureGitignore, inGitRepo } from './files.js';
+import { cleanLogo, ensureGitignore, inGitRepo, isValidLogo } from './files.js';
 
 /**
  * `ux-validate audit <url>`: as mesmas checagens num site já publicado, sem o código do projeto.
@@ -68,12 +68,38 @@ export function prepareAuditDir(dir, { url, maxPages, viewports }) {
   return config;
 }
 
-export async function audit({ cwd, url: rawUrl, yes = false, personas, tasks = [], maxPages, viewports, failOn, log = console.log }) {
+/**
+ * Cliente e logo do relatório da auditoria (`report` na configuração da pasta do site). Um logo local é
+ * copiado para a pasta do site, que continua completa quando enviada ao cliente.
+ */
+export function setAuditReport(dir, cwd, { client, logo }) {
+  const file = path.join(dir, AUDIT_CONFIG);
+  const config = YAML.parse(fs.readFileSync(file, 'utf8')) ?? {};
+  const report = { ...config.report };
+  if (client != null && String(client).trim()) report.client = String(client).trim();
+  const value = cleanLogo(logo);
+  if (value) {
+    if (/^https?:\/\//i.test(value)) report.logo = value;
+    else {
+      const name = `logo${path.extname(value).toLowerCase()}`;
+      const source = path.resolve(cwd, value);
+      if (path.resolve(dir, name) !== source) fs.copyFileSync(source, path.join(dir, name));
+      report.logo = name;
+    }
+  }
+  if (!Object.keys(report).length) return;
+  config.report = report;
+  fs.writeFileSync(file, `${t('audit.configHeader')}\n${YAML.stringify(config)}`);
+}
+
+export async function audit({ cwd, url: rawUrl, yes = false, personas, tasks = [], maxPages, viewports, failOn, client, logo, log = console.log }) {
   const url = parseAuditUrl(rawUrl);
   const max = maxPages == null ? undefined : Number(maxPages);
   if (max !== undefined && !(Number.isInteger(max) && max > 0)) throw new Error(t('audit.invalidMaxPages', { value: maxPages }));
   const vps = viewports ? String(viewports).split(',').map((v) => v.trim()).filter(Boolean) : undefined;
   if (vps?.some((v) => !VIEWPORTS[v])) throw new Error(t('config.unknownViewport', { list: vps.filter((v) => !VIEWPORTS[v]).join(', '), valid: Object.keys(VIEWPORTS).join(', ') }));
+
+  if (logo != null && !isValidLogo(cwd, logo)) throw new Error(t('init.logoInvalid'));
 
   // Só sites próprios ou com autorização: a pergunta é obrigatória, a menos que --yes confirme.
   if (!yes) {
@@ -86,6 +112,16 @@ export async function audit({ cwd, url: rawUrl, yes = false, personas, tasks = [
   prepareAuditDir(dir, { url, maxPages: max, viewports: vps });
   const rel = (p) => path.relative(cwd, p).split(path.sep).join('/') || '.';
   log(t('audit.folder', { dir: rel(dir) }));
+  // Cliente e logo do relatório: das opções ou, no terminal, perguntados quando a pasta ainda não os tem.
+  let report = { client, logo };
+  const current = loadConfig(dir, AUDIT_CONFIG).report ?? {};
+  if (!yes && client == null && logo == null && !current.client && !current.logo) {
+    report = {
+      client: await input({ message: t('init.clientQ') }),
+      logo: cleanLogo(await input({ message: t('init.logoQ'), validate: (v) => isValidLogo(cwd, v) || t('init.logoInvalid') })),
+    };
+  }
+  setAuditReport(dir, cwd, report);
   // Dentro de um repositório Git, a pasta das auditorias não deve ir para o commit por engano.
   if (inGitRepo(cwd)) {
     const { status } = ensureGitignore(cwd, `${AUDITS_DIR}/`, t('audit.gitignoreComment'));

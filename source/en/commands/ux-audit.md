@@ -31,17 +31,18 @@ Write everything (findings, summaries, your answer) in English.
 Each site has its own folder, `ux-validate-audits/<domain>/` (e.g. `ux-validate-audits/www.example.com/`), with its personas (`personas/`), its tasks (`tasks.yml`) and one folder per run. If it already exists, reuse its personas and tasks, and tell the user.
 
 1. **Personas.** If the folder has none, run `{{PERSONA_EXAMPLES_CMD}}` and show the user the predefined personas with each one's characteristics (who they are, device, tech literacy, vision, patience, reading level, goals). Ask whether they want **the predefined ones** (all or some), **their own**, or **both**, and wait for the answer. Predefined ones are added in Step 2 (`--personas`). To create one, follow the `/ux-persona` flow and save the file in `ux-validate-audits/<domain>/personas/` (format in `{{REFERENCES_DIR}}/persona-format.md`).
-2. **Tasks (mandatory).** If the folder has no tasks, ask the user what people come to do on the site and write the tasks following `{{REFERENCES_DIR}}/tasks-format.md`: goals as scenarios, no step-by-step, without the words of the site's menus and buttons (open the home page and read the menu to avoid them), with a success criterion when possible. Show them and ask for confirmation.
+2. **Client and logo (optional).** If the folder's `ux-validate.config.yml` has no `report.client` or `report.logo`, ask for the client's name and logo (an image file such as png, jpg or svg, or an https:// URL), shown at the top of the report. Both can be left empty.
+3. **Tasks (mandatory). If the folder has no tasks, ask the user what people come to do on the site and write the tasks following `{{REFERENCES_DIR}}/tasks-format.md`: goals as scenarios, no step-by-step, without the words of the site's menus and buttons (open the home page and read the menu to avoid them), with a success criterion when possible. Show them and ask for confirmation.
 
 ## Step 2: automated audit
 
 Run, with the personas and tasks from Step 1 (each new task in its own `--task`):
 
 ```bash
-{{AUDIT_CMD}} <url> --yes --personas <ids> --task "<task 1>" --task "<task 2>"
+{{AUDIT_CMD}} <url> --yes --personas <ids> --task "<task 1>" --task "<task 2>" --client "<client>" --logo <logo file or URL>
 ```
 
-Use `--yes` only because the user already confirmed the authorization in rule 1. Leave out `--personas` and `--task` when the folder already has them. The command creates the folder, respects robots.txt, waits between pages, doesn't follow sign out/delete links, and writes a run folder `ux-validate-audits/<domain>/<date-time>/` with `checks-brief.md`, `checks.json`, screenshots, `color-vision/` and `aria/`. If you created personas or wrote tasks by hand, check them with `{{PERSONA_VALIDATE_CMD}} --dir ux-validate-audits/<domain>` and `{{TASK_VALIDATE_CMD}} --dir ux-validate-audits/<domain>`.
+Use `--yes` only because the user already confirmed the authorization in rule 1. Leave out `--personas` and `--task` when the folder already has them, and `--client` and `--logo` when empty. The command creates the folder, respects robots.txt, waits between pages, doesn't follow sign out/delete links, and writes a run folder `ux-validate-audits/<domain>/<date-time>/` with `checks-brief.md`, `checks.json`, screenshots, `color-vision/` and `aria/`. If you created personas or wrote tasks by hand, check them with `{{PERSONA_VALIDATE_CMD}} --dir ux-validate-audits/<domain>` and `{{TASK_VALIDATE_CMD}} --dir ux-validate-audits/<domain>`.
 
 Read `checks-brief.md` (not `checks.json`; open it only for the details of a specific id). These issues **are already recorded**: don't repeat them as your own findings. When one of them hurts a persona in a specific way, create your own finding explaining the impact and cite its id in `relatedChecks`.
 
@@ -84,6 +85,6 @@ Once per audit (not per persona), unless `--only` excludes them:
    - the table of scores by persona and the tasks table (task × persona), with where the personas got lost;
    - the limits of the audit;
    - the top of the "Plan for whoever maintains the site": what stops the personas, then the critical and high issues;
-   - the path to `report.html`, which they can share with whoever maintains the site.
+   - the path to `report.html`, the report's home page (each area has its own page). To share it with whoever maintains the site, send the whole run folder (e.g. as a zip).
 
 Don't offer `/ux-fix`: an audit has no code to change.

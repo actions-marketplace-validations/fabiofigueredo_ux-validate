@@ -20,17 +20,17 @@ Codex CLI ($ux-test) or Gemini CLI. Without AI, only the automated validation ru
 
 Usage:
   ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini|none] [--personas all|none|id,id]
-                     [--url <url>] [--start <command>] [--task "<task>" …]
+                     [--url <url>] [--start <command>] [--task "<task>" …] [--client "<name>"] [--logo <file|url>]
                                                  Set up the project and install the commands in your AI tools
   ux-validate install-browser                    Install the browser (Chromium) for the Playwright version ux-validate uses
   ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
                                                  Run the automated checks (accessibility, links, spelling, content)
   ux-validate audit  <url> [--yes] [--personas id,id|all] [--task "<task>" …] [--max-pages 20]
-                     [--viewports mobile,desktop] [--fail-on high]
+                     [--viewports mobile,desktop] [--fail-on high] [--client "<name>"] [--logo <file|url>]
                                                  Audit a published site, without its code (sites you are responsible
                                                  for or authorized to test; respects robots.txt, never submits forms).
                                                  With personas and tasks: /ux-audit <url> in your AI tool
-  ux-validate report [--run <dir>]               Build report.md and report.html from a run
+  ux-validate report [--run <dir>]               Build the report from a run: report.md and the report site (report.html + one page per area)
   ux-validate sarif  [--run <dir>] [--out <file>]
                                                  Export the issues as SARIF (GitHub code scanning)
   ux-validate comment [--run <dir>] [--out <file>]
@@ -82,6 +82,9 @@ General options:
     frameworkDetected: '\n  {name} project detected: we suggest the development server, where ux-validate can point to the component and file of each issue.\n',
     urlQ: 'URL of the app to test (e.g. http://localhost:3000):',
     startQ: 'Command to start the app (optional, e.g. npm run dev):',
+    clientQ: 'Client name, shown at the top of the report (optional):',
+    logoQ: 'Client logo for the report: an image file (png, jpg, svg, webp) or https:// URL (optional):',
+    logoInvalid: 'Logo not found or not an image (png, jpg, svg, webp, gif). Use a file path, an https:// URL, or leave it empty.',
     viewportsQ: 'Screen sizes:',
     languageQ: "Language of the app's content (for the spell check):",
     languages: { 'pt-BR': 'Portuguese (Brazil)', en: 'English', es: 'Spanish', other: 'Other (no spell check)' },
@@ -485,6 +488,42 @@ General options:
   },
 
   report: {
+    site: {
+      nav: { overview: 'Overview', personas: 'Personas', tasks: 'Tasks', issues: 'Issues', colorVision: 'Color vision', scope: 'Audit scope' },
+      skip: 'Skip to content',
+      menu: 'Menu',
+      navLabel: 'Report areas',
+      evaluatedBy: 'Evaluated by {by}',
+      generatedBy: 'Built by ux-validate {version}',
+      disclaimer: 'Personas simulated by AI: they point out likely barriers, but do not replace testing with real people.',
+      logoNotFound: '⚠ Report logo not found or not an image (png, jpg, svg, webp, gif): {logo}. The report shows the client name instead.',
+      planTitle: 'Fix plan',
+      viewAllIssues: ({ n }) => `See all ${n} ${n === 1 ? 'issue' : 'issues'} →`,
+      viewPersonas: 'See the personas →',
+      areasHand: 'the full report',
+      areasTitle: 'Areas',
+      open: 'Open →',
+      area: {
+        personas: ({ n }) => `Scores by category, goals and the summary of each of the ${n} ${n === 1 ? 'persona' : 'personas'}.`,
+        personasNone: 'Overall score by category (no personas tested yet).',
+        tasks: ({ tasks, personas }) => `${tasks} ${tasks === 1 ? 'task' : 'tasks'} × ${personas} ${personas === 1 ? 'persona' : 'personas'}, with the first click and where each one got lost.`,
+        issues: ({ n }) => `${n} ${n === 1 ? 'issue' : 'issues'} with evidence and how to fix them, filterable by category, severity and persona.`,
+        colorVision: 'Each page as seen by people with color blindness.',
+        scope: 'The pages analyzed and what was left out of the audit.',
+      },
+      lostHand: 'where they got stuck',
+      lostTitle: 'Where the personas got lost',
+      issuesIntro: 'Click an issue to see the evidence and how to fix it. Use the filters to focus on a category, severity or persona.',
+      filterSeverity: 'Severity',
+      filterPersona: 'Persona',
+      any: 'all',
+      countOf: ({ n, total }) => `${n} of ${total} issues`,
+      scopeTitle: 'Audit scope',
+      scopeHand: 'what was and wasn\'t tested',
+      analyzedHand: 'what was tested',
+      analyzedTitle: ({ n }) => `Pages analyzed (${n})`,
+      outHand: 'what was left out',
+    },
     html: {
       hand: {
         report: 'validation report',
@@ -557,9 +596,9 @@ General options:
     fixFirst: 'Fix first',
     noTop: 'No critical or high issues. 🎉',
     applyFixes:
-      '**To apply the fixes:** run `/ux-fix` in Claude Code (uses the tool\'s model and account) or `npx ux-validate fix` in the terminal (uses the model and API key set up in init). Both show each change before saving.',
+      '**To apply the fixes:** run `/ux-fix` in your AI tool (uses the tool\'s model and account) or `npx ux-validate fix` in the terminal (uses the model and API key set up in init). Both show each change before saving.',
     applyFixesHtml:
-      '<strong>To apply the fixes:</strong> run <code>/ux-fix</code> in Claude Code (uses the tool\'s model and account) or <code>npx ux-validate fix</code> in the terminal (uses the model and API key set up in init). Both show each change before saving.',
+      '<strong>To apply the fixes:</strong> run <code>/ux-fix</code> in your AI tool (uses the tool\'s model and account) or <code>npx ux-validate fix</code> in the terminal (uses the model and API key set up in init). Both show each change before saving.',
     noIssues: 'No issues found.',
     noIssuesHtml: 'No issues found. 🎉',
     severity: 'Severity',

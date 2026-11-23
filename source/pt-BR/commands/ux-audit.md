@@ -31,17 +31,18 @@ Escreva tudo (achados, resumos, sua resposta) em português do Brasil.
 Cada site tem uma pasta própria, `ux-validate-audits/<domínio>/` (ex.: `ux-validate-audits/www.exemplo.com.br/`), com as personas (`personas/`), as tarefas (`tasks.yml`) e uma pasta por execução. Se ela já existir, reaproveite as personas e as tarefas e avise o usuário.
 
 1. **Personas.** Se a pasta não tiver nenhuma, rode `{{PERSONA_EXAMPLES_CMD}}` e mostre ao usuário as personas pré-definidas com as características de cada uma (quem é, dispositivo, familiaridade com tecnologia, visão, paciência, leitura, objetivos). Pergunte se ele quer **as pré-definidas** (todas ou algumas), **as dele** ou **as duas coisas**, e espere a resposta. As pré-definidas entram no Passo 2 (`--personas`). Para criar uma, siga o fluxo do `/ux-persona` e salve o arquivo em `ux-validate-audits/<domínio>/personas/` (formato em `{{REFERENCES_DIR}}/persona-format.md`).
-2. **Tarefas (obrigatório).** Se a pasta não tiver tarefas, pergunte ao usuário o que as pessoas vêm fazer no site e escreva as tarefas seguindo `{{REFERENCES_DIR}}/tasks-format.md`: objetivos em forma de cenário, sem passo a passo, sem as palavras dos menus e botões do site (abra a página inicial e leia o menu para evitá-las), com critério de sucesso quando possível. Mostre e peça confirmação.
+2. **Cliente e logo (opcional).** Se o `ux-validate.config.yml` da pasta não tiver `report.client` ou `report.logo`, pergunte o nome e o logo do cliente (um arquivo de imagem, como png, jpg ou svg, ou uma URL https://), que aparecem no topo do relatório. Os dois podem ficar em branco.
+3. **Tarefas (obrigatório). Se a pasta não tiver tarefas, pergunte ao usuário o que as pessoas vêm fazer no site e escreva as tarefas seguindo `{{REFERENCES_DIR}}/tasks-format.md`: objetivos em forma de cenário, sem passo a passo, sem as palavras dos menus e botões do site (abra a página inicial e leia o menu para evitá-las), com critério de sucesso quando possível. Mostre e peça confirmação.
 
 ## Passo 2: auditoria automática
 
 Rode, com as personas e tarefas do Passo 1 (cada tarefa nova num `--task`):
 
 ```bash
-{{AUDIT_CMD}} <url> --yes --personas <ids> --task "<tarefa 1>" --task "<tarefa 2>"
+{{AUDIT_CMD}} <url> --yes --personas <ids> --task "<tarefa 1>" --task "<tarefa 2>" --client "<cliente>" --logo <arquivo ou URL do logo>
 ```
 
-Use `--yes` só porque o usuário já confirmou a autorização na regra 1. Deixe `--personas` e `--task` de fora quando a pasta já as tiver. O comando cria a pasta, respeita o robots.txt, espera entre as páginas, não segue links de sair/excluir e grava uma pasta de execução `ux-validate-audits/<domínio>/<data-hora>/` com `checks-brief.md`, `checks.json`, screenshots, `color-vision/` e `aria/`. Se você criou personas ou escreveu tarefas à mão, confira com `{{PERSONA_VALIDATE_CMD}} --dir ux-validate-audits/<domínio>` e `{{TASK_VALIDATE_CMD}} --dir ux-validate-audits/<domínio>`.
+Use `--yes` só porque o usuário já confirmou a autorização na regra 1. Deixe `--personas` e `--task` de fora quando a pasta já as tiver, e `--client` e `--logo` quando estiverem em branco. O comando cria a pasta, respeita o robots.txt, espera entre as páginas, não segue links de sair/excluir e grava uma pasta de execução `ux-validate-audits/<domínio>/<data-hora>/` com `checks-brief.md`, `checks.json`, screenshots, `color-vision/` e `aria/`. Se você criou personas ou escreveu tarefas à mão, confira com `{{PERSONA_VALIDATE_CMD}} --dir ux-validate-audits/<domínio>` e `{{TASK_VALIDATE_CMD}} --dir ux-validate-audits/<domínio>`.
 
 Leia o `checks-brief.md` (não o `checks.json`; abra-o só para os detalhes de um id específico). Esses problemas **já estão registrados**: não os repita como achados seus. Quando um deles atrapalhar uma persona de um jeito específico, crie um achado próprio explicando o impacto e cite o id em `relatedChecks`.
 
@@ -84,6 +85,6 @@ Uma vez por auditoria (não por persona), a menos que `--only` as exclua:
    - a tabela de notas por persona e a tabela de tarefas (tarefa × persona), com onde as personas se perderam;
    - os limites da auditoria;
    - o começo do "Plano para quem mantém o site": o que impede as personas, depois os problemas críticos e altos;
-   - o caminho do `report.html`, que ele pode compartilhar com quem mantém o site.
+   - o caminho do `report.html`, a página inicial do relatório (cada área tem a própria página). Para compartilhar com quem mantém o site, envie a pasta inteira da execução (ex.: em zip).
 
 Não ofereça o `/ux-fix`: uma auditoria não tem código para alterar.

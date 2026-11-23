@@ -114,9 +114,10 @@ test('audit de ponta a ponta: respeita robots.txt, não segue sair/excluir, não
   const { server, hits, url } = await startSite();
   const cwd = tmp();
   fs.mkdirSync(path.join(cwd, '.git')); // a auditoria roda dentro de um repositório Git
+  fs.writeFileSync(path.join(cwd, 'logo.png'), Buffer.from('89504e470d0a1a0a', 'hex'));
   try {
     const { value, lines } = await quiet(() =>
-      audit({ cwd, url, yes: true, personas: 'margaret', tasks: ['You want to talk to the company.'], viewports: 'desktop', log: console.log }),
+      audit({ cwd, url, yes: true, personas: 'margaret', tasks: ['You want to talk to the company.'], viewports: 'desktop', client: 'Acme Ltda', logo: '"logo.png"', log: console.log }),
     );
     const { dir, runDir, result } = value;
 
@@ -133,6 +134,10 @@ test('audit de ponta a ponta: respeita robots.txt, não segue sair/excluir, não
     const config = YAML.parse(fs.readFileSync(path.join(dir, 'ux-validate.config.yml'), 'utf8'));
     assert.equal(config.mode, 'audit');
     assert.equal(config.crawl.delayMs, 1000);
+    assert.deepEqual(config.report, { client: 'Acme Ltda', logo: 'logo.png' }, 'cliente e logo (copiado para a pasta do site)');
+    assert.ok(fs.existsSync(path.join(dir, 'logo.png')) && fs.existsSync(path.join(runDir, 'report-logo.png')));
+    assert.match(fs.readFileSync(path.join(runDir, 'report.html'), 'utf8'), /<img src="report-logo\.png" alt="Acme Ltda"/);
+    assert.ok(fs.existsSync(path.join(runDir, 'report-scope.html')), 'página de escopo da auditoria');
     assert.ok(fs.existsSync(path.join(dir, 'personas/margaret.yml')));
     assert.equal(fs.readFileSync(path.join(cwd, '.gitignore'), 'utf8'), '# ux-validate: audits of published sites\nux-validate-audits/\n');
     assert.equal(YAML.parse(fs.readFileSync(path.join(dir, 'tasks.yml'), 'utf8')).length, 1);
