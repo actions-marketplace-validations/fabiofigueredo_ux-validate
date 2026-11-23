@@ -5,7 +5,7 @@ import YAML from 'yaml';
 import { checkbox, confirm, input, select } from '@inquirer/prompts';
 import { PROVIDERS, VIEWPORTS, WORK_DIR, RUNS_DIR } from './config.js';
 import { ADAPTERS, sourceDir, loadCommands } from './adapters/index.js';
-import { ensureGitignore as ensureProjectGitignore, writeFile } from './files.js';
+import { cleanLogo, ensureGitignore as ensureProjectGitignore, isValidLogo, writeFile } from './files.js';
 import { projectDictionary } from './spelling.js';
 import { t, getLocale, setLocale } from './i18n.js';
 import { loadPresets, describePersona, addPresets, newPersona, countPersonas } from './persona.js';
@@ -15,17 +15,23 @@ import { askTasks, withIds, writeTasks, loadTasks, tasksFile } from './tasks.js'
 
 const CONTENT_LANGUAGES = ['pt-BR', 'en', 'es', 'other'];
 
-export async function init({ cwd, yes = false, force = false, tools, personas, url, start, tasks }) {
+export async function init({ cwd, yes = false, force = false, tools, personas, url, start, tasks, client, logo }) {
   // Projeto React (Vite, Next.js, CRA…): a URL e o comando do servidor de desenvolvimento viram o padrão.
   // Sem React: um site só com HTML (index.html na raiz ou numa subpasta) é servido com http-server.
   const framework = detectFramework(cwd) ?? detectStaticSite(cwd);
-  const answers = yes ? defaultAnswers(tools, personas, framework) : await ask(framework);
+  const answers = yes ? defaultAnswers(tools, personas, framework) : await ask(framework, cwd);
   if (url) {
     const valid = validateUrl(url);
     if (valid !== true) throw new Error(valid);
     answers.url = url;
   }
   if (start != null) answers.start = start;
+  // Cliente e logo do relatório (opcionais).
+  if (client != null) answers.client = String(client).trim();
+  if (logo != null) {
+    if (!isValidLogo(cwd, logo)) throw new Error(t('init.logoInvalid'));
+    answers.logo = cleanLogo(logo);
+  }
   if (tasks?.length) answers.tasks = tasks.map((task) => ({ task: String(task).trim() })).filter((x) => x.task);
   setLocale(answers.locale);
   // Carrega os comandos antes de gravar qualquer arquivo, para não deixar uma instalação pela metade.
@@ -163,7 +169,7 @@ function defaultAnswers(tools, personas, framework) {
   };
 }
 
-async function ask(framework) {
+async function ask(framework, cwd) {
   // A primeira pergunta aparece nos dois idiomas; daí em diante tudo segue o idioma escolhido.
   const locale = await select({
     message: 'Language / Idioma:',
@@ -191,6 +197,9 @@ async function ask(framework) {
   if (framework) console.log(framework.id === 'static' ? t('init.staticDetected', { dir: framework.dir }) : t('init.frameworkDetected', { name: framework.label }));
   const url = await input({ message: t('init.urlQ'), default: framework?.url ?? 'http://localhost:3000', validate: validateUrl });
   const start = await input({ message: t('init.startQ'), default: framework?.start ?? '' });
+  // Cliente e logo aparecem no topo do relatório (opcionais).
+  const client = (await input({ message: t('init.clientQ') })).trim();
+  const logo = cleanLogo(await input({ message: t('init.logoQ'), validate: (v) => isValidLogo(cwd, v) || t('init.logoInvalid') }));
 
   const viewports = await checkbox({
     message: t('init.viewportsQ'),
@@ -226,7 +235,7 @@ async function ask(framework) {
 
   const { presetIds, createPersonas } = await askPersonas();
 
-  return { locale, targets, url, start, viewports, language, standalone, presetIds, createPersonas };
+  return { locale, targets, url, start, client, logo, viewports, language, standalone, presetIds, createPersonas };
 }
 
 /** Passo obrigatório: mostra as personas pré-definidas e pede para usar, criar ou as duas coisas. */
@@ -266,6 +275,7 @@ function renderConfig(a) {
     locale: a.locale,
     targets: a.targets,
     app: { url: a.url, ...(a.start ? { start: a.start } : {}) },
+    ...(a.client || a.logo ? { report: { ...(a.client ? { client: a.client } : {}), ...(a.logo ? { logo: a.logo } : {}) } } : {}),
     personas: `${WORK_DIR}/personas`,
     tasks: `${WORK_DIR}/tasks.yml`,
     viewports: a.viewports,

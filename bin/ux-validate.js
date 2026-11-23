@@ -26,6 +26,8 @@ const { positionals, values } = parseArgs({
     'sarif-uploaded': { type: 'boolean' },
     config: { type: 'string', default: 'ux-validate.config.yml' },
     dir: { type: 'string' },
+    client: { type: 'string' },
+    logo: { type: 'string' },
     'max-pages': { type: 'string' },
     viewports: { type: 'string' },
     help: { type: 'boolean', short: 'h' },
@@ -58,6 +60,8 @@ try {
         url: values.url,
         start: values.start,
         tasks: values.task,
+        client: values.client,
+        logo: values.logo,
       });
       break;
     }
@@ -77,6 +81,8 @@ try {
         maxPages: values['max-pages'],
         viewports: values.viewports,
         failOn: values['fail-on'],
+        client: values.client,
+        logo: values.logo,
       });
       break;
     }

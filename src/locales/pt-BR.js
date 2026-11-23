@@ -20,17 +20,17 @@ Codex CLI ($ux-test) ou Gemini CLI. Sem IA, roda só a validação automática: 
 
 Uso:
   ux-validate init   [--yes] [--force] [--tools claude-code,cursor,codex,gemini|none] [--personas all|none|id,id]
-                     [--url <url>] [--start <comando>] [--task "<tarefa>" …]
+                     [--url <url>] [--start <comando>] [--task "<tarefa>" …] [--client "<nome>"] [--logo <arquivo|url>]
                                                  Configura o projeto e instala os comandos nas suas ferramentas de IA
   ux-validate install-browser                    Instala o navegador (Chromium) da versão do Playwright que o ux-validate usa
   ux-validate check  [--out <dir>] [--url <url>] [--fail-on high]
                                                  Roda as checagens fixas (acessibilidade, links, ortografia, conteúdo)
   ux-validate audit  <url> [--yes] [--personas id,id|all] [--task "<tarefa>" …] [--max-pages 20]
-                     [--viewports mobile,desktop] [--fail-on high]
+                     [--viewports mobile,desktop] [--fail-on high] [--client "<nome>"] [--logo <arquivo|url>]
                                                  Audita um site publicado, sem o código (sites pelos quais você responde
                                                  ou tem autorização; respeita o robots.txt e nunca envia formulários).
                                                  Com personas e tarefas: /ux-audit <url> na sua ferramenta de IA
-  ux-validate report [--run <dir>]               Gera report.md e report.html a partir de uma execução
+  ux-validate report [--run <dir>]               Gera o relatório de uma execução: report.md e o site do relatório (report.html + uma página por área)
   ux-validate sarif  [--run <dir>] [--out <arquivo>]
                                                  Exporta os problemas em SARIF (code scanning do GitHub)
   ux-validate comment [--run <dir>] [--out <arquivo>]
@@ -82,6 +82,9 @@ Opções gerais:
     frameworkDetected: '\n  Projeto {name} detectado: sugerimos o servidor de desenvolvimento, onde o ux-validate consegue apontar o componente e o arquivo de cada problema.\n',
     urlQ: 'URL da aplicação a ser testada (ex.: http://localhost:3000):',
     startQ: 'Comando para subir a aplicação (opcional, ex.: npm run dev):',
+    clientQ: 'Nome do cliente, que aparece no topo do relatório (opcional):',
+    logoQ: 'Logo do cliente para o relatório: arquivo de imagem (png, jpg, svg, webp) ou URL https:// (opcional):',
+    logoInvalid: 'Logo não encontrado ou não é uma imagem (png, jpg, svg, webp, gif). Use o caminho de um arquivo, uma URL https:// ou deixe em branco.',
     viewportsQ: 'Tamanhos de tela:',
     languageQ: 'Idioma do conteúdo da aplicação (para a verificação ortográfica):',
     languages: { 'pt-BR': 'Português (Brasil)', en: 'Inglês', es: 'Espanhol', other: 'Outro (sem verificação ortográfica)' },
@@ -483,6 +486,42 @@ Opções gerais:
   },
 
   report: {
+    site: {
+      nav: { overview: 'Visão geral', personas: 'Personas', tasks: 'Tarefas', issues: 'Problemas', colorVision: 'Visão de cores', scope: 'Escopo da auditoria' },
+      skip: 'Pular para o conteúdo',
+      menu: 'Menu',
+      navLabel: 'Áreas do relatório',
+      evaluatedBy: 'Avaliado por {by}',
+      generatedBy: 'Gerado pelo ux-validate {version}',
+      disclaimer: 'Personas simuladas por IA: apontam barreiras prováveis, mas não substituem testes com pessoas reais.',
+      logoNotFound: '⚠ Logo do relatório não encontrado ou não é uma imagem (png, jpg, svg, webp, gif): {logo}. O relatório mostra o nome do cliente no lugar.',
+      planTitle: 'Plano de correção',
+      viewAllIssues: ({ n }) => `Ver ${n === 1 ? 'o problema' : `todos os ${n} problemas`} →`,
+      viewPersonas: 'Ver as personas →',
+      areasHand: 'o relatório completo',
+      areasTitle: 'Áreas',
+      open: 'Abrir →',
+      area: {
+        personas: ({ n }) => `Notas por categoria, objetivos e o resumo de ${n === 1 ? 'uma persona' : `cada uma das ${n} personas`}.`,
+        personasNone: 'Nota geral por categoria (nenhuma persona testada ainda).',
+        tasks: ({ tasks, personas }) => `${tasks} ${tasks === 1 ? 'tarefa' : 'tarefas'} × ${personas} ${personas === 1 ? 'persona' : 'personas'}, com o primeiro clique e onde cada uma se perdeu.`,
+        issues: ({ n }) => `${n} ${n === 1 ? 'problema' : 'problemas'} com evidências e como corrigir, filtráveis por categoria, gravidade e persona.`,
+        colorVision: 'Cada página como aparece para pessoas com daltonismo.',
+        scope: 'As páginas analisadas e o que ficou de fora da auditoria.',
+      },
+      lostHand: 'onde travaram',
+      lostTitle: 'Onde as personas se perderam',
+      issuesIntro: 'Clique num problema para ver a evidência e como corrigir. Use os filtros para focar numa categoria, gravidade ou persona.',
+      filterSeverity: 'Gravidade',
+      filterPersona: 'Persona',
+      any: 'todas',
+      countOf: ({ n, total }) => `${n} de ${total} problemas`,
+      scopeTitle: 'Escopo da auditoria',
+      scopeHand: 'o que foi e o que não foi testado',
+      analyzedHand: 'o que foi testado',
+      analyzedTitle: ({ n }) => `Páginas analisadas (${n})`,
+      outHand: 'o que ficou de fora',
+    },
     html: {
       hand: {
         report: 'relatório de validação',
@@ -555,9 +594,9 @@ Opções gerais:
     fixFirst: 'Corrigir primeiro',
     noTop: 'Nenhum problema crítico ou alto. 🎉',
     applyFixes:
-      '**Para aplicar as correções:** rode `/ux-fix` no Claude Code (usa o modelo e a conta da ferramenta) ou `npx ux-validate fix` no terminal (usa o modelo e a API key configurados no setup). Ambos mostram cada mudança antes de gravar.',
+      '**Para aplicar as correções:** rode `/ux-fix` na sua ferramenta de IA (usa o modelo e a conta da ferramenta) ou `npx ux-validate fix` no terminal (usa o modelo e a API key configurados no setup). Ambos mostram cada mudança antes de gravar.',
     applyFixesHtml:
-      '<strong>Para aplicar as correções:</strong> rode <code>/ux-fix</code> no Claude Code (usa o modelo e a conta da ferramenta) ou <code>npx ux-validate fix</code> no terminal (usa o modelo e a API key configurados no setup). Ambos mostram cada mudança antes de gravar.',
+      '<strong>Para aplicar as correções:</strong> rode <code>/ux-fix</code> na sua ferramenta de IA (usa o modelo e a conta da ferramenta) ou <code>npx ux-validate fix</code> no terminal (usa o modelo e a API key configurados no setup). Ambos mostram cada mudança antes de gravar.',
     noIssues: 'Nenhum problema encontrado.',
     noIssuesHtml: 'Nenhum problema encontrado. 🎉',
     severity: 'Gravidade',

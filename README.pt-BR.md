@@ -8,7 +8,7 @@ Em vez de dizer só "o contraste está abaixo de 4,5:1", o ux-validate pergunta,
 
 ![Relatório do ux-validate: notas por persona, objetivos e problemas](docs/ux-validate-demo-crop.gif)
 
-> **Status:** versão 1.2. Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**. Site: [fabiofigueredo.github.io/ux-validate](https://fabiofigueredo.github.io/ux-validate/)
+> **Status:** versão 1.3. Funciona com **Claude Code**, **Cursor**, **Codex CLI** e **Gemini CLI**. Site: [fabiofigueredo.github.io/ux-validate](https://fabiofigueredo.github.io/ux-validate/)
 
 ## Conteúdo
 
@@ -67,7 +67,7 @@ npx ux-validate install-browser
 npx ux-validate init
 ```
 
-O `init` pergunta o idioma, as suas ferramentas de IA, a URL e o comando de início da aplicação, as **personas** e as **tarefas** que elas vão tentar. Depois, a cada validação:
+O `init` pergunta o idioma, as suas ferramentas de IA, a URL e o comando de início da aplicação, o cliente e o logo do relatório (opcionais), as **personas** e as **tarefas** que elas vão tentar. Depois, a cada validação:
 
 1. Abra a sua ferramenta de IA **na pasta do projeto** e rode **`/ux-test`** (no Codex, `$ux-test`). Na primeira vez, aprove o servidor MCP `playwright`: é o navegador do agente.
 2. Abra o `report.html` da pasta mais recente em `.ux-validate/runs/`.
@@ -154,6 +154,7 @@ O `install-browser` instala o Chromium da versão do Playwright que o ux-validat
 
 - o **idioma da ferramenta** (português ou inglês);
 - **em quais ferramentas de IA** você vai usar os comandos (Claude Code, Cursor, Codex CLI, Gemini CLI; uma ou mais);
+- o **nome e o logo do cliente** para o relatório (opcionais);
 - a **URL** da aplicação e o **comando para iniciá-la** (`app.start`). Com ele, o `check` sobe a aplicação quando ela não está no ar e a encerra no fim. O setup sugere o comando para projetos React e para sites só com HTML (`npx -y http-server <pasta> -p 3000 -c-1`);
 - os **tamanhos de tela** (celular, tablet, computador) e o **idioma do conteúdo**, para a ortografia;
 - opcionalmente, um **modelo para aplicar correções pelo terminal** (`npx ux-validate fix`): provedor, modelo e o nome da variável de ambiente com a sua API key;
@@ -171,7 +172,7 @@ E cria:
 | `.ux-validate/dicionario.txt` | Palavras corretas que o dicionário não conhece |
 | Os comandos e o arquivo de MCP de cada ferramenta | Veja [Ferramentas de IA suportadas](#ferramentas-de-ia-suportadas) |
 
-Sem perguntas: `--yes` aceita os padrões, `--tools claude-code,cursor,codex,gemini` escolhe as ferramentas, `--personas all|none|dona-maria,rafael-dev` escolhe as personas pré-definidas, `--task "…"` acrescenta uma tarefa (pode repetir), `--url` e `--start` definem a aplicação. `--force` sobrescreve arquivos existentes.
+Sem perguntas: `--yes` aceita os padrões, `--tools claude-code,cursor,codex,gemini` escolhe as ferramentas, `--personas all|none|dona-maria,rafael-dev` escolhe as personas pré-definidas, `--task "…"` acrescenta uma tarefa (pode repetir), `--url` e `--start` definem a aplicação, `--client` e `--logo` o cliente e o logo do relatório. `--force` sobrescreve arquivos existentes.
 
 > **Vindo de uma versão anterior à 0.3?** Os comandos do agente mudaram de nome (`/persona-test` → `/ux-test`, `/persona-report` → `/ux-report`, `/persona-fix` → `/ux-fix`, `/persona-new` → `/ux-persona`). Rode `npx ux-validate init` de novo: ele instala os novos e remove os antigos.
 
@@ -274,7 +275,7 @@ Cada execução cria `.ux-validate/runs/<data-hora>/` (já incluída no `.gitign
 
 | Arquivo | Conteúdo |
 |---|---|
-| `report.html` / `report.md` | O relatório |
+| `report.html` (+ `report-*.html`, `report.css`) / `report.md` | O relatório: um pequeno site (página inicial mais uma página por área) e a versão em Markdown |
 | `checks.json` | Resultado completo das checagens automáticas |
 | `checks-brief.md` | Resumo curto que o agente lê |
 | `findings.json` | A avaliação do agente por persona |
@@ -348,21 +349,34 @@ npx ux-validate audit https://www.exemplo.com.br
 - **Sem projeto e sem setup.** Roda em qualquer pasta. Cada site ganha uma pasta própria, `ux-validate-audits/<domínio>/`, com as personas, as tarefas e uma pasta por execução com o `report.html`. A próxima auditoria do mesmo site reaproveita tudo, e o `/ux-audit` compara com a execução anterior. Dentro de um repositório Git, `ux-validate-audits/` é adicionada ao `.gitignore`.
 - **Seguro para um site no ar.** Pergunta se você responde pelo site ou tem autorização para testá-lo (`--yes` confirma, ex.: no CI), respeita o `robots.txt`, visita no máximo uma página por segundo, se identifica como `ux-validate` no user agent, não segue links de sair, excluir ou cancelar e nunca envia formulários. As personas vão até o botão final de um formulário, login ou compra e param ali.
 - **Com personas e tarefas:** `/ux-audit <url>` na sua ferramenta de IA pede a autorização, as personas e as tarefas, roda a auditoria e navega como cada persona. Para usar sem o plugin, instale os comandos uma vez em qualquer pasta: `npx ux-validate init --tools claude-code` (ou `cursor`, `codex`, `gemini`).
-- **O relatório** acrescenta "Limites desta auditoria" (páginas não visitadas e o que não pôde ser testado) e um "Plano para quem mantém o site": primeiro o que impede as pessoas de concluir as tarefas, depois os problemas críticos e altos, depois o resto agrupado por tipo. Cada problema mostra a página, o elemento e um screenshot no lugar do arquivo e da linha. Compartilhe o `report.html` com quem mantém o site.
-- **Opções:** `--personas dona-maria,lucas-leitor-de-tela` ou `all`, `--task "<tarefa>"` (pode repetir), `--max-pages 20`, `--viewports mobile,desktop`, `--fail-on high`. Os outros comandos funcionam na pasta do site com `--dir`, ex.: `npx ux-validate report --dir ux-validate-audits/www.exemplo.com.br`.
+- **O relatório** acrescenta "Limites desta auditoria" (páginas não visitadas e o que não pôde ser testado) e um "Plano para quem mantém o site": primeiro o que impede as pessoas de concluir as tarefas, depois os problemas críticos e altos, depois o resto agrupado por tipo. Cada problema mostra a página, o elemento e um screenshot no lugar do arquivo e da linha. Para compartilhar com quem mantém o site, envie a pasta inteira da execução.
+- **Opções:** `--personas dona-maria,lucas-leitor-de-tela` ou `all`, `--task "<tarefa>"` (pode repetir), `--max-pages 20`, `--viewports mobile,desktop`, `--fail-on high`, `--client "<nome>"` e `--logo <arquivo ou URL>`. Os outros comandos funcionam na pasta do site com `--dir`, ex.: `npx ux-validate report --dir ux-validate-audits/www.exemplo.com.br`.
 - **O que não se aplica:** arquivo e linha, nomes de componentes React, `fix` e `sarif`, que trabalham no código do projeto. Páginas atrás de login ainda não são auditadas.
 
 ## O relatório
 
-O `report.html` usa a identidade visual do ux-validate e traz, nesta ordem:
+O relatório é um pequeno site na pasta da execução, com a identidade visual do ux-validate. O `report.html` é a página inicial, e cada área tem a própria página, ligadas por um menu no topo:
 
-1. **Os números principais:** nota média, tarefas concluídas, objetivos não cumpridos e problemas por gravidade, com o lembrete de que as personas são simuladas (ou de que o relatório tem só as checagens automáticas).
-2. **Notas por persona:** um cartão para cada uma, com a nota geral de 0 a 100, uma barra por categoria (conteúdo, navegação, interface, acessibilidade) e as características dela. Cada persona só perde pontos pelos problemas que a afetam.
-3. **Tarefas:** uma tabela tarefa × persona com o resultado e a quantidade de passos, e um cartão para cada vez que uma persona se perdeu (primeiro clique, voltas, observações e screenshot).
-4. **Corrigir primeiro:** os problemas críticos e altos numa lista numerada, com o arquivo a corrigir. Numa auditoria, o plano para quem mantém o site e os limites da auditoria.
-5. **Objetivos** de cada persona, **visão de cores** (cada página como aparece para cada tipo de daltonismo) e **todos os problemas**, com filtros por categoria: evidência, critério WCAG, trecho de código, como corrigir e screenshot.
+| Página | Conteúdo |
+|---|---|
+| **Visão geral** (`report.html`) | Os números principais (nota média, tarefas concluídas, objetivos não cumpridos, problemas por gravidade), a nota de cada persona, o **Corrigir primeiro** (os problemas críticos e altos, com o arquivo a corrigir) e atalhos para as outras áreas |
+| **Personas** | Um cartão para cada persona: nota geral de 0 a 100, uma barra por categoria, características, resumo e objetivos. Cada persona só perde pontos pelos problemas que a afetam |
+| **Tarefas** | Uma tabela tarefa × persona com o resultado e a quantidade de passos, e onde cada persona se perdeu (primeiro clique, voltas, observações e screenshot) |
+| **Problemas** | Todos os problemas, fechados numa linha, que abrem com a evidência, o critério WCAG, o trecho de código, como corrigir e o screenshot. Filtros por categoria, gravidade e persona |
+| **Visão de cores** | Cada página como aparece para cada tipo de daltonismo |
+| **Escopo da auditoria** | Só na auditoria: as páginas analisadas e o que ficou de fora. Na auditoria, a visão geral mostra o **Plano de correção** para quem mantém o site no lugar do "Corrigir primeiro" |
 
-O `report.md` tem o mesmo conteúdo em Markdown. O relatório em HTML é só claro e carrega as fontes do Google Fonts; sem internet, usa as fontes do sistema.
+- **Cliente e logo:** aparecem no topo de todas as páginas. O `init` e o `/ux-audit` perguntam (são opcionais), ou defina no `ux-validate.config.yml`; um logo local é copiado para a pasta da execução.
+
+  ```yaml
+  report:
+    client: Nome do cliente
+    logo: ./logo-cliente.png   # arquivo de imagem (png, jpg, svg, webp) ou URL https://
+  ```
+
+- **Rodapé:** quem avaliou (ferramenta de IA e modelo), a data e a versão do ux-validate.
+- **Para compartilhar:** envie a pasta inteira da execução (ex.: em zip): as páginas, o `report.css`, o logo e os screenshots vão juntos.
+- O `report.md` tem todo o conteúdo num único arquivo Markdown. O relatório em HTML é só claro e carrega as fontes do Google Fonts; sem internet, usa as fontes do sistema.
 
 ## O que é verificado
 
@@ -656,6 +670,7 @@ Sugestões e PRs são bem-vindos. Rode `npm test` antes de abrir um PR. Para mud
 - [x] Tarefas: objetivos sem passo a passo, primeiro clique, voltas
 - [x] Auditoria de site publicado pela URL
 - [x] Relatório com a identidade visual do ux-validate
+- [x] Relatório como site, uma página por área, com o logo do cliente
 - [ ] Auditar páginas atrás de login (sessão salva)
 - [ ] Navegação das personas pelo terminal (sem ferramenta de IA), com o modelo escolhido no setup
 - [ ] Repetir a navegação e só confirmar os problemas que aparecem em mais de uma execução
